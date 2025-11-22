@@ -11,6 +11,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import com.example.emergencynow.ui.extention.AuthSession
+import com.example.emergencynow.ui.extention.BackendClient
+import com.example.emergencynow.ui.extention.CreateProfileRequest
+import com.example.emergencynow.ui.extention.GenderDto
+import kotlinx.coroutines.launch
+
 enum class Gender { Male, Female, Other }
 
 @Composable
@@ -22,6 +28,9 @@ fun PersonalInformationScreen(
     var weight by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf(Gender.Male) }
     var allergiesInput by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -80,9 +89,63 @@ fun PersonalInformationScreen(
                 minLines = 3
             )
             Spacer(Modifier.height(24.dp))
+            if (error != null) {
+                Text(
+                    text = error ?: "",
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(Modifier.height(8.dp))
+            }
             Button(
-                onClick = onContinue,
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                onClick = {
+                    if (isLoading) {
+                        return@Button
+                    }
+                    val accessToken = AuthSession.accessToken
+                    if (accessToken.isNullOrEmpty()) {
+                        error = "Missing session. Log in again."
+                        return@Button
+                    }
+                    val heightValue = height.toIntOrNull()
+                    val weightValue = weight.toIntOrNull()
+                    if (heightValue == null || weightValue == null) {
+                        error = "Height and weight must be numbers."
+                        return@Button
+                    }
+                    val genderDto = when (gender) {
+                        Gender.Female -> GenderDto.FEMALE
+                        Gender.Other -> GenderDto.OTHER
+                        else -> GenderDto.MALE
+                    }
+                    val allergiesList = allergiesInput.split(",")
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                    val allergies = if (allergiesList.isEmpty()) null else allergiesList
+                    scope.launch {
+                        isLoading = true
+                        error = null
+                        try {
+                            BackendClient.api.createProfile(
+                                bearer = "Bearer $accessToken",
+                                body = CreateProfileRequest(
+                                    height = heightValue,
+                                    weight = weightValue,
+                                    gender = genderDto,
+                                    allergies = allergies
+                                )
+                            )
+                            onContinue()
+                        } catch (e: Exception) {
+                            error = "Failed to save profile."
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                },
+                enabled = !isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             ) { Text("Continue") }
         }
     }

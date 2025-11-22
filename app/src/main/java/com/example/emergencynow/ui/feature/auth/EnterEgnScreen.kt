@@ -11,7 +11,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-
+import com.example.emergencynow.ui.extention.AuthSession
 
 @Composable
 fun EnterEgnScreen(
@@ -60,7 +60,16 @@ fun EnterEgnScreen(
             }
 
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Button(onClick = onContinue, enabled = isValid, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+                Button(
+                    onClick = {
+                        AuthSession.egn = egn
+                        onContinue()
+                    },
+                    enabled = isValid,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                ) {
                     Text("Continue")
                 }
                 TextButton(onClick = { /* TODO: help */ }) { Text("Need Help?") }
