@@ -9,7 +9,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.GET
+import retrofit2.http.DELETE
+import retrofit2.http.Path
 import com.google.gson.annotations.SerializedName
+import android.content.Context
 
 enum class LoginMethod {
     @SerializedName("email")
@@ -66,7 +70,24 @@ data class ProfileResponse(
 )
 
 data class ContactResponse(
-    val id: String?
+    val id: String,
+    val name: String,
+    val phoneNumber: String,
+    val email: String?
+)
+
+data class CreateCallRequest(
+    val description: String,
+    val latitude: Double,
+    val longitude: Double,
+    val patientEgn: String?
+)
+
+data class CallResponse(
+    val id: String?,
+    val description: String?,
+    val latitude: Double?,
+    val longitude: Double?
 )
 
 interface BackendApi {
@@ -79,21 +100,39 @@ interface BackendApi {
     @POST("auth/refresh")
     suspend fun refresh(@Body body: RefreshTokenRequest): TokenResponse
 
-    @POST("profiles")
+    @POST("profiles/me")
     suspend fun createProfile(
         @Header("Authorization") bearer: String,
         @Body body: CreateProfileRequest
     ): ProfileResponse
 
-    @POST("contacts")
-    suspend fun createContact(
+    @GET("contacts/me")
+    suspend fun getMyContacts(
+        @Header("Authorization") bearer: String,
+    ): List<ContactResponse>
+
+    @POST("contacts/me")
+    suspend fun createMyContact(
         @Header("Authorization") bearer: String,
         @Body body: CreateContactRequest
     ): ContactResponse
+
+    @DELETE("contacts/me/{id}")
+    suspend fun deleteMyContact(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+    )
+
+    @POST("calls")
+    suspend fun createCall(
+        @Header("Authorization") bearer: String,
+        @Body body: CreateCallRequest
+    ): CallResponse
 }
 
 object BackendClient {
-    private const val BASE_URL = "http://10.0.2.2:3000/"
+    // private const val BASE_URL = "http://10.0.2.2:3000/"
+    private const val BASE_URL = "http://localhost:3000/"
 
     private val logging: HttpLoggingInterceptor = HttpLoggingInterceptor().setLevel(
         HttpLoggingInterceptor.Level.BODY
@@ -117,4 +156,33 @@ object AuthSession {
     var accessToken: String? = null
     var refreshToken: String? = null
     var lastMethod: LoginMethod? = null
+}
+
+object AuthStorage {
+    private const val PREFS_NAME = "auth_prefs"
+    private const val KEY_ACCESS = "access_token"
+    private const val KEY_REFRESH = "refresh_token"
+
+    data class Tokens(val accessToken: String?, val refreshToken: String?)
+
+    fun loadTokens(context: Context): Tokens {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return Tokens(
+            accessToken = prefs.getString(KEY_ACCESS, null),
+            refreshToken = prefs.getString(KEY_REFRESH, null)
+        )
+    }
+
+    fun saveTokens(context: Context, accessToken: String, refreshToken: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(KEY_ACCESS, accessToken)
+            .putString(KEY_REFRESH, refreshToken)
+            .apply()
+    }
+
+    fun clearTokens(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
+    }
 }

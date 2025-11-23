@@ -27,6 +27,24 @@ fun EmergencyContactsScreen(
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    LaunchedEffect(Unit) {
+        val accessToken = AuthSession.accessToken
+        if (accessToken.isNullOrEmpty()) {
+            error = "Missing session. Log in again."
+        } else {
+            try {
+                val remoteContacts = BackendClient.api.getMyContacts("Bearer $accessToken")
+                contacts = if (remoteContacts.isEmpty()) {
+                    listOf(Contact("", ""))
+                } else {
+                    remoteContacts.map { Contact(it.name, it.phoneNumber, it.id) }
+                }
+            } catch (e: Exception) {
+    error = "Failed to load contacts: ${e.localizedMessage ?: e::class.simpleName}"
+}
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -51,12 +69,13 @@ fun EmergencyContactsScreen(
                             error = "Add at least one contact."
                             return@Button
                         }
+                        val newContacts = validContacts.filter { it.id == null }
                         scope.launch {
                             isLoading = true
                             error = null
                             try {
-                                validContacts.forEach { contact ->
-                                    BackendClient.api.createContact(
+                                newContacts.forEach { contact ->
+                                    BackendClient.api.createMyContact(
                                         bearer = "Bearer $accessToken",
                                         body = CreateContactRequest(
                                             name = contact.name,
@@ -98,7 +117,23 @@ fun EmergencyContactsScreen(
                             contacts = contacts.toMutableList().also { it[index] = updated }
                         },
                         onRemove = {
-                            contacts = contacts.toMutableList().also { it.removeAt(index) }
+                            val accessToken = AuthSession.accessToken
+                            val toRemove = contacts[index]
+                            if (!toRemove.id.isNullOrEmpty() && !accessToken.isNullOrEmpty()) {
+                                scope.launch {
+                                    try {
+                                        BackendClient.api.deleteMyContact(
+                                            bearer = "Bearer $accessToken",
+                                            id = toRemove.id!!
+                                        )
+                                        contacts = contacts.toMutableList().also { it.removeAt(index) }
+                                    } catch (e: Exception) {
+                                        error = "Failed to remove contact."
+                                    }
+                                }
+                            } else {
+                                contacts = contacts.toMutableList().also { it.removeAt(index) }
+                            }
                         }
                     )
                 }
@@ -111,7 +146,7 @@ fun EmergencyContactsScreen(
     }
 }
 
-data class Contact(var name: String, var phone: String)
+data class Contact(var name: String, var phone: String, var id: String? = null)
 
 @Composable
 private fun ContactCard(index: Int, contact: Contact, onChange: (Contact) -> Unit, onRemove: () -> Unit) {

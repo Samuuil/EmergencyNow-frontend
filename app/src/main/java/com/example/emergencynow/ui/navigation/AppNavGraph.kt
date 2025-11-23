@@ -9,16 +9,25 @@ import com.example.emergencynow.ui.feature.auth.WelcomeScreen
 import com.example.emergencynow.ui.feature.auth.EnterEgnScreen
 import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodScreen
 import com.example.emergencynow.ui.feature.auth.EnterVerificationCodeScreen
+import com.example.emergencynow.ui.feature.auth.HomeScreen
+import com.example.emergencynow.ui.feature.auth.EmergencyCallScreen
+import com.example.emergencynow.ui.feature.auth.ProfileHomeScreen
 import com.example.emergencynow.ui.feature.profile.PersonalInformationScreen
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsScreen
 
 @Composable
-fun AppNavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = Routes.WELCOME) {
+fun AppNavGraph(navController: NavHostController, startDestination: String = Routes.WELCOME) {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable(Routes.WELCOME) {
             WelcomeScreen(
                 onRegisterEgn = { navController.navigate(Routes.ENTER_EGN) },
                 onLogin = { navController.navigate(Routes.ENTER_EGN) }
+            )
+        }
+        composable(Routes.HOME) {
+            HomeScreen(
+                onMakeEmergencyCall = { navController.navigate(Routes.EMERGENCY_CALL) },
+                onOpenProfile = { navController.navigate(Routes.PROFILE_HOME) }
             )
         }
         composable(Routes.ENTER_EGN) {
@@ -49,7 +58,23 @@ fun AppNavGraph(navController: NavHostController) {
         composable(Routes.EMERGENCY_CONTACTS) {
             EmergencyContactsScreen(
                 onBack = { navController.popBackStack() },
-                onFinish = { /* TODO: Navigate to app home when available */ }
+                onFinish = { navController.navigate(Routes.HOME) }
+            )
+        }
+        composable(Routes.EMERGENCY_CALL) {
+            EmergencyCallScreen(
+                onBack = { navController.popBackStack() },
+                onCallCreated = {
+                    navController.popBackStack()
+                    navController.navigate(Routes.HOME)
+                }
+            )
+        }
+        composable(Routes.PROFILE_HOME) {
+            ProfileHomeScreen(
+                onBack = { navController.popBackStack() },
+                onEditProfile = { navController.navigate(Routes.PERSONAL_INFO) },
+                onEditContacts = { navController.navigate(Routes.EMERGENCY_CONTACTS) }
             )
         }
     }

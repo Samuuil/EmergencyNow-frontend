@@ -7,11 +7,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import com.example.emergencynow.ui.extention.AuthSession
+import com.example.emergencynow.ui.extention.AuthStorage
 import com.example.emergencynow.ui.extention.BackendClient
 import com.example.emergencynow.ui.extention.VerifyCodeRequest
 import kotlinx.coroutines.launch
@@ -26,6 +28,7 @@ fun EnterVerificationCodeScreen(
     val scope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -77,6 +80,11 @@ fun EnterVerificationCodeScreen(
                             )
                             AuthSession.accessToken = response.accessToken
                             AuthSession.refreshToken = response.refreshToken
+                            AuthStorage.saveTokens(
+                                context = context,
+                                accessToken = response.accessToken,
+                                refreshToken = response.refreshToken
+                            )
                             onVerified()
                         } catch (e: Exception) {
                             error = "Invalid or expired verification code."
