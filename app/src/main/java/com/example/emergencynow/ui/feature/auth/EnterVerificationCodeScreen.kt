@@ -7,25 +7,29 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import com.example.emergencynow.ui.extention.AuthSession
+import com.example.emergencynow.ui.extention.AuthStorage
 import com.example.emergencynow.ui.extention.BackendClient
 import com.example.emergencynow.ui.extention.VerifyCodeRequest
+import com.example.emergencynow.ui.extention.parseJwt
 import kotlinx.coroutines.launch
 
 @Composable
 fun EnterVerificationCodeScreen(
     onBack: () -> Unit,
-    onVerified: () -> Unit,
+    onVerified: (isReturningUser: Boolean) -> Unit,
 ) {
     var code by remember { mutableStateOf("") }
     val isValid = code.length == 6 && code.all { it.isDigit() }
     val scope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -77,7 +81,22 @@ fun EnterVerificationCodeScreen(
                             )
                             AuthSession.accessToken = response.accessToken
                             AuthSession.refreshToken = response.refreshToken
-                            onVerified()
+                            val payload = parseJwt(response.accessToken)
+                            AuthSession.userId = payload?.sub
+                            AuthStorage.saveTokens(
+                                context = context,
+                                accessToken = response.accessToken,
+                                refreshToken = response.refreshToken
+                            )
+                            val hasExistingContacts = try {
+                                val contacts = BackendClient.api.getMyContacts(
+                                    bearer = "Bearer ${response.accessToken}"
+                                )
+                                contacts.isNotEmpty()
+                            } catch (e: Exception) {
+                                false
+                            }
+                            onVerified(hasExistingContacts)
                         } catch (e: Exception) {
                             error = "Invalid or expired verification code."
                         } finally {

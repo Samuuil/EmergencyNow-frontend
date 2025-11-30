@@ -3,13 +3,21 @@ package com.example.emergencynow.ui.extention
 // Placeholder to keep the package as requested. Add extension functions here later.
 
 import okhttp3.OkHttpClient
+import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.GET
+import retrofit2.http.DELETE
+import retrofit2.http.Path
+import retrofit2.http.PATCH
 import com.google.gson.annotations.SerializedName
+import android.content.Context
+import android.util.Base64
+import com.google.gson.Gson
 
 enum class LoginMethod {
     @SerializedName("email")
@@ -66,7 +74,79 @@ data class ProfileResponse(
 )
 
 data class ContactResponse(
-    val id: String?
+    val id: String,
+    val name: String,
+    val phoneNumber: String,
+    val email: String?
+)
+
+data class CreateCallRequest(
+    val description: String,
+    val latitude: Double,
+    val longitude: Double,
+    val patientEgn: String?
+)
+
+data class CallResponse(
+    val id: String?,
+    val description: String?,
+    val latitude: Double?,
+    val longitude: Double?
+)
+
+data class CallTrackingLocation(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class RoutePoint(
+    val lat: Double,
+    val lng: Double
+)
+
+data class RouteStepDto(
+    val distance: Int,
+    val duration: Int,
+    val instruction: String,
+    val startLocation: RoutePoint,
+    val endLocation: RoutePoint
+)
+
+data class RouteDto(
+    val polyline: String,
+    val distance: Int,
+    val duration: Int,
+    val steps: List<RouteStepDto>
+)
+
+data class CallTrackingCall(
+    val id: String,
+    val description: String,
+    val latitude: Double,
+    val longitude: Double,
+    val status: String?,
+    val ambulanceCurrentLatitude: Double?,
+    val ambulanceCurrentLongitude: Double?
+)
+
+data class CallTrackingResponse(
+    val call: CallTrackingCall,
+    val currentLocation: CallTrackingLocation?,
+    val route: RouteDto?
+)
+
+data class AmbulanceDto(
+    val id: String,
+    val licensePlate: String,
+    val vehicleModel: String?,
+    val latitude: Double?,
+    val longitude: Double?,
+    val available: Boolean,
+    val driverId: String?,
+)
+
+data class AssignDriverRequest(
+    val driverId: String?
 )
 
 interface BackendApi {
@@ -79,21 +159,66 @@ interface BackendApi {
     @POST("auth/refresh")
     suspend fun refresh(@Body body: RefreshTokenRequest): TokenResponse
 
-    @POST("profiles")
+    @POST("profiles/me")
     suspend fun createProfile(
         @Header("Authorization") bearer: String,
         @Body body: CreateProfileRequest
     ): ProfileResponse
 
-    @POST("contacts")
-    suspend fun createContact(
+    @GET("contacts/me")
+    suspend fun getMyContacts(
+        @Header("Authorization") bearer: String,
+    ): List<ContactResponse>
+
+    @POST("contacts/me")
+    suspend fun createMyContact(
         @Header("Authorization") bearer: String,
         @Body body: CreateContactRequest
     ): ContactResponse
+
+    @DELETE("contacts/me/{id}")
+    suspend fun deleteMyContact(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+    )
+
+    @POST("calls")
+    suspend fun createCall(
+        @Header("Authorization") bearer: String,
+        @Body body: CreateCallRequest
+    ): CallResponse
+
+    @GET("calls/{id}/tracking")
+    suspend fun getCallTracking(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+    ): CallTrackingResponse
+
+    @GET("ambulances/available")
+    suspend fun getAvailableAmbulances(): List<AmbulanceDto>
+
+    @GET("ambulances/driver/{driverId}")
+    suspend fun getAmbulanceByDriver(
+        @Path("driverId") driverId: String,
+    ): AmbulanceDto?
+
+    @GET("users/user-role/{id}")
+    suspend fun getUserRole(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+    ): ResponseBody
+
+    @PATCH("ambulances/{id}/driver")
+    suspend fun assignAmbulanceDriver(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+        @Body body: AssignDriverRequest
+    ): AmbulanceDto
 }
 
 object BackendClient {
-    private const val BASE_URL = "http://10.0.2.2:3000/"
+    // private const val BASE_URL = "http://10.0.2.2:3000/"
+    private const val BASE_URL = "http://localhost:3000/"
 
     private val logging: HttpLoggingInterceptor = HttpLoggingInterceptor().setLevel(
         HttpLoggingInterceptor.Level.BODY
@@ -112,9 +237,58 @@ object BackendClient {
     val api: BackendApi = retrofit.create(BackendApi::class.java)
 }
 
+data class JwtPayload(
+    val sub: String?,
+    val role: String?,
+    val egn: String?,
+)
+
+fun parseJwt(token: String): JwtPayload? {
+    return try {
+        val parts = token.split(".")
+        if (parts.size < 2) return null
+        val payloadPart = parts[1]
+        val decodedBytes = Base64.decode(payloadPart, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+        val json = String(decodedBytes, Charsets.UTF_8)
+        Gson().fromJson(json, JwtPayload::class.java)
+    } catch (e: Exception) {
+        null
+    }
+}
+
 object AuthSession {
     var egn: String? = null
     var accessToken: String? = null
     var refreshToken: String? = null
     var lastMethod: LoginMethod? = null
+    var userId: String? = null
+}
+
+object AuthStorage {
+    private const val PREFS_NAME = "auth_prefs"
+    private const val KEY_ACCESS = "access_token"
+    private const val KEY_REFRESH = "refresh_token"
+
+    data class Tokens(val accessToken: String?, val refreshToken: String?)
+
+    fun loadTokens(context: Context): Tokens {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return Tokens(
+            accessToken = prefs.getString(KEY_ACCESS, null),
+            refreshToken = prefs.getString(KEY_REFRESH, null)
+        )
+    }
+
+    fun saveTokens(context: Context, accessToken: String, refreshToken: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(KEY_ACCESS, accessToken)
+            .putString(KEY_REFRESH, refreshToken)
+            .apply()
+    }
+
+    fun clearTokens(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
+    }
 }
