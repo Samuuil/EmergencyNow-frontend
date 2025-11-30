@@ -3,6 +3,7 @@ package com.example.emergencynow.ui.extention
 // Placeholder to keep the package as requested. Add extension functions here later.
 
 import okhttp3.OkHttpClient
+import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -12,8 +13,11 @@ import retrofit2.http.POST
 import retrofit2.http.GET
 import retrofit2.http.DELETE
 import retrofit2.http.Path
+import retrofit2.http.PATCH
 import com.google.gson.annotations.SerializedName
 import android.content.Context
+import android.util.Base64
+import com.google.gson.Gson
 
 enum class LoginMethod {
     @SerializedName("email")
@@ -90,6 +94,61 @@ data class CallResponse(
     val longitude: Double?
 )
 
+data class CallTrackingLocation(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class RoutePoint(
+    val lat: Double,
+    val lng: Double
+)
+
+data class RouteStepDto(
+    val distance: Int,
+    val duration: Int,
+    val instruction: String,
+    val startLocation: RoutePoint,
+    val endLocation: RoutePoint
+)
+
+data class RouteDto(
+    val polyline: String,
+    val distance: Int,
+    val duration: Int,
+    val steps: List<RouteStepDto>
+)
+
+data class CallTrackingCall(
+    val id: String,
+    val description: String,
+    val latitude: Double,
+    val longitude: Double,
+    val status: String?,
+    val ambulanceCurrentLatitude: Double?,
+    val ambulanceCurrentLongitude: Double?
+)
+
+data class CallTrackingResponse(
+    val call: CallTrackingCall,
+    val currentLocation: CallTrackingLocation?,
+    val route: RouteDto?
+)
+
+data class AmbulanceDto(
+    val id: String,
+    val licensePlate: String,
+    val vehicleModel: String?,
+    val latitude: Double?,
+    val longitude: Double?,
+    val available: Boolean,
+    val driverId: String?,
+)
+
+data class AssignDriverRequest(
+    val driverId: String?
+)
+
 interface BackendApi {
     @POST("auth/initiate-login")
     suspend fun initiateLogin(@Body body: InitiateLoginRequest): InitiateLoginResponse
@@ -128,6 +187,33 @@ interface BackendApi {
         @Header("Authorization") bearer: String,
         @Body body: CreateCallRequest
     ): CallResponse
+
+    @GET("calls/{id}/tracking")
+    suspend fun getCallTracking(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+    ): CallTrackingResponse
+
+    @GET("ambulances/available")
+    suspend fun getAvailableAmbulances(): List<AmbulanceDto>
+
+    @GET("ambulances/driver/{driverId}")
+    suspend fun getAmbulanceByDriver(
+        @Path("driverId") driverId: String,
+    ): AmbulanceDto?
+
+    @GET("users/user-role/{id}")
+    suspend fun getUserRole(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+    ): ResponseBody
+
+    @PATCH("ambulances/{id}/driver")
+    suspend fun assignAmbulanceDriver(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+        @Body body: AssignDriverRequest
+    ): AmbulanceDto
 }
 
 object BackendClient {
@@ -151,11 +237,31 @@ object BackendClient {
     val api: BackendApi = retrofit.create(BackendApi::class.java)
 }
 
+data class JwtPayload(
+    val sub: String?,
+    val role: String?,
+    val egn: String?,
+)
+
+fun parseJwt(token: String): JwtPayload? {
+    return try {
+        val parts = token.split(".")
+        if (parts.size < 2) return null
+        val payloadPart = parts[1]
+        val decodedBytes = Base64.decode(payloadPart, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+        val json = String(decodedBytes, Charsets.UTF_8)
+        Gson().fromJson(json, JwtPayload::class.java)
+    } catch (e: Exception) {
+        null
+    }
+}
+
 object AuthSession {
     var egn: String? = null
     var accessToken: String? = null
     var refreshToken: String? = null
     var lastMethod: LoginMethod? = null
+    var userId: String? = null
 }
 
 object AuthStorage {

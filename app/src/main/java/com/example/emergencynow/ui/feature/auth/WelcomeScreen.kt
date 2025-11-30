@@ -13,15 +13,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.example.emergencynow.ui.extention.AuthSession
 import com.example.emergencynow.ui.extention.BackendClient
 import com.example.emergencynow.ui.extention.CreateCallRequest
+import com.example.emergencynow.ui.extention.AssignDriverRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.launch
 
@@ -77,11 +82,19 @@ fun WelcomeScreen(
 fun HomeScreen(
     onMakeEmergencyCall: () -> Unit,
     onOpenProfile: () -> Unit,
+    onSelectAmbulance: () -> Unit,
 ) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val cameraPositionState = rememberCameraPositionState()
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
+    var isDriver by remember { mutableStateOf(false) }
+    var roleCheckError by remember { mutableStateOf<String?>(null) }
+    var assignedAmbulancePlate by remember { mutableStateOf<String?>(null) }
+    var assignedAmbulanceId by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    var debugRole by remember { mutableStateOf<String?>(null) }
+    var debugError by remember { mutableStateOf<String?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -107,6 +120,30 @@ fun HomeScreen(
                 Manifest.permission.ACCESS_COARSE_LOCATION
             )
         )
+        val accessToken = AuthSession.accessToken
+        val userId = AuthSession.userId
+        if (accessToken != null && accessToken.isNotEmpty() && userId != null && userId.isNotEmpty()) {
+            try {
+                val roleResponse = BackendClient.api.getUserRole(
+                    bearer = "Bearer $accessToken",
+                    id = userId,
+                )
+                val role = roleResponse.string().trim()
+                debugRole = role
+                isDriver = role == "DRIVER"
+                if (isDriver) {
+                    try {
+                        val ambulance = BackendClient.api.getAmbulanceByDriver(userId)
+                        assignedAmbulancePlate = ambulance?.licensePlate
+                        assignedAmbulanceId = ambulance?.id
+                    } catch (_: Exception) { }
+                }
+            } catch (e: Exception) {
+                debugError = e.message
+            }
+        } else {
+            debugError = "Missing token or userId: token=${accessToken != null}, userId=$userId"
+        }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -126,6 +163,52 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
+                if (isDriver) {
+                    assignedAmbulancePlate?.let { plate ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Using ambulance: $plate",
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(
+                                onClick = {
+                                    val token = AuthSession.accessToken
+                                    val ambulanceId = assignedAmbulanceId
+                                    if (token.isNullOrEmpty() || ambulanceId.isNullOrEmpty()) return@TextButton
+                                    scope.launch {
+                                        try {
+                                            BackendClient.api.assignAmbulanceDriver(
+                                                bearer = "Bearer $token",
+                                                id = ambulanceId,
+                                                body = AssignDriverRequest(driverId = null)
+                                            )
+                                            assignedAmbulancePlate = null
+                                            assignedAmbulanceId = null
+                                        } catch (_: Exception) {
+                                        }
+                                    }
+                                }
+                            ) {
+                                Text("X")
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = onSelectAmbulance,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Text("Select Ambulance")
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
                 Button(
                     onClick = onMakeEmergencyCall,
                     modifier = Modifier
@@ -149,9 +232,103 @@ fun HomeScreen(
 }
 
 @Composable
+fun AmbulanceSelectionScreen(
+    onBack: () -> Unit,
+    onAmbulanceSelected: () -> Unit,
+) {
+    val accessToken = AuthSession.accessToken
+    var ambulances by remember { mutableStateOf<List<com.example.emergencynow.ui.extention.AmbulanceDto>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        if (accessToken.isNullOrEmpty()) {
+            error = "Missing session. Log in again."
+            isLoading = false
+            return@LaunchedEffect
+        }
+        try {
+            val all = BackendClient.api.getAvailableAmbulances()
+            ambulances = all.filter { it.driverId == null }
+        } catch (e: Exception) {
+            error = "Failed to load ambulances."
+        } finally {
+            isLoading = false
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Select Ambulance") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Text("Back") }
+                }
+            )
+        }
+    ) { inner ->
+        Column(
+            modifier = Modifier
+                .padding(inner)
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            if (isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            if (error != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(text = error ?: "", color = MaterialTheme.colorScheme.error)
+            }
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier.weight(1f)
+            ) {
+                items(ambulances.size) { index ->
+                    val ambulance = ambulances[index]
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Plate: ${ambulance.licensePlate}")
+                            ambulance.vehicleModel?.let { Text("Model: $it") }
+                            Spacer(Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    if (accessToken.isNullOrEmpty()) return@Button
+                                    val userId = AuthSession.userId ?: return@Button
+                                    scope.launch {
+                                        try {
+                                            BackendClient.api.assignAmbulanceDriver(
+                                                bearer = "Bearer $accessToken",
+                                                id = ambulance.id,
+                                                body = AssignDriverRequest(driverId = userId)
+                                            )
+                                            onAmbulanceSelected()
+                                        } catch (e: Exception) {
+                                            error = "Failed to assign ambulance."
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Use this ambulance")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun EmergencyCallScreen(
     onBack: () -> Unit,
-    onCallCreated: () -> Unit,
+    onCallCreated: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
@@ -221,7 +398,7 @@ fun EmergencyCallScreen(
                             isLoading = true
                             error = null
                             try {
-                                BackendClient.api.createCall(
+                                val response = BackendClient.api.createCall(
                                     bearer = "Bearer $accessToken",
                                     body = CreateCallRequest(
                                         description = description.ifBlank { "" },
@@ -230,7 +407,12 @@ fun EmergencyCallScreen(
                                         patientEgn = patientEgn
                                     )
                                 )
-                                onCallCreated()
+                                val callId = response.id
+                                if (callId.isNullOrEmpty()) {
+                                    error = "Invalid response from server."
+                                } else {
+                                    onCallCreated(callId)
+                                }
                             } catch (e: Exception) {
                                 error = "Failed to create emergency call."
                             } finally {
@@ -270,8 +452,13 @@ fun EmergencyCallScreen(
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = patientEgn,
-                onValueChange = { patientEgn = it },
+                onValueChange = { newValue ->
+                    if (newValue.length <= 10 && newValue.all { ch -> ch.isDigit() }) {
+                        patientEgn = newValue
+                    }
+                },
                 label = { Text("Patient EGN") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
@@ -285,6 +472,193 @@ fun EmergencyCallScreen(
             if (error != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(text = error ?: "", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
+@Composable
+fun CallTrackingScreen(
+    callId: String,
+    onBack: () -> Unit,
+) {
+    val cameraPositionState = rememberCameraPositionState()
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var patientLocation by remember { mutableStateOf<LatLng?>(null) }
+    var ambulanceLocation by remember { mutableStateOf<LatLng?>(null) }
+    var polylinePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var etaSeconds by remember { mutableStateOf<Int?>(null) }
+    var distanceMeters by remember { mutableStateOf<Int?>(null) }
+    var otherAmbulances by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+
+    fun decodePolyline(encoded: String): List<LatLng> {
+        val poly = ArrayList<LatLng>()
+        var index = 0
+        val len = encoded.length
+        var lat = 0
+        var lng = 0
+
+        while (index < len) {
+            var b: Int
+            var shift = 0
+            var result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or ((b and 0x1f) shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlat = if ((result and 1) != 0) (result shr 1).inv() else (result shr 1)
+            lat += dlat
+
+            shift = 0
+            result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or ((b and 0x1f) shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlng = if ((result and 1) != 0) (result shr 1).inv() else (result shr 1)
+            lng += dlng
+
+            val latD = lat / 1E5
+            val lngD = lng / 1E5
+            poly.add(LatLng(latD, lngD))
+        }
+        return poly
+    }
+
+    LaunchedEffect(callId) {
+        val accessToken = AuthSession.accessToken
+        if (accessToken.isNullOrEmpty()) {
+            error = "Missing session. Log in again."
+            isLoading = false
+            return@LaunchedEffect
+        }
+        try {
+            val tracking = BackendClient.api.getCallTracking(
+                bearer = "Bearer $accessToken",
+                id = callId
+            )
+            val call = tracking.call
+            patientLocation = LatLng(call.latitude, call.longitude)
+
+            val current = tracking.currentLocation
+            val fallbackLat = call.ambulanceCurrentLatitude
+            val fallbackLng = call.ambulanceCurrentLongitude
+            ambulanceLocation = when {
+                current != null -> LatLng(current.latitude, current.longitude)
+                fallbackLat != null && fallbackLng != null -> LatLng(fallbackLat, fallbackLng)
+                else -> null
+            }
+
+            tracking.route?.let { route ->
+                etaSeconds = route.duration
+                distanceMeters = route.distance
+                if (route.polyline.isNotEmpty()) {
+                    polylinePoints = decodePolyline(route.polyline)
+                }
+            }
+
+            try {
+                val ambulances = BackendClient.api.getAvailableAmbulances()
+                otherAmbulances = ambulances.mapNotNull { amb ->
+                    val lat = amb.latitude
+                    val lng = amb.longitude
+                    if (lat != null && lng != null) LatLng(lat, lng) else null
+                }
+            } catch (_: Exception) {
+            }
+
+            val focus = ambulanceLocation ?: patientLocation
+            focus?.let {
+                cameraPositionState.position = CameraPosition.fromLatLngZoom(it, 13f)
+            }
+        } catch (e: Exception) {
+            error = "Failed to load tracking data."
+        } finally {
+            isLoading = false
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Ambulance Tracking") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Text("Back") }
+                }
+            )
+        }
+    ) { inner ->
+        Column(
+            modifier = Modifier
+                .padding(inner)
+                .fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState
+                ) {
+                    patientLocation?.let { loc ->
+                        Marker(
+                            state = MarkerState(position = loc),
+                            title = "Patient"
+                        )
+                    }
+                    ambulanceLocation?.let { loc ->
+                        Marker(
+                            state = MarkerState(position = loc),
+                            title = "Assigned ambulance",
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                        )
+                    }
+                    otherAmbulances.forEach { loc ->
+                        Marker(
+                            state = MarkerState(position = loc),
+                            title = "Available ambulance",
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                        )
+                    }
+                    if (polylinePoints.isNotEmpty()) {
+                        Polyline(points = polylinePoints)
+                    }
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                if (isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                if (etaSeconds != null || distanceMeters != null) {
+                    val minutes = etaSeconds?.div(60)
+                    Text(
+                        text = buildString {
+                            if (minutes != null) append("ETA: ~${minutes} min")
+                            if (distanceMeters != null) {
+                                if (isNotEmpty()) append("  b7 ")
+                                val km = distanceMeters!! / 1000.0
+                                append(String.format("Distance: %.1f km", km))
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                if (error != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = error ?: "",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

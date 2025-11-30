@@ -16,6 +16,7 @@ import com.example.emergencynow.ui.extention.AuthSession
 import com.example.emergencynow.ui.extention.AuthStorage
 import com.example.emergencynow.ui.extention.BackendClient
 import com.example.emergencynow.ui.extention.RefreshTokenRequest
+import com.example.emergencynow.ui.extention.parseJwt
 import com.example.emergencynow.ui.theme.EmergencyNowTheme
 import com.example.emergencynow.ui.navigation.AppNavGraph
 
@@ -37,6 +38,8 @@ class MainActivity : ComponentActivity() {
                             val response = BackendClient.api.refresh(RefreshTokenRequest(refreshToken))
                             AuthSession.accessToken = response.accessToken
                             AuthSession.refreshToken = response.refreshToken
+                            val payload = parseJwt(response.accessToken)
+                            AuthSession.userId = payload?.sub
                             AuthStorage.saveTokens(context, response.accessToken, response.refreshToken)
                             startDestination = Routes.HOME
                         } catch (e: Exception) {

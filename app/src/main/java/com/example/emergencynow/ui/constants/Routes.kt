@@ -10,4 +10,6 @@ object Routes {
     const val EMERGENCY_CONTACTS = "emergency_contacts"
     const val EMERGENCY_CALL = "emergency_call"
     const val PROFILE_HOME = "profile_home"
+    const val CALL_TRACKING = "call_tracking"
+    const val AMBULANCE_SELECTION = "ambulance_selection"
 }

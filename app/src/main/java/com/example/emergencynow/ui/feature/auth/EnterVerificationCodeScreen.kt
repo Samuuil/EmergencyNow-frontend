@@ -16,12 +16,13 @@ import com.example.emergencynow.ui.extention.AuthSession
 import com.example.emergencynow.ui.extention.AuthStorage
 import com.example.emergencynow.ui.extention.BackendClient
 import com.example.emergencynow.ui.extention.VerifyCodeRequest
+import com.example.emergencynow.ui.extention.parseJwt
 import kotlinx.coroutines.launch
 
 @Composable
 fun EnterVerificationCodeScreen(
     onBack: () -> Unit,
-    onVerified: () -> Unit,
+    onVerified: (isReturningUser: Boolean) -> Unit,
 ) {
     var code by remember { mutableStateOf("") }
     val isValid = code.length == 6 && code.all { it.isDigit() }
@@ -80,12 +81,22 @@ fun EnterVerificationCodeScreen(
                             )
                             AuthSession.accessToken = response.accessToken
                             AuthSession.refreshToken = response.refreshToken
+                            val payload = parseJwt(response.accessToken)
+                            AuthSession.userId = payload?.sub
                             AuthStorage.saveTokens(
                                 context = context,
                                 accessToken = response.accessToken,
                                 refreshToken = response.refreshToken
                             )
-                            onVerified()
+                            val hasExistingContacts = try {
+                                val contacts = BackendClient.api.getMyContacts(
+                                    bearer = "Bearer ${response.accessToken}"
+                                )
+                                contacts.isNotEmpty()
+                            } catch (e: Exception) {
+                                false
+                            }
+                            onVerified(hasExistingContacts)
                         } catch (e: Exception) {
                             error = "Invalid or expired verification code."
                         } finally {
