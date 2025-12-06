@@ -194,6 +194,13 @@ interface BackendApi {
         @Path("id") id: String,
     ): CallTrackingResponse
 
+    @PATCH("calls/{id}/status")
+    suspend fun updateCallStatus(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+        @Body body: Map<String, String>
+    ): CallResponse
+
     @GET("ambulances/available")
     suspend fun getAvailableAmbulances(): List<AmbulanceDto>
 
@@ -219,6 +226,7 @@ interface BackendApi {
 object BackendClient {
     // private const val BASE_URL = "http://10.0.2.2:3000/"
     private const val BASE_URL = "http://localhost:3000/"
+    //private const val BASE_URL = "http://192.168.5.32:3000/"
 
     private val logging: HttpLoggingInterceptor = HttpLoggingInterceptor().setLevel(
         HttpLoggingInterceptor.Level.BODY

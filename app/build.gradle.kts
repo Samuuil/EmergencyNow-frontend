@@ -70,6 +70,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.maps.android:maps-compose:4.3.0")
 
+    // Socket.IO for WebSocket
+    implementation("io.socket:socket.io-client:2.1.0")
+
     // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

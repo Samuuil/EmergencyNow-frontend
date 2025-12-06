@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -19,6 +20,13 @@ import com.example.emergencynow.ui.extention.AuthSession
 import com.example.emergencynow.ui.extention.BackendClient
 import com.example.emergencynow.ui.extention.CreateCallRequest
 import com.example.emergencynow.ui.extention.AssignDriverRequest
+import com.example.emergencynow.ui.extention.DriverSocketManager
+import com.example.emergencynow.ui.extention.CallOffer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -28,7 +36,15 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import android.annotation.SuppressLint
+import com.example.emergencynow.ui.extention.CallRoute
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.Priority
 
 @Composable
 fun WelcomeScreen(
@@ -78,6 +94,7 @@ fun WelcomeScreen(
     }
 }
 
+@SuppressLint("MissingPermission")
 @Composable
 fun HomeScreen(
     onMakeEmergencyCall: () -> Unit,
@@ -95,6 +112,18 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     var debugRole by remember { mutableStateOf<String?>(null) }
     var debugError by remember { mutableStateOf<String?>(null) }
+
+    // WebSocket state for incoming calls
+    var incomingCallOffer by remember { mutableStateOf<CallOffer?>(null) }
+    var isSocketConnected by remember { mutableStateOf(false) }
+    var activeCallId by remember { mutableStateOf<String?>(null) }
+
+    // Active call navigation state
+    var activeRoutePolyline by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var emergencyLocation by remember { mutableStateOf<LatLng?>(null) }
+    var activeRouteDistance by remember { mutableStateOf(0) }
+    var activeRouteDuration by remember { mutableStateOf(0) }
+    var driverCurrentLocation by remember { mutableStateOf<LatLng?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -146,6 +175,110 @@ fun HomeScreen(
         }
     }
 
+    // Helper function to decode Google polyline
+    fun decodePolyline(encoded: String): List<LatLng> {
+        val poly = ArrayList<LatLng>()
+        var index = 0
+        val len = encoded.length
+        var lat = 0
+        var lng = 0
+        while (index < len) {
+            var b: Int
+            var shift = 0
+            var result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or ((b and 0x1f) shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlat = if ((result and 1) != 0) (result shr 1).inv() else (result shr 1)
+            lat += dlat
+            shift = 0
+            result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or ((b and 0x1f) shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlng = if ((result and 1) != 0) (result shr 1).inv() else (result shr 1)
+            lng += dlng
+            poly.add(LatLng(lat / 1E5, lng / 1E5))
+        }
+        return poly
+    }
+
+    // Connect to WebSocket when driver has an assigned ambulance
+    LaunchedEffect(isDriver, assignedAmbulanceId) {
+        val accessToken = AuthSession.accessToken
+        if (isDriver && assignedAmbulanceId != null && !accessToken.isNullOrEmpty()) {
+            // Set up callbacks before connecting
+            DriverSocketManager.onCallOffer = { offer ->
+                incomingCallOffer = offer
+                // Store emergency location when offer comes in
+                emergencyLocation = LatLng(offer.latitude, offer.longitude)
+            }
+            DriverSocketManager.onConnectionChange = { connected ->
+                isSocketConnected = connected
+            }
+            DriverSocketManager.onCallRoute = { route ->
+                // Call was accepted and route received - store route data
+                activeCallId = route.callId
+                activeRoutePolyline = decodePolyline(route.polyline)
+                activeRouteDistance = route.distance
+                activeRouteDuration = route.duration
+            }
+            DriverSocketManager.onRouteUpdate = { route ->
+                // Route updated during navigation
+                activeRoutePolyline = decodePolyline(route.polyline)
+                activeRouteDistance = route.distance
+                activeRouteDuration = route.duration
+            }
+            DriverSocketManager.connect(accessToken)
+        } else {
+            DriverSocketManager.disconnect()
+        }
+    }
+
+    // Cleanup WebSocket on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            DriverSocketManager.disconnect()
+        }
+    }
+
+    // Location update loop - runs every 2 seconds when there's an active call
+    LaunchedEffect(activeCallId) {
+        if (activeCallId != null) {
+            while (isActive) {
+                try {
+                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                        if (location != null) {
+                            val newLocation = LatLng(location.latitude, location.longitude)
+                            driverCurrentLocation = newLocation
+                            userLocation = newLocation
+                            // Send location update via WebSocket
+                            DriverSocketManager.sendLocationUpdate(
+                                activeCallId!!,
+                                location.latitude,
+                                location.longitude
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore location errors
+                }
+                delay(2000) // Update every 2 seconds
+            }
+        }
+    }
+
+    // Update camera to follow driver when navigating
+    LaunchedEffect(driverCurrentLocation, activeCallId) {
+        if (activeCallId != null && driverCurrentLocation != null) {
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(driverCurrentLocation!!, 16f)
+        }
+    }
+
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -153,8 +286,71 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState
                 ) {
-                    userLocation?.let { loc ->
-                        Marker(state = MarkerState(position = loc))
+                    // Show driver's current location (blue marker when navigating, default otherwise)
+                    val currentLoc = if (activeCallId != null) driverCurrentLocation else userLocation
+                    currentLoc?.let { loc ->
+                        Marker(
+                            state = MarkerState(position = loc),
+                            title = if (activeCallId != null) "You (Ambulance)" else "Your Location",
+                            icon = if (activeCallId != null)
+                                BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                            else null
+                        )
+                    }
+
+                    // Show emergency location marker when navigating
+                    if (activeCallId != null) {
+                        emergencyLocation?.let { emergency ->
+                            Marker(
+                                state = MarkerState(position = emergency),
+                                title = "Emergency Location",
+                                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                            )
+                        }
+
+                        // Show route polyline
+                        if (activeRoutePolyline.isNotEmpty()) {
+                            Polyline(
+                                points = activeRoutePolyline,
+                                color = Color(0xFF1976D2),
+                                width = 12f
+                            )
+                        }
+                    }
+                }
+
+                // Navigation info overlay when there's an active call
+                if (activeCallId != null) {
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "🚨 Navigating to Emergency",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                val distanceKm = activeRouteDistance / 1000.0
+                                val durationMin = activeRouteDuration / 60
+                                Text("📍 %.1f km".format(distanceKm))
+                                Text("⏱️ ~$durationMin min")
+                            }
+                        }
                     }
                 }
             }
@@ -163,68 +359,258 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                if (isDriver) {
-                    assignedAmbulancePlate?.let { plate ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Using ambulance: $plate",
-                                modifier = Modifier.weight(1f)
-                            )
-                            TextButton(
-                                onClick = {
-                                    val token = AuthSession.accessToken
-                                    val ambulanceId = assignedAmbulanceId
-                                    if (token.isNullOrEmpty() || ambulanceId.isNullOrEmpty()) return@TextButton
-                                    scope.launch {
-                                        try {
-                                            BackendClient.api.assignAmbulanceDriver(
-                                                bearer = "Bearer $token",
-                                                id = ambulanceId,
-                                                body = AssignDriverRequest(driverId = null)
-                                            )
-                                            assignedAmbulancePlate = null
-                                            assignedAmbulanceId = null
-                                        } catch (_: Exception) {
+                // When there's an active call, show navigation controls
+                if (activeCallId != null) {
+                    Button(
+                        onClick = {
+                            // Mark as arrived
+                            val token = AuthSession.accessToken
+                            val callId = activeCallId
+                            if (!token.isNullOrEmpty() && callId != null) {
+                                scope.launch {
+                                    try {
+                                        BackendClient.api.updateCallStatus(
+                                            bearer = "Bearer $token",
+                                            id = callId,
+                                            body = mapOf("status" to "arrived")
+                                        )
+                                    } catch (_: Exception) { }
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2196F3)
+                        )
+                    ) {
+                        Text("🏥 Mark as Arrived")
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            // Complete the call
+                            val token = AuthSession.accessToken
+                            val callId = activeCallId
+                            if (!token.isNullOrEmpty() && callId != null) {
+                                scope.launch {
+                                    try {
+                                        BackendClient.api.updateCallStatus(
+                                            bearer = "Bearer $token",
+                                            id = callId,
+                                            body = mapOf("status" to "completed")
+                                        )
+                                        // Reset navigation state
+                                        activeCallId = null
+                                        activeRoutePolyline = emptyList()
+                                        emergencyLocation = null
+                                        activeRouteDistance = 0
+                                        activeRouteDuration = 0
+                                    } catch (_: Exception) { }
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF4CAF50)
+                        )
+                    ) {
+                        Text("✅ Complete Call")
+                    }
+                } else {
+                    // Normal home screen buttons
+                    if (isDriver) {
+                        assignedAmbulancePlate?.let { plate ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Using ambulance: $plate",
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(
+                                    onClick = {
+                                        val token = AuthSession.accessToken
+                                        val ambulanceId = assignedAmbulanceId
+                                        if (token.isNullOrEmpty() || ambulanceId.isNullOrEmpty()) return@TextButton
+                                        scope.launch {
+                                            try {
+                                                BackendClient.api.assignAmbulanceDriver(
+                                                    bearer = "Bearer $token",
+                                                    id = ambulanceId,
+                                                    body = AssignDriverRequest(driverId = null)
+                                                )
+                                                assignedAmbulancePlate = null
+                                                assignedAmbulanceId = null
+                                            } catch (_: Exception) {
+                                            }
                                         }
                                     }
+                                ) {
+                                    Text("X")
                                 }
-                            ) {
-                                Text("X")
                             }
                         }
-                    }
 
+                        Button(
+                            onClick = onSelectAmbulance,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                        ) {
+                            Text("Select Ambulance")
+                        }
+                        Spacer(Modifier.height(12.dp))
+                    }
                     Button(
-                        onClick = onSelectAmbulance,
+                        onClick = onMakeEmergencyCall,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                    ) {
+                        Text("Make Emergency Call")
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = onOpenProfile,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
                     ) {
-                        Text("Select Ambulance")
+                        Text("Profile")
                     }
-                    Spacer(Modifier.height(12.dp))
+
+                    // Show WebSocket connection status for drivers
+                    if (isDriver && assignedAmbulanceId != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = if (isSocketConnected) "🟢 Connected - Waiting for calls" else "🔴 Disconnected",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isSocketConnected) Color(0xFF4CAF50) else Color(0xFFF44336)
+                        )
+                    }
                 }
-                Button(
-                    onClick = onMakeEmergencyCall,
+            }
+        }
+
+        // Incoming Call Dialog
+        incomingCallOffer?.let { offer ->
+            Dialog(
+                onDismissRequest = { /* Don't allow dismiss by tapping outside */ },
+                properties = DialogProperties(
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false
+                )
+            ) {
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(64.dp)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
-                    Text("Make Emergency Call")
-                }
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = onOpenProfile,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text("Profile")
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Alert icon
+                        Text(
+                            text = "🚨",
+                            style = MaterialTheme.typography.displayMedium
+                        )
+                        Spacer(Modifier.height(16.dp))
+
+                        Text(
+                            text = "Incoming Emergency Call",
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Color(0xFFD32F2F)
+                        )
+                        Spacer(Modifier.height(16.dp))
+
+                        // Call details
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                if (offer.description.isNotBlank()) {
+                                    Text(
+                                        text = offer.description,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                }
+
+                                val distanceKm = offer.distance / 1000.0
+                                val durationMin = offer.duration / 60
+                                Text(
+                                    text = "📍 Distance: %.1f km".format(distanceKm),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "⏱️ ETA: ~$durationMin min",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(24.dp))
+
+                        // Action buttons
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Reject button
+                            OutlinedButton(
+                                onClick = {
+                                    DriverSocketManager.respondToCall(offer.callId, accept = false)
+                                    incomingCallOffer = null
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color(0xFFF44336)
+                                )
+                            ) {
+                                Text("Reject")
+                            }
+
+                            // Accept button
+                            Button(
+                                onClick = {
+                                    DriverSocketManager.respondToCall(offer.callId, accept = true)
+                                    activeCallId = offer.callId
+                                    emergencyLocation = LatLng(offer.latitude, offer.longitude)
+                                    incomingCallOffer = null
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF4CAF50)
+                                )
+                            ) {
+                                Text("Accept")
+                            }
+                        }
+                    }
                 }
             }
         }
