@@ -49,6 +49,9 @@ object DriverSocketManager {
     var onCallRoute: ((CallRoute) -> Unit)? = null
     var onRouteUpdate: ((CallRoute) -> Unit)? = null
     var onConnectionChange: ((Boolean) -> Unit)? = null
+    
+    // Callback for location requests - frontend should respond with GPS coordinates
+    var onLocationRequest: ((requestId: Int) -> Unit)? = null
 
     /**
      * Connect to the WebSocket server with JWT authentication.
@@ -146,6 +149,18 @@ object DriverSocketManager {
                 }
             }
 
+            // Listen for location requests - backend asks for fresh GPS before deciding who gets call
+            socket?.on("location.request") { args ->
+                try {
+                    val data = args.firstOrNull() as? JSONObject ?: return@on
+                    val requestId = data.getInt("requestId")
+                    Log.d(TAG, "Received location.request: requestId=$requestId")
+                    onLocationRequest?.invoke(requestId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing location.request: ${e.message}")
+                }
+            }
+
             socket?.connect()
             Log.d(TAG, "Connecting to WebSocket...")
 
@@ -172,6 +187,29 @@ object DriverSocketManager {
             Log.d(TAG, "Sent call.respond: callId=$callId, accept=$accept")
         } catch (e: Exception) {
             Log.e(TAG, "Error sending call.respond: ${e.message}")
+        }
+    }
+
+    /**
+     * Send location response to a location.request from backend.
+     * This is called when backend needs fresh GPS data before dispatching a call.
+     */
+    fun sendLocationResponse(requestId: Int, latitude: Double, longitude: Double) {
+        if (socket == null || !isConnected) {
+            Log.w(TAG, "Cannot send location response - socket not connected")
+            return
+        }
+
+        try {
+            val data = JSONObject().apply {
+                put("requestId", requestId)
+                put("latitude", latitude)
+                put("longitude", longitude)
+            }
+            socket?.emit("location.response", data)
+            Log.d(TAG, "Sent location.response: requestId=$requestId, lat=$latitude, lng=$longitude")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending location.response: ${e.message}")
         }
     }
 

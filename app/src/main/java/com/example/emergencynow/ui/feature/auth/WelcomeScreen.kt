@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
 import android.annotation.SuppressLint
 import com.example.emergencynow.ui.extention.CallRoute
+import com.example.emergencynow.ui.extention.UserSocketManager
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
@@ -232,6 +233,22 @@ fun HomeScreen(
                 activeRoutePolyline = decodePolyline(route.polyline)
                 activeRouteDistance = route.distance
                 activeRouteDuration = route.duration
+            }
+            // Handle location requests from backend - respond immediately with GPS
+            DriverSocketManager.onLocationRequest = { requestId ->
+                try {
+                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                        if (location != null) {
+                            DriverSocketManager.sendLocationResponse(
+                                requestId,
+                                location.latitude,
+                                location.longitude
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Silently fail - backend will use stale location
+                }
             }
             DriverSocketManager.connect(accessToken)
         } else {
@@ -877,6 +894,10 @@ fun CallTrackingScreen(
     var etaSeconds by remember { mutableStateOf<Int?>(null) }
     var distanceMeters by remember { mutableStateOf<Int?>(null) }
     var otherAmbulances by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    
+    // WebSocket state for live tracking
+    var isSocketConnected by remember { mutableStateOf(false) }
+    var callStatus by remember { mutableStateOf("pending") }
 
     fun decodePolyline(encoded: String): List<LatLng> {
         val poly = ArrayList<LatLng>()
@@ -967,6 +988,54 @@ fun CallTrackingScreen(
         }
     }
 
+    // Connect to WebSocket for live tracking updates
+    LaunchedEffect(callId) {
+        val accessToken = AuthSession.accessToken
+        if (!accessToken.isNullOrEmpty()) {
+            // Set up callbacks for live updates
+            UserSocketManager.onConnectionChange = { connected ->
+                isSocketConnected = connected
+            }
+            UserSocketManager.onCallDispatched = { dispatched ->
+                if (dispatched.callId == callId) {
+                    ambulanceLocation = LatLng(dispatched.ambulanceLatitude, dispatched.ambulanceLongitude)
+                    if (dispatched.polyline.isNotEmpty()) {
+                        polylinePoints = decodePolyline(dispatched.polyline)
+                    }
+                    etaSeconds = dispatched.duration
+                    distanceMeters = dispatched.distance
+                    callStatus = "dispatched"
+                }
+            }
+            UserSocketManager.onAmbulanceLocation = { update ->
+                if (update.callId == callId) {
+                    ambulanceLocation = LatLng(update.latitude, update.longitude)
+                    // Update route if provided
+                    update.polyline?.let { poly ->
+                        if (poly.isNotEmpty()) {
+                            polylinePoints = decodePolyline(poly)
+                        }
+                    }
+                    update.duration?.let { etaSeconds = it }
+                    update.distance?.let { distanceMeters = it }
+                }
+            }
+            UserSocketManager.onCallStatus = { statusUpdate ->
+                if (statusUpdate.callId == callId) {
+                    callStatus = statusUpdate.status
+                }
+            }
+            UserSocketManager.connect(accessToken)
+        }
+    }
+
+    // Cleanup WebSocket on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            UserSocketManager.disconnect()
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -991,28 +1060,37 @@ fun CallTrackingScreen(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState
                 ) {
+                    // Patient location (your location) - green marker
                     patientLocation?.let { loc ->
                         Marker(
                             state = MarkerState(position = loc),
-                            title = "Patient"
+                            title = "Your Location",
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
                         )
                     }
+                    // Assigned ambulance - blue marker (moves in real-time)
                     ambulanceLocation?.let { loc ->
                         Marker(
                             state = MarkerState(position = loc),
-                            title = "Assigned ambulance",
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                            title = "Ambulance",
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                         )
                     }
+                    // Other available ambulances - light blue
                     otherAmbulances.forEach { loc ->
                         Marker(
                             state = MarkerState(position = loc),
                             title = "Available ambulance",
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN)
                         )
                     }
+                    // Route polyline
                     if (polylinePoints.isNotEmpty()) {
-                        Polyline(points = polylinePoints)
+                        Polyline(
+                            points = polylinePoints,
+                            color = Color(0xFF1976D2),
+                            width = 10f
+                        )
                     }
                 }
             }
@@ -1021,29 +1099,93 @@ fun CallTrackingScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
+                // Call status banner
+                val statusText = when (callStatus) {
+                    "pending" -> "⏳ Waiting for ambulance..."
+                    "dispatched", "en_route" -> "🚑 Ambulance on the way!"
+                    "arrived" -> "✅ Ambulance has arrived!"
+                    "completed" -> "✔️ Call completed"
+                    "cancelled" -> "❌ Call cancelled"
+                    else -> "📍 Tracking ambulance..."
+                }
+                val statusColor = when (callStatus) {
+                    "arrived" -> Color(0xFF4CAF50)
+                    "completed" -> Color(0xFF2196F3)
+                    "cancelled" -> Color(0xFFF44336)
+                    else -> MaterialTheme.colorScheme.primary
+                }
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = statusColor.copy(alpha = 0.15f)
+                    )
+                ) {
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(16.dp),
+                        color = statusColor
+                    )
+                }
+                
+                Spacer(Modifier.height(8.dp))
+                
                 if (isLoading) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
+                
+                // ETA and distance info
                 if (etaSeconds != null || distanceMeters != null) {
-                    val minutes = etaSeconds?.div(60)
-                    Text(
-                        text = buildString {
-                            if (minutes != null) append("ETA: ~${minutes} min")
-                            if (distanceMeters != null) {
-                                if (isNotEmpty()) append("  b7 ")
-                                val km = distanceMeters!! / 1000.0
-                                append(String.format("Distance: %.1f km", km))
-                            }
-                        },
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        etaSeconds?.let { eta ->
+                            val minutes = eta / 60
+                            Text(
+                                text = "⏱️ ETA: ~$minutes min",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        distanceMeters?.let { dist ->
+                            val km = dist / 1000.0
+                            Text(
+                                text = "📍 %.1f km away".format(km),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 }
+                
+                // Connection status
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = if (isSocketConnected) "🟢 Live tracking active" else "🔴 Connecting...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isSocketConnected) Color(0xFF4CAF50) else Color(0xFFF44336)
+                )
+                
                 if (error != null) {
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = error ?: "",
                         color = MaterialTheme.colorScheme.error
                     )
+                }
+                
+                // Close button for completed/cancelled calls
+                if (callStatus == "completed" || callStatus == "cancelled") {
+                    Spacer(Modifier.height(16.dp))
+                    Button(
+                        onClick = onBack,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Close")
+                    }
                 }
             }
         }
