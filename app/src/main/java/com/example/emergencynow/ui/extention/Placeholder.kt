@@ -149,6 +149,37 @@ data class AssignDriverRequest(
     val driverId: String?
 )
 
+// Hospital DTOs for hospital selection flow
+data class HospitalDto(
+    val id: String,
+    val name: String,
+    val address: String?,
+    val latitude: Double,
+    val longitude: Double,
+    val distance: Int?, // meters from driver location
+    val duration: Int?  // seconds to reach
+)
+
+data class GetHospitalsRequest(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class SelectHospitalRequest(
+    val hospitalId: String,
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class HospitalRouteResponse(
+    val selectedHospitalId: String?,
+    val selectedHospitalName: String?,
+    val hospitalRoutePolyline: String?,
+    val hospitalRouteDistance: Int?,
+    val hospitalRouteDuration: Int?,
+    val hospitalRouteSteps: List<RouteStepDto>?
+)
+
 interface BackendApi {
     @POST("auth/initiate-login")
     suspend fun initiateLogin(@Body body: InitiateLoginRequest): InitiateLoginResponse
@@ -221,6 +252,27 @@ interface BackendApi {
         @Path("id") id: String,
         @Body body: AssignDriverRequest
     ): AmbulanceDto
+
+    // Hospital selection endpoints
+    @POST("calls/{id}/hospitals")
+    suspend fun getHospitalsForCall(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+        @Body body: GetHospitalsRequest
+    ): List<HospitalDto>
+
+    @POST("calls/{id}/select-hospital")
+    suspend fun selectHospitalForCall(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+        @Body body: SelectHospitalRequest
+    ): HospitalRouteResponse
+
+    @GET("calls/{id}/hospital-route")
+    suspend fun getHospitalRoute(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String
+    ): HospitalRouteResponse
 }
 
 object BackendClient {

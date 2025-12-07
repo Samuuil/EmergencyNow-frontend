@@ -22,6 +22,9 @@ import com.example.emergencynow.ui.extention.CreateCallRequest
 import com.example.emergencynow.ui.extention.AssignDriverRequest
 import com.example.emergencynow.ui.extention.DriverSocketManager
 import com.example.emergencynow.ui.extention.CallOffer
+import com.example.emergencynow.ui.extention.HospitalDto
+import com.example.emergencynow.ui.extention.GetHospitalsRequest
+import com.example.emergencynow.ui.extention.SelectHospitalRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
@@ -125,6 +128,17 @@ fun HomeScreen(
     var activeRouteDistance by remember { mutableStateOf(0) }
     var activeRouteDuration by remember { mutableStateOf(0) }
     var driverCurrentLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    // Hospital selection state
+    var callStatus by remember { mutableStateOf("en_route") } // en_route, arrived, navigating_to_hospital
+    var showHospitalSelection by remember { mutableStateOf(false) }
+    var availableHospitals by remember { mutableStateOf<List<HospitalDto>>(emptyList()) }
+    var isLoadingHospitals by remember { mutableStateOf(false) }
+    var selectedHospitalName by remember { mutableStateOf<String?>(null) }
+    var hospitalLocation by remember { mutableStateOf<LatLng?>(null) }
+    var hospitalRoutePolyline by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var hospitalRouteDistance by remember { mutableStateOf(0) }
+    var hospitalRouteDuration by remember { mutableStateOf(0) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -320,18 +334,40 @@ fun HomeScreen(
                         emergencyLocation?.let { emergency ->
                             Marker(
                                 state = MarkerState(position = emergency),
-                                title = "Emergency Location",
-                                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                                title = if (callStatus == "navigating_to_hospital") "Patient Pickup" else "Emergency Location",
+                                icon = BitmapDescriptorFactory.defaultMarker(
+                                    if (callStatus == "navigating_to_hospital") BitmapDescriptorFactory.HUE_ORANGE else BitmapDescriptorFactory.HUE_RED
+                                )
                             )
                         }
 
-                        // Show route polyline
-                        if (activeRoutePolyline.isNotEmpty()) {
-                            Polyline(
-                                points = activeRoutePolyline,
-                                color = Color(0xFF1976D2),
-                                width = 12f
-                            )
+                        // Show hospital marker when navigating to hospital
+                        if (callStatus == "navigating_to_hospital") {
+                            hospitalLocation?.let { hospital ->
+                                Marker(
+                                    state = MarkerState(position = hospital),
+                                    title = selectedHospitalName ?: "Hospital",
+                                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
+                                )
+                            }
+                            
+                            // Show hospital route polyline
+                            if (hospitalRoutePolyline.isNotEmpty()) {
+                                Polyline(
+                                    points = hospitalRoutePolyline,
+                                    color = Color(0xFF4CAF50), // Green for hospital route
+                                    width = 12f
+                                )
+                            }
+                        } else {
+                            // Show route polyline to emergency (red/blue)
+                            if (activeRoutePolyline.isNotEmpty()) {
+                                Polyline(
+                                    points = activeRoutePolyline,
+                                    color = Color(0xFF1976D2),
+                                    width = 12f
+                                )
+                            }
                         }
                     }
                 }
@@ -344,7 +380,11 @@ fun HomeScreen(
                             .padding(16.dp)
                             .fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                            containerColor = when (callStatus) {
+                                "navigating_to_hospital" -> Color(0xFFE3F2FD) // Light blue for hospital
+                                "arrived" -> Color(0xFFFFF3E0) // Light orange for arrived
+                                else -> MaterialTheme.colorScheme.primaryContainer
+                            }
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
@@ -352,20 +392,62 @@ fun HomeScreen(
                             modifier = Modifier.padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = "🚨 Navigating to Emergency",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                val distanceKm = activeRouteDistance / 1000.0
-                                val durationMin = activeRouteDuration / 60
-                                Text("📍 %.1f km".format(distanceKm))
-                                Text("⏱️ ~$durationMin min")
+                            when (callStatus) {
+                                "navigating_to_hospital" -> {
+                                    Text(
+                                        text = "🏥 Navigating to Hospital",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    selectedHospitalName?.let { name ->
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF1976D2)
+                                        )
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        val distanceKm = hospitalRouteDistance / 1000.0
+                                        val durationMin = hospitalRouteDuration / 60
+                                        Text("📍 %.1f km".format(distanceKm))
+                                        Text("⏱️ ~$durationMin min")
+                                    }
+                                }
+                                "arrived" -> {
+                                    Text(
+                                        text = "✅ Arrived at Patient",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = "Select a hospital to transport patient",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF666666)
+                                    )
+                                }
+                                else -> {
+                                    Text(
+                                        text = "🚨 Navigating to Emergency",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        val distanceKm = activeRouteDistance / 1000.0
+                                        val durationMin = activeRouteDuration / 60
+                                        Text("📍 %.1f km".format(distanceKm))
+                                        Text("⏱️ ~$durationMin min")
+                                    }
+                                }
                             }
                         }
                     }
@@ -378,36 +460,147 @@ fun HomeScreen(
             ) {
                 // When there's an active call, show navigation controls
                 if (activeCallId != null) {
-                    Button(
-                        onClick = {
-                            // Mark as arrived
-                            val token = AuthSession.accessToken
-                            val callId = activeCallId
-                            if (!token.isNullOrEmpty() && callId != null) {
-                                scope.launch {
-                                    try {
-                                        BackendClient.api.updateCallStatus(
-                                            bearer = "Bearer $token",
-                                            id = callId,
-                                            body = mapOf("status" to "arrived")
-                                        )
-                                    } catch (_: Exception) { }
-                                }
+                    // Show different buttons based on call status
+                    when (callStatus) {
+                        "en_route" -> {
+                            // Driver is on the way to patient - show Mark as Arrived button
+                            Button(
+                                onClick = {
+                                    // Mark as arrived and fetch hospitals
+                                    val token = AuthSession.accessToken
+                                    val callId = activeCallId
+                                    val currentLoc = driverCurrentLocation ?: userLocation
+                                    if (!token.isNullOrEmpty() && callId != null && currentLoc != null) {
+                                        scope.launch {
+                                            try {
+                                                // First mark as arrived
+                                                BackendClient.api.updateCallStatus(
+                                                    bearer = "Bearer $token",
+                                                    id = callId,
+                                                    body = mapOf("status" to "arrived")
+                                                )
+                                                callStatus = "arrived"
+                                                
+                                                // Then fetch hospitals
+                                                isLoadingHospitals = true
+                                                val hospitals = BackendClient.api.getHospitalsForCall(
+                                                    bearer = "Bearer $token",
+                                                    id = callId,
+                                                    body = GetHospitalsRequest(
+                                                        latitude = currentLoc.latitude,
+                                                        longitude = currentLoc.longitude
+                                                    )
+                                                )
+                                                availableHospitals = hospitals
+                                                showHospitalSelection = true
+                                            } catch (e: Exception) {
+                                                // Still show hospital selection even if fetching fails
+                                                callStatus = "arrived"
+                                                showHospitalSelection = true
+                                            } finally {
+                                                isLoadingHospitals = false
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF2196F3)
+                                )
+                            ) {
+                                Text("🏥 Mark as Arrived")
                             }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2196F3)
-                        )
-                    ) {
-                        Text("🏥 Mark as Arrived")
+                        }
+                        "arrived" -> {
+                            // Driver arrived at patient - show Select Hospital button
+                            Button(
+                                onClick = {
+                                    val token = AuthSession.accessToken
+                                    val callId = activeCallId
+                                    val currentLoc = driverCurrentLocation ?: userLocation
+                                    if (!token.isNullOrEmpty() && callId != null && currentLoc != null) {
+                                        scope.launch {
+                                            isLoadingHospitals = true
+                                            try {
+                                                val hospitals = BackendClient.api.getHospitalsForCall(
+                                                    bearer = "Bearer $token",
+                                                    id = callId,
+                                                    body = GetHospitalsRequest(
+                                                        latitude = currentLoc.latitude,
+                                                        longitude = currentLoc.longitude
+                                                    )
+                                                )
+                                                availableHospitals = hospitals
+                                                showHospitalSelection = true
+                                            } catch (_: Exception) {
+                                                showHospitalSelection = true
+                                            } finally {
+                                                isLoadingHospitals = false
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFF9800)
+                                )
+                            ) {
+                                Text(if (isLoadingHospitals) "Loading..." else "🏥 Select Hospital")
+                            }
+                        }
+                        "navigating_to_hospital" -> {
+                            // Driver is navigating to hospital - show Complete Call button
+                            Button(
+                                onClick = {
+                                    // Complete the call
+                                    val token = AuthSession.accessToken
+                                    val callId = activeCallId
+                                    if (!token.isNullOrEmpty() && callId != null) {
+                                        scope.launch {
+                                            try {
+                                                BackendClient.api.updateCallStatus(
+                                                    bearer = "Bearer $token",
+                                                    id = callId,
+                                                    body = mapOf("status" to "completed")
+                                                )
+                                                // Reset all navigation state
+                                                activeCallId = null
+                                                activeRoutePolyline = emptyList()
+                                                emergencyLocation = null
+                                                activeRouteDistance = 0
+                                                activeRouteDuration = 0
+                                                callStatus = "en_route"
+                                                selectedHospitalName = null
+                                                hospitalLocation = null
+                                                hospitalRoutePolyline = emptyList()
+                                                hospitalRouteDistance = 0
+                                                hospitalRouteDuration = 0
+                                            } catch (_: Exception) { }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF4CAF50)
+                                )
+                            ) {
+                                Text("✅ Complete Call - Arrived at Hospital")
+                            }
+                        }
                     }
+                    
                     Spacer(Modifier.height(12.dp))
-                    Button(
+                    
+                    // Cancel/Reset button
+                    OutlinedButton(
                         onClick = {
-                            // Complete the call
+                            // Reset call state (cancel)
                             val token = AuthSession.accessToken
                             val callId = activeCallId
                             if (!token.isNullOrEmpty() && callId != null) {
@@ -418,24 +611,30 @@ fun HomeScreen(
                                             id = callId,
                                             body = mapOf("status" to "completed")
                                         )
-                                        // Reset navigation state
-                                        activeCallId = null
-                                        activeRoutePolyline = emptyList()
-                                        emergencyLocation = null
-                                        activeRouteDistance = 0
-                                        activeRouteDuration = 0
                                     } catch (_: Exception) { }
+                                    // Reset all state
+                                    activeCallId = null
+                                    activeRoutePolyline = emptyList()
+                                    emergencyLocation = null
+                                    activeRouteDistance = 0
+                                    activeRouteDuration = 0
+                                    callStatus = "en_route"
+                                    selectedHospitalName = null
+                                    hospitalLocation = null
+                                    hospitalRoutePolyline = emptyList()
+                                    hospitalRouteDistance = 0
+                                    hospitalRouteDuration = 0
                                 }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4CAF50)
+                            .height(48.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFFF44336)
                         )
                     ) {
-                        Text("✅ Complete Call")
+                        Text("Cancel Call")
                     }
                 } else {
                     // Normal home screen buttons
@@ -617,6 +816,7 @@ fun HomeScreen(
                                     DriverSocketManager.respondToCall(offer.callId, accept = true)
                                     activeCallId = offer.callId
                                     emergencyLocation = LatLng(offer.latitude, offer.longitude)
+                                    callStatus = "en_route"
                                     incomingCallOffer = null
                                 },
                                 modifier = Modifier.weight(1f),
@@ -625,6 +825,223 @@ fun HomeScreen(
                                 )
                             ) {
                                 Text("Accept")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Hospital Selection Dialog
+        if (showHospitalSelection) {
+            Dialog(
+                onDismissRequest = { showHospitalSelection = false },
+                properties = DialogProperties(
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = false,
+                    usePlatformDefaultWidth = false
+                )
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .fillMaxHeight(0.8f)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                    ) {
+                        // Header
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "🏥 Select Hospital",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(onClick = { showHospitalSelection = false }) {
+                                Text("✕", style = MaterialTheme.typography.titleLarge)
+                            }
+                        }
+                        
+                        Text(
+                            text = "Hospitals sorted by distance from your location",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF666666),
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        if (isLoadingHospitals) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        } else if (availableHospitals.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("No hospitals found", style = MaterialTheme.typography.bodyLarge)
+                                    Spacer(Modifier.height(8.dp))
+                                    Button(onClick = {
+                                        // Retry fetching hospitals
+                                        val token = AuthSession.accessToken
+                                        val callId = activeCallId
+                                        val currentLoc = driverCurrentLocation ?: userLocation
+                                        if (!token.isNullOrEmpty() && callId != null && currentLoc != null) {
+                                            scope.launch {
+                                                isLoadingHospitals = true
+                                                try {
+                                                    val hospitals = BackendClient.api.getHospitalsForCall(
+                                                        bearer = "Bearer $token",
+                                                        id = callId,
+                                                        body = GetHospitalsRequest(
+                                                            latitude = currentLoc.latitude,
+                                                            longitude = currentLoc.longitude
+                                                        )
+                                                    )
+                                                    availableHospitals = hospitals
+                                                } catch (_: Exception) { }
+                                                isLoadingHospitals = false
+                                            }
+                                        }
+                                    }) {
+                                        Text("Retry")
+                                    }
+                                }
+                            }
+                        } else {
+                            // Hospital list
+                            androidx.compose.foundation.lazy.LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(availableHospitals.size) { index ->
+                                    val hospital = availableHospitals[index]
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.Top
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = hospital.name,
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    hospital.address?.let { addr ->
+                                                        Text(
+                                                            text = addr,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = Color(0xFF666666)
+                                                        )
+                                                    }
+                                                }
+                                                // Distance badge
+                                                hospital.distance?.let { dist ->
+                                                    val distanceKm = dist / 1000.0
+                                                    val durationMin = (hospital.duration ?: 0) / 60
+                                                    Column(horizontalAlignment = Alignment.End) {
+                                                        Text(
+                                                            text = "%.1f km".format(distanceKm),
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFF1976D2)
+                                                        )
+                                                        Text(
+                                                            text = "~$durationMin min",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = Color(0xFF666666)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            
+                                            Spacer(Modifier.height(12.dp))
+                                            
+                                            Button(
+                                                onClick = {
+                                                    // Select this hospital
+                                                    val token = AuthSession.accessToken
+                                                    val callId = activeCallId
+                                                    val currentLoc = driverCurrentLocation ?: userLocation
+                                                    if (!token.isNullOrEmpty() && callId != null && currentLoc != null) {
+                                                        scope.launch {
+                                                            try {
+                                                                val response = BackendClient.api.selectHospitalForCall(
+                                                                    bearer = "Bearer $token",
+                                                                    id = callId,
+                                                                    body = SelectHospitalRequest(
+                                                                        hospitalId = hospital.id,
+                                                                        latitude = currentLoc.latitude,
+                                                                        longitude = currentLoc.longitude
+                                                                    )
+                                                                )
+                                                                
+                                                                // Update state with hospital route
+                                                                selectedHospitalName = response.selectedHospitalName
+                                                                hospitalLocation = LatLng(hospital.latitude, hospital.longitude)
+                                                                
+                                                                response.hospitalRoutePolyline?.let { polyline ->
+                                                                    hospitalRoutePolyline = decodePolyline(polyline)
+                                                                }
+                                                                hospitalRouteDistance = response.hospitalRouteDistance ?: 0
+                                                                hospitalRouteDuration = response.hospitalRouteDuration ?: 0
+                                                                
+                                                                // Update call status
+                                                                callStatus = "navigating_to_hospital"
+                                                                showHospitalSelection = false
+                                                                
+                                                                // Center camera on hospital
+                                                                cameraPositionState.position = CameraPosition.fromLatLngZoom(
+                                                                    hospitalLocation!!,
+                                                                    14f
+                                                                )
+                                                            } catch (e: Exception) {
+                                                                // Even on error, try to use local data
+                                                                selectedHospitalName = hospital.name
+                                                                hospitalLocation = LatLng(hospital.latitude, hospital.longitude)
+                                                                callStatus = "navigating_to_hospital"
+                                                                showHospitalSelection = false
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = Color(0xFF4CAF50)
+                                                )
+                                            ) {
+                                                Text("Select This Hospital")
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -898,6 +1315,14 @@ fun CallTrackingScreen(
     // WebSocket state for live tracking
     var isSocketConnected by remember { mutableStateOf(false) }
     var callStatus by remember { mutableStateOf("pending") }
+    
+    // Hospital information (when driver selects a hospital)
+    var selectedHospitalName by remember { mutableStateOf<String?>(null) }
+    var hospitalLocation by remember { mutableStateOf<LatLng?>(null) }
+    var hospitalRoutePolyline by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var hospitalRouteDistance by remember { mutableStateOf<Int?>(null) }
+    var hospitalRouteDuration by remember { mutableStateOf<Int?>(null) }
+    val scope = rememberCoroutineScope()
 
     fun decodePolyline(encoded: String): List<LatLng> {
         val poly = ArrayList<LatLng>()
@@ -1023,6 +1448,32 @@ fun CallTrackingScreen(
             UserSocketManager.onCallStatus = { statusUpdate ->
                 if (statusUpdate.callId == callId) {
                     callStatus = statusUpdate.status
+                    // When status changes to arrived, start polling for hospital selection
+                    if (statusUpdate.status == "arrived") {
+                        scope.launch {
+                            // Poll for hospital route data
+                            while (selectedHospitalName == null) {
+                                try {
+                                    val hospitalRoute = BackendClient.api.getHospitalRoute(
+                                        bearer = "Bearer $accessToken",
+                                        id = callId
+                                    )
+                                    if (hospitalRoute.selectedHospitalName != null) {
+                                        selectedHospitalName = hospitalRoute.selectedHospitalName
+                                        hospitalRouteDistance = hospitalRoute.hospitalRouteDistance
+                                        hospitalRouteDuration = hospitalRoute.hospitalRouteDuration
+                                        hospitalRoute.hospitalRoutePolyline?.let { polyline ->
+                                            hospitalRoutePolyline = decodePolyline(polyline)
+                                        }
+                                        // We don't have hospital lat/lng directly, but route shows direction
+                                        callStatus = "navigating_to_hospital"
+                                        break
+                                    }
+                                } catch (_: Exception) { }
+                                delay(3000) // Poll every 3 seconds
+                            }
+                        }
+                    }
                 }
             }
             UserSocketManager.connect(accessToken)
@@ -1084,8 +1535,14 @@ fun CallTrackingScreen(
                             icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN)
                         )
                     }
-                    // Route polyline
-                    if (polylinePoints.isNotEmpty()) {
+                    // Route polyline - show hospital route when navigating to hospital
+                    if (callStatus == "navigating_to_hospital" && hospitalRoutePolyline.isNotEmpty()) {
+                        Polyline(
+                            points = hospitalRoutePolyline,
+                            color = Color(0xFF4CAF50), // Green for hospital route
+                            width = 10f
+                        )
+                    } else if (polylinePoints.isNotEmpty()) {
                         Polyline(
                             points = polylinePoints,
                             color = Color(0xFF1976D2),
@@ -1103,13 +1560,15 @@ fun CallTrackingScreen(
                 val statusText = when (callStatus) {
                     "pending" -> "⏳ Waiting for ambulance..."
                     "dispatched", "en_route" -> "🚑 Ambulance on the way!"
-                    "arrived" -> "✅ Ambulance has arrived!"
+                    "arrived" -> "✅ Ambulance has arrived! Selecting hospital..."
+                    "navigating_to_hospital" -> "🏥 Heading to Hospital"
                     "completed" -> "✔️ Call completed"
                     "cancelled" -> "❌ Call cancelled"
                     else -> "📍 Tracking ambulance..."
                 }
                 val statusColor = when (callStatus) {
                     "arrived" -> Color(0xFF4CAF50)
+                    "navigating_to_hospital" -> Color(0xFF1976D2)
                     "completed" -> Color(0xFF2196F3)
                     "cancelled" -> Color(0xFFF44336)
                     else -> MaterialTheme.colorScheme.primary
@@ -1121,13 +1580,33 @@ fun CallTrackingScreen(
                         containerColor = statusColor.copy(alpha = 0.15f)
                     )
                 ) {
-                    Text(
-                        text = statusText,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(16.dp),
-                        color = statusColor
-                    )
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = statusColor
+                        )
+                        // Show hospital name when navigating to hospital
+                        if (callStatus == "navigating_to_hospital" && selectedHospitalName != null) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "Destination: $selectedHospitalName",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF1976D2)
+                            )
+                            // Show hospital ETA
+                            hospitalRouteDuration?.let { duration ->
+                                val minutes = duration / 60
+                                Text(
+                                    text = "Hospital ETA: ~$minutes min",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF666666)
+                                )
+                            }
+                        }
+                    }
                 }
                 
                 Spacer(Modifier.height(8.dp))
