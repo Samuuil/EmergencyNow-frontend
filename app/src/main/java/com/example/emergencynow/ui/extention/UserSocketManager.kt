@@ -45,7 +45,7 @@ data class CallStatusUpdate(
  */
 object UserSocketManager {
     private const val TAG = "UserSocketManager"
-    private const val BASE_URL = "http://localhost:3000"
+    private const val BASE_URL = "https://emergencynow.samuil.me"
     private const val NAMESPACE = "/users"
 
     private var socket: Socket? = null

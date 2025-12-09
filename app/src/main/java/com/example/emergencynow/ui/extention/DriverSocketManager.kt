@@ -38,7 +38,7 @@ object DriverSocketManager {
     // Use 10.0.2.2 for Android emulator to reach host machine's localhost
     //private const val BASE_URL = "http://10.0.2.2:3000"
     //private const val BASE_URL = "http://192.168.5.32:3000"
-    private const val BASE_URL = "http://localhost:3000"
+    private const val BASE_URL = "https://emergencynow.samuil.me"
     private const val NAMESPACE = "/drivers"
 
     private var socket: Socket? = null
