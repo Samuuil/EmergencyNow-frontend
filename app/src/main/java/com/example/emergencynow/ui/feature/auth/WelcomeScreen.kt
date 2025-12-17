@@ -49,6 +49,9 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.Priority
+import android.util.Log
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 @Composable
 fun WelcomeScreen(
@@ -116,6 +119,8 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     var debugRole by remember { mutableStateOf<String?>(null) }
     var debugError by remember { mutableStateOf<String?>(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var refreshTrigger by remember { mutableStateOf(0) }
 
     // WebSocket state for incoming calls
     var incomingCallOffer by remember { mutableStateOf<CallOffer?>(null) }
@@ -157,7 +162,21 @@ fun HomeScreen(
         }
     )
 
-    LaunchedEffect(Unit) {
+    // Refetch role and ambulance data when screen resumes (e.g., after ambulance selection)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                Log.d("HomeScreen", "Screen resumed, triggering refresh")
+                refreshTrigger++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(refreshTrigger) {
         permissionLauncher.launch(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -166,8 +185,10 @@ fun HomeScreen(
         )
         val accessToken = AuthSession.accessToken
         val userId = AuthSession.userId
+        Log.d("HomeScreen", "Init (trigger=$refreshTrigger): userId=$userId, hasToken=${!accessToken.isNullOrEmpty()}")
         if (accessToken != null && accessToken.isNotEmpty() && userId != null && userId.isNotEmpty()) {
             try {
+                Log.d("HomeScreen", "Fetching user role...")
                 val roleResponse = BackendClient.api.getUserRole(
                     bearer = "Bearer $accessToken",
                     id = userId,
@@ -175,18 +196,25 @@ fun HomeScreen(
                 val role = roleResponse.string().trim()
                 debugRole = role
                 isDriver = role == "DRIVER"
+                Log.d("HomeScreen", "User role: $role, isDriver=$isDriver")
                 if (isDriver) {
                     try {
+                        Log.d("HomeScreen", "Fetching ambulance for driver $userId...")
                         val ambulance = BackendClient.api.getAmbulanceByDriver(userId)
                         assignedAmbulancePlate = ambulance?.licensePlate
                         assignedAmbulanceId = ambulance?.id
-                    } catch (_: Exception) { }
+                        Log.d("HomeScreen", "Ambulance assigned: id=${ambulance?.id}, plate=${ambulance?.licensePlate}")
+                    } catch (e: Exception) { 
+                        Log.e("HomeScreen", "Failed to fetch ambulance: ${e.message}", e)
+                    }
                 }
             } catch (e: Exception) {
                 debugError = e.message
+                Log.e("HomeScreen", "Failed to fetch role: ${e.message}", e)
             }
         } else {
             debugError = "Missing token or userId: token=${accessToken != null}, userId=$userId"
+            Log.e("HomeScreen", debugError ?: "Unknown error")
         }
     }
 
@@ -225,7 +253,9 @@ fun HomeScreen(
     // Connect to WebSocket when driver has an assigned ambulance
     LaunchedEffect(isDriver, assignedAmbulanceId) {
         val accessToken = AuthSession.accessToken
+        Log.d("HomeScreen", "WebSocket LaunchedEffect: isDriver=$isDriver, ambulanceId=$assignedAmbulanceId, tokenEmpty=${accessToken.isNullOrEmpty()}")
         if (isDriver && assignedAmbulanceId != null && !accessToken.isNullOrEmpty()) {
+            Log.d("HomeScreen", "Attempting to connect driver WebSocket...")
             // Set up callbacks before connecting
             DriverSocketManager.onCallOffer = { offer ->
                 incomingCallOffer = offer
@@ -233,6 +263,7 @@ fun HomeScreen(
                 emergencyLocation = LatLng(offer.latitude, offer.longitude)
             }
             DriverSocketManager.onConnectionChange = { connected ->
+                Log.d("HomeScreen", "WebSocket connection changed: connected=$connected")
                 isSocketConnected = connected
             }
             DriverSocketManager.onCallRoute = { route ->
@@ -265,7 +296,9 @@ fun HomeScreen(
                 }
             }
             DriverSocketManager.connect(accessToken)
+            Log.d("HomeScreen", "DriverSocketManager.connect() called")
         } else {
+            Log.d("HomeScreen", "Disconnecting: condition not met")
             DriverSocketManager.disconnect()
         }
     }

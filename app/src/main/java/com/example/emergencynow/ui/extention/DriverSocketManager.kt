@@ -57,12 +57,14 @@ object DriverSocketManager {
      * Connect to the WebSocket server with JWT authentication.
      */
     fun connect(accessToken: String) {
+        Log.d(TAG, "connect() called with token: ${accessToken.take(20)}...")
         if (socket != null && isConnected) {
             Log.d(TAG, "Already connected")
             return
         }
 
         try {
+            Log.d(TAG, "Creating socket options...")
             val options = IO.Options().apply {
                 auth = mapOf("token" to accessToken)
                 transports = arrayOf("websocket")
@@ -71,23 +73,31 @@ object DriverSocketManager {
                 reconnectionDelay = 1000
             }
 
-            socket = IO.socket(URI.create("$BASE_URL$NAMESPACE"), options)
+            val uri = "$BASE_URL$NAMESPACE"
+            Log.d(TAG, "Connecting to: $uri")
+            socket = IO.socket(URI.create(uri), options)
 
             socket?.on(Socket.EVENT_CONNECT) {
-                Log.d(TAG, "Connected to WebSocket")
+                Log.d(TAG, "✅ Connected to WebSocket")
                 isConnected = true
                 onConnectionChange?.invoke(true)
             }
 
-            socket?.on(Socket.EVENT_DISCONNECT) {
-                Log.d(TAG, "Disconnected from WebSocket")
+            socket?.on(Socket.EVENT_DISCONNECT) { args ->
+                Log.d(TAG, "❌ Disconnected from WebSocket: ${args.joinToString()}")
                 isConnected = false
                 onConnectionChange?.invoke(false)
             }
 
             socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
                 val error = args.firstOrNull()
-                Log.e(TAG, "Connection error: $error")
+                when (error) {
+                    is Exception -> {
+                        Log.e(TAG, "❌ Connection error (Exception): ${error.message}", error)
+                        error.printStackTrace()
+                    }
+                    else -> Log.e(TAG, "❌ Connection error: $error (${error?.javaClass?.simpleName})")
+                }
                 isConnected = false
                 onConnectionChange?.invoke(false)
             }
@@ -162,10 +172,11 @@ object DriverSocketManager {
             }
 
             socket?.connect()
-            Log.d(TAG, "Connecting to WebSocket...")
+            Log.d(TAG, "🔄 socket.connect() initiated...")
 
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create socket: ${e.message}")
+            Log.e(TAG, "❌ Failed to create socket: ${e.message}", e)
+            e.printStackTrace()
         }
     }
 

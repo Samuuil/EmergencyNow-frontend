@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Auth errors -->
+    <string name="error_invalid_credentials">Invalid email or password</string>
+    <string name="error_invalid_verification_code">Invalid verification code</string>
+    <string name="error_verification_code_expired">Verification code has expired</string>
+    <string name="error_verification_code_not_found">Verification code not found</string>
+    <string name="error_user_not_in_archive">User not found in system</string>
+    <string name="error_invalid_refresh_token">Session expired. Please login again</string>
+    <string name="error_refresh_token_expired">Session expired. Please login again</string>
+    <string name="error_token_generation_failed">Failed to generate authentication tokens</string>
+    <string name="error_unauthorized_access">Authentication required</string>
+    <string name="error_email_send_failed">Failed to send verification email</string>
+    <string name="error_sms_send_failed">Failed to send verification SMS</string>
+    <string name="error_verification_code_generation_failed">Failed to generate verification code</string>
+    <string name="error_logout_failed">Failed to logout</string>
+    <string name="error_invalid_login_method">Invalid login method</string>
+
+    <!-- Ambulance errors -->
+    <string name="error_ambulance_not_found">Ambulance not found</string>
+    <string name="error_ambulance_already_exists">Ambulance with this license plate already exists</string>
+    <string name="error_invalid_license_plate">Invalid license plate format</string>
+    <string name="error_driver_not_found">Driver not found</string>
+    <string name="error_driver_already_assigned">Driver is already assigned to another ambulance</string>
+    <string name="error_ambulance_not_available">Ambulance is not available</string>
+    <string name="error_no_available_ambulances">No ambulances available at the moment</string>
+    <string name="error_location_update_failed">Failed to update location</string>
+    <string name="error_invalid_location">Invalid location coordinates</string>
+    <string name="error_ambulance_creation_failed">Failed to create ambulance</string>
+    <string name="error_ambulance_update_failed">Failed to update ambulance</string>
+    <string name="error_ambulance_delete_failed">Failed to delete ambulance</string>
+    <string name="error_driver_assignment_failed">Failed to assign driver to ambulance</string>
+    <string name="error_driver_removal_failed">Failed to remove driver from ambulance</string>
+    <string name="error_distance_calculation_failed">Failed to calculate distance</string>
+
+    <!-- Contact errors -->
+    <string name="error_contact_not_found">Contact not found</string>
+    <string name="error_max_contacts_reached">Maximum number of contacts reached (5 max)</string>
+    <string name="error_contact_creation_failed">Failed to create contact</string>
+    <string name="error_contact_update_failed">Failed to update contact</string>
+    <string name="error_contact_delete_failed">Failed to delete contact</string>
+    <string name="error_unauthorized_contact_access">You don\'t have permission to access this contact</string>
+
+    <!-- Profile errors -->
+    <string name="error_profile_not_found">Profile not found</string>
+    <string name="error_profile_creation_failed">Failed to create profile</string>
+    <string name="error_profile_update_failed">Failed to update profile</string>
+    <string name="error_profile_delete_failed">Failed to delete profile</string>
+    <string name="error_user_not_found">User not found</string>
+
+    <!-- Generic errors -->
+    <string name="error_database">Database operation failed</string>
+    <string name="error_default">An error occurred. Please try again</string>
+    <string name="error_network">Network connection error</string>
+</resources>
