@@ -313,6 +313,9 @@ fun HomeScreen(
     // Location update loop - runs every 2 seconds when there's an active call
     LaunchedEffect(activeCallId) {
         if (activeCallId != null) {
+            // Wait for backend to complete ambulance assignment transaction
+            delay(1500)
+            
             while (isActive) {
                 try {
                     fusedLocationClient.lastLocation.addOnSuccessListener { location ->
