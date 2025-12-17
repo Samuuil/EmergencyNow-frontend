@@ -1037,14 +1037,14 @@ fun HomeScreen(
                                                                 )
                                                                 
                                                                 // Update state with hospital route
-                                                                selectedHospitalName = response.selectedHospitalName
+                                                                selectedHospitalName = response.hospital?.name ?: hospital.name
                                                                 hospitalLocation = LatLng(hospital.latitude, hospital.longitude)
                                                                 
-                                                                response.hospitalRoutePolyline?.let { polyline ->
+                                                                response.route?.polyline?.let { polyline ->
                                                                     hospitalRoutePolyline = decodePolyline(polyline)
                                                                 }
-                                                                hospitalRouteDistance = response.hospitalRouteDistance ?: 0
-                                                                hospitalRouteDuration = response.hospitalRouteDuration ?: 0
+                                                                hospitalRouteDistance = response.route?.distance ?: 0
+                                                                hospitalRouteDuration = response.route?.duration ?: 0
                                                                 
                                                                 // Update call status
                                                                 callStatus = "navigating_to_hospital"
@@ -1102,8 +1102,8 @@ fun AmbulanceSelectionScreen(
             return@LaunchedEffect
         }
         try {
-            val all = BackendClient.api.getAvailableAmbulances()
-            ambulances = all.filter { it.driverId == null }
+            val response = BackendClient.api.getAvailableAmbulances("Bearer $accessToken")
+            ambulances = response.data.filter { it.driverId == null }
         } catch (e: Exception) {
             error = "Failed to load ambulances."
         } finally {
@@ -1254,10 +1254,9 @@ fun EmergencyCallScreen(
                                 val response = BackendClient.api.createCall(
                                     bearer = "Bearer $accessToken",
                                     body = CreateCallRequest(
-                                        description = description.ifBlank { "" },
+                                        description = description.ifBlank { "Emergency call" },
                                         latitude = lat,
-                                        longitude = lng,
-                                        patientEgn = patientEgn
+                                        longitude = lng
                                     )
                                 )
                                 val callId = response.id
@@ -1426,8 +1425,8 @@ fun CallTrackingScreen(
             }
 
             try {
-                val ambulances = BackendClient.api.getAvailableAmbulances()
-                otherAmbulances = ambulances.mapNotNull { amb ->
+                val ambulanceResponse = BackendClient.api.getAvailableAmbulances("Bearer $accessToken")
+                otherAmbulances = ambulanceResponse.data.mapNotNull { amb ->
                     val lat = amb.latitude
                     val lng = amb.longitude
                     if (lat != null && lng != null) LatLng(lat, lng) else null
@@ -1491,11 +1490,11 @@ fun CallTrackingScreen(
                                         bearer = "Bearer $accessToken",
                                         id = callId
                                     )
-                                    if (hospitalRoute.selectedHospitalName != null) {
-                                        selectedHospitalName = hospitalRoute.selectedHospitalName
-                                        hospitalRouteDistance = hospitalRoute.hospitalRouteDistance
-                                        hospitalRouteDuration = hospitalRoute.hospitalRouteDuration
-                                        hospitalRoute.hospitalRoutePolyline?.let { polyline ->
+                                    if (hospitalRoute.hospital?.name != null) {
+                                        selectedHospitalName = hospitalRoute.hospital?.name
+                                        hospitalRouteDistance = hospitalRoute.route?.distance
+                                        hospitalRouteDuration = hospitalRoute.route?.duration
+                                        hospitalRoute.route?.polyline?.let { polyline ->
                                             hospitalRoutePolyline = decodePolyline(polyline)
                                         }
                                         // We don't have hospital lat/lng directly, but route shows direction

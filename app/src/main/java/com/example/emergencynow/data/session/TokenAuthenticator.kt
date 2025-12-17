@@ -17,7 +17,7 @@ class TokenAuthenticator(
 
     private val prefs: SharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
     
-    private val refreshTokenURL = "https://emergencynow.samuil.me/auth/refresh-token"
+    private val refreshTokenURL = "https://emergencynow.samuil.me/auth/refresh"
 
     override fun authenticate(route: Route?, response: Response): Request? {
         return runBlocking {

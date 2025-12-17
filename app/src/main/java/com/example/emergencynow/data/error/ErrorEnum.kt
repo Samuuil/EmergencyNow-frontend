@@ -47,10 +47,62 @@ enum class ErrorEnum(@StringRes val value: Int) {
 
     // Profile errors
     PROFILE_NOT_FOUND(R.string.error_profile_not_found),
+    PROFILE_ALREADY_EXISTS(R.string.error_profile_already_exists),
     PROFILE_CREATION_FAILED(R.string.error_profile_creation_failed),
     PROFILE_UPDATE_FAILED(R.string.error_profile_update_failed),
     PROFILE_DELETE_FAILED(R.string.error_profile_delete_failed),
+    INVALID_PROFILE_DATA(R.string.error_invalid_profile_data),
     USER_NOT_FOUND(R.string.error_user_not_found),
+
+    // User errors
+    USER_ALREADY_EXISTS(R.string.error_user_already_exists),
+    USER_CREATION_FAILED(R.string.error_user_creation_failed),
+    USER_UPDATE_FAILED(R.string.error_user_update_failed),
+    USER_DELETE_FAILED(R.string.error_user_delete_failed),
+    INVALID_USER_ID(R.string.error_invalid_user_id),
+    REFRESH_TOKEN_UPDATE_FAILED(R.string.error_refresh_token_update_failed),
+    STATE_ARCHIVE_NOT_FOUND(R.string.error_state_archive_not_found),
+
+    // State Archive errors
+    STATE_ARCHIVE_ALREADY_EXISTS(R.string.error_state_archive_already_exists),
+    STATE_ARCHIVE_CREATION_FAILED(R.string.error_state_archive_creation_failed),
+    STATE_ARCHIVE_UPDATE_FAILED(R.string.error_state_archive_update_failed),
+    STATE_ARCHIVE_DELETE_FAILED(R.string.error_state_archive_delete_failed),
+    INVALID_EGN(R.string.error_invalid_egn),
+    INVALID_EMAIL(R.string.error_invalid_email),
+    INVALID_PHONE_NUMBER(R.string.error_invalid_phone_number),
+    EGN_ALREADY_EXISTS(R.string.error_egn_already_exists),
+
+    // Hospital errors
+    HOSPITAL_NOT_FOUND(R.string.error_hospital_not_found),
+    HOSPITAL_ALREADY_EXISTS(R.string.error_hospital_already_exists),
+    HOSPITAL_CREATION_FAILED(R.string.error_hospital_creation_failed),
+    HOSPITAL_UPDATE_FAILED(R.string.error_hospital_update_failed),
+    HOSPITAL_DELETE_FAILED(R.string.error_hospital_delete_failed),
+    NO_HOSPITALS_FOUND(R.string.error_no_hospitals_found),
+    GOOGLE_PLACES_SYNC_FAILED(R.string.error_google_places_sync_failed),
+    INVALID_HOSPITAL_DATA(R.string.error_invalid_hospital_data),
+
+    // Call errors
+    CALL_NOT_FOUND(R.string.error_call_not_found),
+    CALL_CREATION_FAILED(R.string.error_call_creation_failed),
+    CALL_UPDATE_FAILED(R.string.error_call_update_failed),
+    CALL_DELETE_FAILED(R.string.error_call_delete_failed),
+    INVALID_CALL_STATUS(R.string.error_invalid_call_status),
+    CALL_ALREADY_COMPLETED(R.string.error_call_already_completed),
+    CALL_ALREADY_CANCELLED(R.string.error_call_already_cancelled),
+    NO_AMBULANCE_ASSIGNED(R.string.error_no_ambulance_assigned),
+    AMBULANCE_DISPATCH_FAILED(R.string.error_ambulance_dispatch_failed),
+    HOSPITAL_NOT_SELECTED(R.string.error_hospital_not_selected),
+    HOSPITAL_SELECTION_FAILED(R.string.error_hospital_selection_failed),
+    ROUTE_CALCULATION_FAILED(R.string.error_route_calculation_failed),
+    CONTACT_NOTIFICATION_FAILED(R.string.error_contact_notification_failed),
+    DRIVER_RESPONSE_FAILED(R.string.error_driver_response_failed),
+    NO_AVAILABLE_DRIVERS(R.string.error_no_available_drivers),
+    INVALID_USER(R.string.error_invalid_user),
+
+    // Contact additional errors
+    INVALID_CONTACT_DATA(R.string.error_invalid_contact_data),
 
     // Generic errors
     DATABASE_ERROR(R.string.error_database),

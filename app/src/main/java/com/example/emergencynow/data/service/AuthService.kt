@@ -6,6 +6,6 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthService {
-    @POST("/auth/refresh-token")
+    @POST("/auth/refresh")
     fun refreshToken(@Body body: Map<String, String>): retrofit2.Call<TokenResponse>
 }

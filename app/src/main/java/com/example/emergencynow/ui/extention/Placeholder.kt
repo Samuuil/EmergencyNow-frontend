@@ -70,7 +70,11 @@ data class CreateContactRequest(
 )
 
 data class ProfileResponse(
-    val id: String?
+    val id: String?,
+    val height: Int?,
+    val weight: Int?,
+    val gender: String?,
+    val allergies: List<String>?
 )
 
 data class ContactResponse(
@@ -80,18 +84,57 @@ data class ContactResponse(
     val email: String?
 )
 
+// Pagination metadata from nestjs-paginate
+data class PaginationMeta(
+    val itemsPerPage: Int?,
+    val totalItems: Int?,
+    val currentPage: Int?,
+    val totalPages: Int?,
+    val sortBy: List<List<String>>?
+)
+
+data class PaginationLinks(
+    val current: String?,
+    val next: String?,
+    val previous: String?,
+    val first: String?,
+    val last: String?
+)
+
+// Generic paginated response wrapper matching nestjs-paginate output
+data class PaginatedResponse<T>(
+    val data: List<T>,
+    val meta: PaginationMeta?,
+    val links: PaginationLinks?
+)
+
 data class CreateCallRequest(
     val description: String,
     val latitude: Double,
-    val longitude: Double,
-    val patientEgn: String?
+    val longitude: Double
 )
 
 data class CallResponse(
     val id: String?,
     val description: String?,
     val latitude: Double?,
-    val longitude: Double?
+    val longitude: Double?,
+    val status: String?,
+    val routePolyline: String?,
+    val estimatedDistance: Int?,
+    val estimatedDuration: Int?,
+    val routeSteps: List<RouteStepDto>?,
+    val ambulanceCurrentLatitude: Double?,
+    val ambulanceCurrentLongitude: Double?,
+    val dispatchedAt: String?,
+    val arrivedAt: String?,
+    val completedAt: String?,
+    val selectedHospitalId: String?,
+    val selectedHospitalName: String?,
+    val hospitalRoutePolyline: String?,
+    val hospitalRouteDistance: Int?,
+    val hospitalRouteDuration: Int?,
+    val hospitalRouteSteps: List<RouteStepDto>?
 )
 
 data class CallTrackingLocation(
@@ -171,13 +214,16 @@ data class SelectHospitalRequest(
     val longitude: Double
 )
 
+// Hospital info wrapper for hospital-route response
+data class HospitalInfo(
+    val id: String?,
+    val name: String?
+)
+
+// Updated to match backend getHospitalRouteData response structure
 data class HospitalRouteResponse(
-    val selectedHospitalId: String?,
-    val selectedHospitalName: String?,
-    val hospitalRoutePolyline: String?,
-    val hospitalRouteDistance: Int?,
-    val hospitalRouteDuration: Int?,
-    val hospitalRouteSteps: List<RouteStepDto>?
+    val hospital: HospitalInfo?,
+    val route: RouteDto?
 )
 
 interface BackendApi {
@@ -199,7 +245,7 @@ interface BackendApi {
     @GET("contacts/me")
     suspend fun getMyContacts(
         @Header("Authorization") bearer: String,
-    ): List<ContactResponse>
+    ): PaginatedResponse<ContactResponse>
 
     @POST("contacts/me")
     suspend fun createMyContact(
@@ -233,7 +279,9 @@ interface BackendApi {
     ): CallResponse
 
     @GET("ambulances/available")
-    suspend fun getAvailableAmbulances(): List<AmbulanceDto>
+    suspend fun getAvailableAmbulances(
+        @Header("Authorization") bearer: String,
+    ): PaginatedResponse<AmbulanceDto>
 
     @GET("ambulances/driver/{driverId}")
     suspend fun getAmbulanceByDriver(
