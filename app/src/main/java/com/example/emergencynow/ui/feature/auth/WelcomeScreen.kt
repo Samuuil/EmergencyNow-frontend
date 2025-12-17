@@ -1026,7 +1026,8 @@ fun HomeScreen(
                                                     if (!token.isNullOrEmpty() && callId != null && currentLoc != null) {
                                                         scope.launch {
                                                             try {
-                                                                val response = BackendClient.api.selectHospitalForCall(
+                                                                // First, select the hospital
+                                                                BackendClient.api.selectHospitalForCall(
                                                                     bearer = "Bearer $token",
                                                                     id = callId,
                                                                     body = SelectHospitalRequest(
@@ -1036,19 +1037,27 @@ fun HomeScreen(
                                                                     )
                                                                 )
                                                                 
-                                                                // Update state with hospital route
-                                                                selectedHospitalName = response.hospital?.name ?: hospital.name
+                                                                // Set basic hospital info immediately
+                                                                selectedHospitalName = hospital.name
                                                                 hospitalLocation = LatLng(hospital.latitude, hospital.longitude)
-                                                                
-                                                                response.route?.polyline?.let { polyline ->
-                                                                    hospitalRoutePolyline = decodePolyline(polyline)
-                                                                }
-                                                                hospitalRouteDistance = response.route?.distance ?: 0
-                                                                hospitalRouteDuration = response.route?.duration ?: 0
-                                                                
-                                                                // Update call status
                                                                 callStatus = "navigating_to_hospital"
                                                                 showHospitalSelection = false
+                                                                
+                                                                // Then fetch the hospital route separately (backend calculates and stores it)
+                                                                try {
+                                                                    val routeResponse = BackendClient.api.getHospitalRoute(
+                                                                        bearer = "Bearer $token",
+                                                                        id = callId
+                                                                    )
+                                                                    routeResponse.route?.polyline?.let { polyline ->
+                                                                        hospitalRoutePolyline = decodePolyline(polyline)
+                                                                        Log.d("HomeScreen", "Hospital route loaded: ${hospitalRoutePolyline.size} points")
+                                                                    }
+                                                                    hospitalRouteDistance = routeResponse.route?.distance ?: 0
+                                                                    hospitalRouteDuration = routeResponse.route?.duration ?: 0
+                                                                } catch (routeEx: Exception) {
+                                                                    Log.e("HomeScreen", "Failed to fetch hospital route: ${routeEx.message}")
+                                                                }
                                                                 
                                                                 // Center camera on hospital
                                                                 cameraPositionState.position = CameraPosition.fromLatLngZoom(
@@ -1056,6 +1065,7 @@ fun HomeScreen(
                                                                     14f
                                                                 )
                                                             } catch (e: Exception) {
+                                                                Log.e("HomeScreen", "Failed to select hospital: ${e.message}")
                                                                 // Even on error, try to use local data
                                                                 selectedHospitalName = hospital.name
                                                                 hospitalLocation = LatLng(hospital.latitude, hospital.longitude)
@@ -1419,8 +1429,10 @@ fun CallTrackingScreen(
             tracking.route?.let { route ->
                 etaSeconds = route.duration
                 distanceMeters = route.distance
-                if (route.polyline.isNotEmpty()) {
-                    polylinePoints = decodePolyline(route.polyline)
+                route.polyline?.let { polyline ->
+                    if (polyline.isNotEmpty()) {
+                        polylinePoints = decodePolyline(polyline)
+                    }
                 }
             }
 

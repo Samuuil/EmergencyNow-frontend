@@ -156,10 +156,10 @@ data class RouteStepDto(
 )
 
 data class RouteDto(
-    val polyline: String,
-    val distance: Int,
-    val duration: Int,
-    val steps: List<RouteStepDto>
+    val polyline: String?,
+    val distance: Int?,
+    val duration: Int?,
+    val steps: List<RouteStepDto>?
 )
 
 data class CallTrackingCall(
