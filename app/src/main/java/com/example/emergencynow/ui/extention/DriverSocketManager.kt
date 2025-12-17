@@ -63,6 +63,14 @@ object DriverSocketManager {
             return
         }
 
+        // Clean up any existing socket before creating a new one
+        if (socket != null) {
+            Log.d(TAG, "Cleaning up existing disconnected socket...")
+            socket?.disconnect()
+            socket?.off()
+            socket = null
+        }
+
         try {
             Log.d(TAG, "Creating socket options...")
             val options = IO.Options().apply {

@@ -61,9 +61,18 @@ object UserSocketManager {
      * Connect to the WebSocket server with JWT authentication.
      */
     fun connect(accessToken: String) {
+        Log.d(TAG, "connect() called")
         if (socket != null && isConnected) {
             Log.d(TAG, "Already connected")
             return
+        }
+
+        // Clean up any existing socket before creating a new one
+        if (socket != null) {
+            Log.d(TAG, "Cleaning up existing disconnected socket...")
+            socket?.disconnect()
+            socket?.off()
+            socket = null
         }
 
         try {
