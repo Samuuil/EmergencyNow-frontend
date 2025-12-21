@@ -49,6 +49,7 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.Priority
+import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -310,29 +311,62 @@ fun HomeScreen(
         }
     }
 
-    // Location update loop - runs every 2 seconds when there's an active call
+    // Location request for fresh GPS updates
+    val locationRequest = remember {
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L)
+            .setMinUpdateIntervalMillis(1000L)
+            .build()
+    }
+
+    // Location callback to handle updates
+    val locationCallback = remember {
+        object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                locationResult.lastLocation?.let { location ->
+                    val newLocation = LatLng(location.latitude, location.longitude)
+                    driverCurrentLocation = newLocation
+                    userLocation = newLocation
+                    // Send location update via WebSocket if there's an active call
+                    activeCallId?.let { callId ->
+                        DriverSocketManager.sendLocationUpdate(
+                            callId,
+                            location.latitude,
+                            location.longitude
+                        )
+                        Log.d("DriverInterface", "📤 Sent GPS update: lat=${location.latitude}, lng=${location.longitude}")
+                    }
+                }
+            }
+        }
+    }
+
+    // Start/stop location updates based on active call
     LaunchedEffect(activeCallId) {
         if (activeCallId != null) {
-            while (isActive) {
-                try {
-                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                        if (location != null) {
-                            val newLocation = LatLng(location.latitude, location.longitude)
-                            driverCurrentLocation = newLocation
-                            userLocation = newLocation
-                            // Send location update via WebSocket
-                            DriverSocketManager.sendLocationUpdate(
-                                activeCallId!!,
-                                location.latitude,
-                                location.longitude
-                            )
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Ignore location errors
-                }
-                delay(2000) // Update every 2 seconds
+            // Wait for backend to complete ambulance assignment transaction
+            delay(1500)
+            // Start requesting location updates
+            try {
+                fusedLocationClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    Looper.getMainLooper()
+                )
+                Log.d("DriverInterface", "✅ Started real-time GPS tracking")
+            } catch (e: SecurityException) {
+                Log.e("DriverInterface", "Location permission not granted: ${e.message}")
             }
+        } else {
+            // Stop location updates when no active call
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            Log.d("DriverInterface", "⏹️ Stopped GPS tracking")
+        }
+    }
+
+    // Clean up location updates when composable leaves
+    DisposableEffect(Unit) {
+        onDispose {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
 
@@ -1356,6 +1390,10 @@ fun CallTrackingScreen(
     var hospitalRouteDistance by remember { mutableStateOf<Int?>(null) }
     var hospitalRouteDuration by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
+    
+    // Persistent marker states for smooth updates
+    val ambulanceMarkerState = remember { MarkerState() }
+    val patientMarkerState = remember { MarkerState() }
 
     fun decodePolyline(encoded: String): List<LatLng> {
         val poly = ArrayList<LatLng>()
@@ -1416,6 +1454,10 @@ fun CallTrackingScreen(
                 fallbackLat != null && fallbackLng != null -> LatLng(fallbackLat, fallbackLng)
                 else -> null
             }
+            
+            // Initialize marker positions
+            patientLocation?.let { patientMarkerState.position = it }
+            ambulanceLocation?.let { ambulanceMarkerState.position = it }
 
             tracking.route?.let { route ->
                 etaSeconds = route.duration
@@ -1467,7 +1509,12 @@ fun CallTrackingScreen(
             }
             UserSocketManager.onAmbulanceLocation = { update ->
                 if (update.callId == callId) {
-                    ambulanceLocation = LatLng(update.latitude, update.longitude)
+                    val newLocation = LatLng(update.latitude, update.longitude)
+                    Log.d("CallTrackingScreen", "📍 Updating ambulance location: $newLocation")
+                    ambulanceLocation = newLocation
+                    // Update marker position directly
+                    ambulanceMarkerState.position = newLocation
+                    Log.d("CallTrackingScreen", "🚑 Moved ambulance marker to: $newLocation")
                     // Update route if provided
                     update.polyline?.let { poly ->
                         if (poly.isNotEmpty()) {
@@ -1545,17 +1592,17 @@ fun CallTrackingScreen(
                     cameraPositionState = cameraPositionState
                 ) {
                     // Patient location (your location) - green marker
-                    patientLocation?.let { loc ->
+                    if (patientLocation != null) {
                         Marker(
-                            state = MarkerState(position = loc),
+                            state = patientMarkerState,
                             title = "Your Location",
                             icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
                         )
                     }
                     // Assigned ambulance - blue marker (moves in real-time)
-                    ambulanceLocation?.let { loc ->
+                    if (ambulanceLocation != null) {
                         Marker(
-                            state = MarkerState(position = loc),
+                            state = ambulanceMarkerState,
                             title = "Ambulance",
                             icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                         )

@@ -16,8 +16,6 @@ class TokenAuthenticator(
 ) : Authenticator {
 
     private val prefs: SharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-    
-    private val refreshTokenURL = "https://emergencynow.samuil.me/auth/refresh-token"
 
     override fun authenticate(route: Route?, response: Response): Request? {
         return runBlocking {
@@ -26,15 +24,18 @@ class TokenAuthenticator(
     }
 
     private suspend fun getRequest(response: Response): Request? {
-        // Don't retry if already trying to refresh
-        if (response.request.url.toString() == refreshTokenURL) {
+        val requestUrl = response.request.url.toString()
+        
+        // Don't retry if already trying to refresh token (avoid infinite loop)
+        if (requestUrl.contains("/auth/refresh-token") || requestUrl.contains("/auth/refresh")) {
             logout()
             return null
         }
 
-        // Don't retry login endpoints
-        if (response.request.url.toString().contains("/auth/login") || 
-            response.request.url.toString().contains("/auth/verify-code")) {
+        // Don't retry login/registration endpoints
+        if (requestUrl.contains("/auth/initiate-login") || 
+            requestUrl.contains("/auth/verify-code") ||
+            requestUrl.contains("/auth/login")) {
             return null
         }
 
