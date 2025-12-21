@@ -63,6 +63,14 @@ object DriverSocketManager {
             return
         }
 
+        // Clean up any existing socket before creating a new one
+        if (socket != null) {
+            Log.d(TAG, "Cleaning up existing disconnected socket...")
+            socket?.disconnect()
+            socket?.off()
+            socket = null
+        }
+
         try {
             Log.d(TAG, "Creating socket options...")
             val options = IO.Options().apply {
@@ -229,7 +237,7 @@ object DriverSocketManager {
      */
     fun sendLocationUpdate(callId: String, latitude: Double, longitude: Double) {
         if (socket == null || !isConnected) {
-            Log.w(TAG, "Cannot send location - socket not connected")
+            Log.w(TAG, "⚠️ Cannot send location - socket not connected (socket=${socket != null}, connected=$isConnected)")
             return
         }
 
@@ -240,8 +248,9 @@ object DriverSocketManager {
                 put("longitude", longitude)
             }
             socket?.emit("location.update", data)
+            Log.d(TAG, "📤 Sent location.update: callId=$callId, lat=$latitude, lng=$longitude")
         } catch (e: Exception) {
-            Log.e(TAG, "Error sending location.update: ${e.message}")
+            Log.e(TAG, "❌ Error sending location.update: ${e.message}")
         }
     }
 

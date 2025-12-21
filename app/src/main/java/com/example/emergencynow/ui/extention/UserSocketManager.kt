@@ -61,9 +61,23 @@ object UserSocketManager {
      * Connect to the WebSocket server with JWT authentication.
      */
     fun connect(accessToken: String) {
+        Log.d(TAG, "connect() called with token: ${accessToken.take(20)}...")
+        
+        // If already connected with an active socket, just log and return
+        // The callbacks are already set on the manager object before connect() is called
         if (socket != null && isConnected) {
-            Log.d(TAG, "Already connected")
+            Log.d(TAG, "Already connected to /users namespace")
+            onConnectionChange?.invoke(true)
             return
+        }
+
+        // Clean up any existing socket before creating a new one
+        if (socket != null) {
+            Log.d(TAG, "Cleaning up existing disconnected socket...")
+            socket?.off()
+            socket?.disconnect()
+            socket = null
+            isConnected = false
         }
 
         try {
@@ -75,29 +89,31 @@ object UserSocketManager {
                 reconnectionDelay = 1000
             }
 
+            Log.d(TAG, "Creating socket for $BASE_URL$NAMESPACE")
             socket = IO.socket(URI.create("$BASE_URL$NAMESPACE"), options)
 
             socket?.on(Socket.EVENT_CONNECT) {
-                Log.d(TAG, "Connected to WebSocket /users namespace")
+                Log.d(TAG, "✅ Connected to WebSocket /users namespace")
                 isConnected = true
                 onConnectionChange?.invoke(true)
             }
 
-            socket?.on(Socket.EVENT_DISCONNECT) {
-                Log.d(TAG, "Disconnected from WebSocket")
+            socket?.on(Socket.EVENT_DISCONNECT) { args ->
+                Log.d(TAG, "❌ Disconnected from WebSocket: ${args.joinToString()}")
                 isConnected = false
                 onConnectionChange?.invoke(false)
             }
 
             socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
                 val error = args.firstOrNull()
-                Log.e(TAG, "Connection error: $error")
+                Log.e(TAG, "❌ Connection error: $error (${error?.javaClass?.simpleName})")
                 isConnected = false
                 onConnectionChange?.invoke(false)
             }
 
             // Listen for call.dispatched - ambulance assigned to user's call
             socket?.on("call.dispatched") { args ->
+                Log.d(TAG, "📥 Received call.dispatched event")
                 try {
                     val data = args.firstOrNull() as? JSONObject ?: return@on
                     val ambulanceLocation = data.getJSONObject("ambulanceLocation")
@@ -121,8 +137,15 @@ object UserSocketManager {
 
             // Listen for ambulance.location - live position updates
             socket?.on("ambulance.location") { args ->
+                Log.d(TAG, "📥 Received ambulance.location event, args count: ${args.size}")
                 try {
-                    val data = args.firstOrNull() as? JSONObject ?: return@on
+                    val data = args.firstOrNull() as? JSONObject
+                    if (data == null) {
+                        Log.e(TAG, "ambulance.location: data is null or not JSONObject, raw: ${args.firstOrNull()}")
+                        return@on
+                    }
+                    Log.d(TAG, "ambulance.location raw data: $data")
+                    
                     val ambulanceLocation = data.getJSONObject("ambulanceLocation")
                     val route = data.optJSONObject("route")
                     
@@ -134,10 +157,16 @@ object UserSocketManager {
                         distance = route?.optInt("distance"),
                         duration = route?.optInt("duration")
                     )
-                    Log.d(TAG, "Received ambulance.location: lat=${update.latitude}, lng=${update.longitude}")
-                    onAmbulanceLocation?.invoke(update)
+                    Log.d(TAG, "📍 Parsed ambulance.location: callId=${update.callId}, lat=${update.latitude}, lng=${update.longitude}")
+                    
+                    if (onAmbulanceLocation != null) {
+                        Log.d(TAG, "Invoking onAmbulanceLocation callback")
+                        onAmbulanceLocation?.invoke(update)
+                    } else {
+                        Log.w(TAG, "onAmbulanceLocation callback is NULL - location update ignored!")
+                    }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing ambulance.location: ${e.message}")
+                    Log.e(TAG, "❌ Error parsing ambulance.location: ${e.message}", e)
                 }
             }
 

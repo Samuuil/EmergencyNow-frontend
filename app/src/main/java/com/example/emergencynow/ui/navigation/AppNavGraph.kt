@@ -76,8 +76,8 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
             AmbulanceSelectionScreen(
                 onBack = { navController.popBackStack() },
                 onAmbulanceSelected = {
+                    // Just pop back to existing HomeScreen - don't create a new one
                     navController.popBackStack()
-                    navController.navigate(Routes.HOME)
                 }
             )
         }

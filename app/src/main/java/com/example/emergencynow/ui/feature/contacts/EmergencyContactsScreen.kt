@@ -33,15 +33,16 @@ fun EmergencyContactsScreen(
             error = "Missing session. Log in again."
         } else {
             try {
-                val remoteContacts = BackendClient.api.getMyContacts("Bearer $accessToken")
+                val response = BackendClient.api.getMyContacts("Bearer $accessToken")
+                val remoteContacts = response.data
                 contacts = if (remoteContacts.isEmpty()) {
                     listOf(Contact("", ""))
                 } else {
                     remoteContacts.map { Contact(it.name, it.phoneNumber, it.id) }
                 }
             } catch (e: Exception) {
-    error = "Failed to load contacts: ${e.localizedMessage ?: e::class.simpleName}"
-}
+                error = "Failed to load contacts: ${e.localizedMessage ?: e::class.simpleName}"
+            }
         }
     }
 

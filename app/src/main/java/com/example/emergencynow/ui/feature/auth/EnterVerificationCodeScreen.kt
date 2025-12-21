@@ -89,10 +89,10 @@ fun EnterVerificationCodeScreen(
                                 refreshToken = response.refreshToken
                             )
                             val hasExistingContacts = try {
-                                val contacts = BackendClient.api.getMyContacts(
+                                val contactsResponse = BackendClient.api.getMyContacts(
                                     bearer = "Bearer ${response.accessToken}"
                                 )
-                                contacts.isNotEmpty()
+                                contactsResponse.data.isNotEmpty()
                             } catch (e: Exception) {
                                 false
                             }

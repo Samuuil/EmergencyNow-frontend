@@ -17,14 +17,18 @@ fun <T> requestBody(request: Response<T>): Result<T> {
             } ?: Result.failure(Throwable("Empty response body"))
         } else {
             val errorBody = request.errorBody()?.string()
+            val httpStatusCode = request.code()
             val error = try {
-                json.decodeFromString<EmergencyError.Generic>(errorBody ?: "")
+                // Parse the error body and add HTTP status code
+                val parsed = json.decodeFromString<EmergencyError.Generic>(errorBody ?: "{}")
+                // Copy with httpStatusCode since it's not in the JSON
+                parsed.copy(httpStatusCode = httpStatusCode)
             } catch (e: Exception) {
                 // Fallback for unparseable errors
                 EmergencyError.Generic(
                     code = null,
                     messageString = errorBody ?: "Unknown error",
-                    statusCode = request.code()
+                    httpStatusCode = httpStatusCode
                 )
             }
             Result.failure(error)
