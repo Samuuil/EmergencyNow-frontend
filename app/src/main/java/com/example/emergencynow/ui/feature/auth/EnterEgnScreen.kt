@@ -10,16 +10,38 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import com.example.emergencynow.ui.extention.AuthSession
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.example.emergencynow.ui.util.AuthSession
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun EnterEgnScreen(
     onBack: () -> Unit,
-    onContinue: () -> Unit,
+    onContinue: (egn: String) -> Unit,
+    viewModel: EnterEgnViewModel = koinViewModel()
 ) {
-    var egn by remember { mutableStateOf("") }
-    val isValid = egn.length == 10 && egn.all { it.isDigit() }
+    val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(state.shouldNavigateToVerification) {
+        if (state.shouldNavigateToVerification) {
+            AuthSession.egn = state.egn
+            onContinue(state.egn)
+            viewModel.onAction(EnterEgnAction.OnNavigationHandled)
+        }
+    }
+
+    if (state.error != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onAction(EnterEgnAction.OnErrorDismissed) },
+            title = { Text("Error") },
+            text = { Text(state.error ?: "") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.onAction(EnterEgnAction.OnErrorDismissed) }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -27,7 +49,7 @@ fun EnterEgnScreen(
                 title = { Text("Log In or Register") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -47,13 +69,18 @@ fun EnterEgnScreen(
                 Text("We use your EGN to securely identify you within the medical system.", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(24.dp))
                 OutlinedTextField(
-                    value = egn,
-                    onValueChange = { if (it.length <= 10 && it.all { ch -> ch.isDigit() }) egn = it },
+                    value = state.egn,
+                    onValueChange = { 
+                        if (it.length <= 10 && it.all { ch -> ch.isDigit() }) {
+                            viewModel.onAction(EnterEgnAction.OnEgnChanged(it))
+                        }
+                    },
                     label = { Text("EGN") },
                     placeholder = { Text("10 digits") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isLoading
                 )
                 Spacer(Modifier.height(8.dp))
                 TextButton(onClick = { /* TODO: explain why required */ }) { Text("Why is this required?") }
@@ -61,16 +88,20 @@ fun EnterEgnScreen(
 
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Button(
-                    onClick = {
-                        AuthSession.egn = egn
-                        onContinue()
-                    },
-                    enabled = isValid,
+                    onClick = { viewModel.onAction(EnterEgnAction.OnContinueClicked) },
+                    enabled = state.egn.length == 10 && state.egn.all { it.isDigit() } && !state.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
                 ) {
-                    Text("Continue")
+                    if (state.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Continue")
+                    }
                 }
                 TextButton(onClick = { /* TODO: help */ }) { Text("Need Help?") }
             }

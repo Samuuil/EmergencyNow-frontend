@@ -1,9 +1,10 @@
 package com.example.emergencynow.data.service
 
-import com.example.emergencynow.data.model.GetHospitalsRequest
-import com.example.emergencynow.data.model.HospitalDto
-import com.example.emergencynow.data.model.HospitalRouteResponse
-import com.example.emergencynow.data.model.SelectHospitalRequest
+import com.example.emergencynow.data.model.request.GetHospitalsRequest
+import com.example.emergencynow.data.model.request.SelectHospitalRequest
+import com.example.emergencynow.data.model.response.HospitalDto
+import com.example.emergencynow.data.model.response.HospitalRouteResponse
+import com.example.emergencynow.data.model.response.HospitalRouteWrapperResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -23,5 +24,5 @@ interface HospitalService {
     ): HospitalRouteResponse
 
     @GET("calls/{id}/hospital-route")
-    suspend fun getHospitalRoute(@Path("id") id: String): HospitalRouteResponse
+    suspend fun getHospitalRoute(@Path("id") id: String): HospitalRouteWrapperResponse
 }

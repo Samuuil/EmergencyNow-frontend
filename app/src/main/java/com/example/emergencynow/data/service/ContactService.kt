@@ -1,8 +1,8 @@
 package com.example.emergencynow.data.service
 
-import com.example.emergencynow.data.model.ContactResponse
-import com.example.emergencynow.data.model.CreateContactRequest
-import com.example.emergencynow.data.model.PaginatedResponse
+import com.example.emergencynow.data.model.request.CreateContactRequest
+import com.example.emergencynow.data.model.response.ContactResponse
+import com.example.emergencynow.data.model.response.PaginatedResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET

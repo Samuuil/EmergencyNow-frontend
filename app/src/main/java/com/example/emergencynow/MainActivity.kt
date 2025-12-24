@@ -6,19 +6,25 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
+import com.example.emergencynow.ui.util.AuthSession
+import com.example.emergencynow.ui.util.AuthStorage
+import com.example.emergencynow.domain.usecase.auth.RefreshTokenUseCase
+import com.example.emergencynow.data.util.JwtHelper
 import com.example.emergencynow.ui.constants.Routes
-import com.example.emergencynow.ui.extention.AuthSession
-import com.example.emergencynow.ui.extention.AuthStorage
-import com.example.emergencynow.ui.extention.BackendClient
-import com.example.emergencynow.ui.extention.RefreshTokenRequest
-import com.example.emergencynow.ui.extention.parseJwt
+import org.koin.core.context.GlobalContext
 import com.example.emergencynow.ui.theme.EmergencyNowTheme
 import com.example.emergencynow.ui.navigation.AppNavGraph
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,12 +41,13 @@ class MainActivity : ComponentActivity() {
                     val refreshToken = tokens.refreshToken
                     if (refreshToken != null) {
                         try {
-                            val response = BackendClient.api.refresh(RefreshTokenRequest(refreshToken))
-                            AuthSession.accessToken = response.accessToken
-                            AuthSession.refreshToken = response.refreshToken
-                            val payload = parseJwt(response.accessToken)
+                            val refreshTokenUseCase = GlobalContext.get().get<RefreshTokenUseCase>()
+                            val token = refreshTokenUseCase(refreshToken).getOrThrow()
+                            AuthSession.accessToken = token.accessToken
+                            AuthSession.refreshToken = token.refreshToken
+                            val payload = JwtHelper.parseJwt(token.accessToken)
                             AuthSession.userId = payload?.sub
-                            AuthStorage.saveTokens(context, response.accessToken, response.refreshToken)
+                            AuthStorage.saveTokens(context, token.accessToken, token.refreshToken)
                             startDestination = Routes.HOME
                         } catch (e: Exception) {
                             AuthStorage.clearTokens(context)

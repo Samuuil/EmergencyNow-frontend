@@ -10,11 +10,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import com.example.emergencynow.ui.extention.AuthSession
-import com.example.emergencynow.ui.extention.BackendClient
-import com.example.emergencynow.ui.extention.CreateContactRequest
+import com.example.emergencynow.ui.util.AuthSession
+import com.example.emergencynow.domain.usecase.contact.GetContactsUseCase
+import com.example.emergencynow.domain.usecase.contact.CreateContactUseCase
+import com.example.emergencynow.domain.usecase.contact.DeleteContactUseCase
+import org.koin.compose.koinInject
 import kotlinx.coroutines.launch
 
 @Composable
@@ -24,6 +26,9 @@ fun EmergencyContactsScreen(
 ) {
     var contacts by remember { mutableStateOf(listOf(Contact("", ""))) }
     val scope = rememberCoroutineScope()
+    val getContactsUseCase: GetContactsUseCase = koinInject()
+    val createContactUseCase: CreateContactUseCase = koinInject()
+    val deleteContactUseCase: DeleteContactUseCase = koinInject()
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -33,8 +38,7 @@ fun EmergencyContactsScreen(
             error = "Missing session. Log in again."
         } else {
             try {
-                val response = BackendClient.api.getMyContacts("Bearer $accessToken")
-                val remoteContacts = response.data
+                val remoteContacts = getContactsUseCase().getOrDefault(emptyList())
                 contacts = if (remoteContacts.isEmpty()) {
                     listOf(Contact("", ""))
                 } else {
@@ -50,7 +54,7 @@ fun EmergencyContactsScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Emergency Contacts") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") } }
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } }
             )
         },
         bottomBar = {
@@ -76,14 +80,11 @@ fun EmergencyContactsScreen(
                             error = null
                             try {
                                 newContacts.forEach { contact ->
-                                    BackendClient.api.createMyContact(
-                                        bearer = "Bearer $accessToken",
-                                        body = CreateContactRequest(
-                                            name = contact.name,
-                                            phoneNumber = contact.phone,
-                                            email = null
-                                        )
-                                    )
+                                    createContactUseCase(
+                                        name = contact.name,
+                                        phoneNumber = contact.phone,
+                                        email = null
+                                    ).getOrThrow()
                                 }
                                 onFinish()
                             } catch (e: Exception) {
@@ -123,10 +124,7 @@ fun EmergencyContactsScreen(
                             if (!toRemove.id.isNullOrEmpty() && !accessToken.isNullOrEmpty()) {
                                 scope.launch {
                                     try {
-                                        BackendClient.api.deleteMyContact(
-                                            bearer = "Bearer $accessToken",
-                                            id = toRemove.id!!
-                                        )
+                                        deleteContactUseCase(toRemove.id!!).getOrThrow()
                                         contacts = contacts.toMutableList().also { it.removeAt(index) }
                                     } catch (e: Exception) {
                                         error = "Failed to remove contact."

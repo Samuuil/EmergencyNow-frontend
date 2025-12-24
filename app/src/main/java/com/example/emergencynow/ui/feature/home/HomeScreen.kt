@@ -1,0 +1,605 @@
+package com.example.emergencynow.ui.feature.home
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.maps.android.compose.*
+import kotlinx.coroutines.delay
+import org.koin.androidx.compose.koinViewModel
+
+@SuppressLint("MissingPermission")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    onMakeEmergencyCall: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onSelectAmbulance: () -> Unit,
+    viewModel: HomeViewModel = koinViewModel()
+) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val cameraPositionState = rememberCameraPositionState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.refreshData()
+        }
+    }
+
+    val locationCallback = remember {
+        object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                val location = locationResult.lastLocation ?: return
+                val latLng = LatLng(location.latitude, location.longitude)
+                viewModel.updateUserLocation(latLng)
+
+                if (uiState.userLocation == null) {
+                    cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
+                }
+            }
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { permissions ->
+            val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+            if (granted) {
+                val locationRequest = LocationRequest.Builder(
+                    Priority.PRIORITY_HIGH_ACCURACY,
+                    2000L
+                ).apply {
+                    setMinUpdateIntervalMillis(1000L)
+                }.build()
+                
+                fusedLocationClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    null
+                )
+            }
+        }
+    )
+
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+    }
+
+    LaunchedEffect(uiState.hospitalRoutePolyline) {
+        val points = uiState.hospitalRoutePolyline
+        if (points.isNotEmpty()) {
+            val builder = LatLngBounds.Builder()
+            points.forEach { builder.include(it) }
+            uiState.userLocation?.let { builder.include(it) }
+            uiState.hospitalLocation?.let { builder.include(it) }
+            val bounds = builder.build()
+            cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100))
+        }
+    }
+
+    LaunchedEffect(uiState.activeRoutePolyline, uiState.ambulanceLocation) {
+        if (!uiState.isDriver && uiState.activeRoutePolyline.isNotEmpty()) {
+            val builder = LatLngBounds.Builder()
+            uiState.activeRoutePolyline.forEach { builder.include(it) }
+            uiState.userLocation?.let { builder.include(it) }
+            uiState.ambulanceLocation?.let { builder.include(it) }
+            val bounds = builder.build()
+            cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100))
+        }
+    }
+
+    LaunchedEffect(uiState.activeCallId, uiState.userLocation) {
+        if (uiState.isDriver && uiState.activeCallId != null && uiState.userLocation != null) {
+            while (uiState.activeCallId != null) {
+                val location = uiState.userLocation
+                val callId = uiState.activeCallId
+                if (location != null && callId != null) {
+                    com.example.emergencynow.ui.util.DriverSocketManager.sendLocationUpdate(
+                        callId = callId,
+                        latitude = location.latitude,
+                        longitude = location.longitude
+                    )
+                }
+                delay(2000)
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { 
+                    Text(
+                        if (uiState.isDriver) "Driver Dashboard" else "Emergency Now",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                actions = {
+                    if (uiState.isDriver) {
+                        IconButton(onClick = onOpenProfile) {
+                            Icon(Icons.Filled.Person, contentDescription = "Profile")
+                        }
+                        if (uiState.activeCallId == null) {
+                            IconButton(onClick = onMakeEmergencyCall) {
+                                Icon(Icons.Filled.Phone, contentDescription = "Emergency Call")
+                            }
+                        }
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            if (!uiState.isDriver) {
+                BottomAppBar {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        FilledTonalButton(
+                            onClick = onMakeEmergencyCall,
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+                        ) {
+                            Icon(Icons.Filled.Phone, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Emergency Call")
+                        }
+                        Button(
+                            onClick = onOpenProfile,
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+                        ) {
+                            Icon(Icons.Filled.Person, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Profile")
+                        }
+                    }
+                }
+            } else {
+                BottomAppBar {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        if (uiState.assignedAmbulanceId == null) {
+                            Button(
+                                onClick = onSelectAmbulance,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                            ) {
+                                Icon(Icons.Filled.DirectionsCar, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Select Ambulance")
+                            }
+                        } else {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "Ambulance: ${uiState.assignedAmbulancePlate ?: "Unknown"}",
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    if (uiState.activeCallId == null) {
+                                        OutlinedButton(
+                                            onClick = { viewModel.unassignAmbulance() },
+                                            modifier = Modifier.height(36.dp)
+                                        ) {
+                                            Text("Unassign", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+        ) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState
+            ) {
+                uiState.userLocation?.let { location ->
+                    Marker(
+                        state = MarkerState(position = location),
+                        title = if (uiState.isDriver) "Your Ambulance" else "Your Location",
+                        icon = if (uiState.isDriver) {
+                            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                        } else {
+                            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                        }
+                    )
+                }
+
+                if (uiState.isDriver && uiState.emergencyLocation != null) {
+                    Marker(
+                        state = MarkerState(position = uiState.emergencyLocation!!),
+                        title = "Emergency",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                    )
+                }
+
+                if (!uiState.isDriver && uiState.ambulanceLocation != null) {
+                    Marker(
+                        state = MarkerState(position = uiState.ambulanceLocation!!),
+                        title = "Ambulance",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                    )
+                }
+
+                if (uiState.hospitalLocation != null) {
+                    Marker(
+                        state = MarkerState(position = uiState.hospitalLocation!!),
+                        title = uiState.selectedHospitalName ?: "Hospital",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
+                    )
+                }
+
+                if (uiState.activeRoutePolyline.isNotEmpty() && uiState.callStatus != CallStatus.NAVIGATING_TO_HOSPITAL) {
+                    Polyline(
+                        points = uiState.activeRoutePolyline,
+                        color = Color.Blue,
+                        width = 10f
+                    )
+                }
+
+                if (uiState.hospitalRoutePolyline.isNotEmpty()) {
+                    Polyline(
+                        points = uiState.hospitalRoutePolyline,
+                        color = Color.Green,
+                        width = 10f
+                    )
+                }
+            }
+
+            if (uiState.isDriver) {
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Status", fontWeight = FontWeight.Medium)
+                            Text(
+                                when {
+                                    uiState.activeCallId != null -> "On Call"
+                                    uiState.isSocketConnected -> "Available"
+                                    else -> "Connecting..."
+                                },
+                                color = when {
+                                    uiState.activeCallId != null -> Color.Red
+                                    uiState.isSocketConnected -> Color.Green
+                                    else -> Color.Gray
+                                }
+                            )
+                        }
+                        
+                        if (uiState.activeCallId != null) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            Text("Call Status: ${uiState.callStatus}", fontSize = 14.sp)
+                            if (uiState.activeRouteDistance > 0) {
+                                Text(
+                                    "Distance: ${uiState.activeRouteDistance}m | Time: ${uiState.activeRouteDuration}s",
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                            if (uiState.hospitalRoutePolyline.isNotEmpty()) {
+                                Text(
+                                    "🏥 Hospital route: ${uiState.hospitalRoutePolyline.size} points (${uiState.hospitalRouteDistance}m)",
+                                    fontSize = 12.sp,
+                                    color = Color.Green,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            } else if (uiState.activeCallId != null) {
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Filled.LocalHospital,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Text(
+                                "Ambulance on the way",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        }
+                        
+                        if (uiState.activeRouteDistance > 0) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            Text(
+                                "Estimated arrival: ${uiState.activeRouteDuration / 60} min (${uiState.activeRouteDistance}m)",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (uiState.isDriver && uiState.activeCallId != null) {
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        when (uiState.callStatus) {
+                            CallStatus.EN_ROUTE -> {
+                                Button(
+                                    onClick = { viewModel.updateCallStatus(CallStatus.ARRIVED) },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Mark as Arrived")
+                                }
+                            }
+                            CallStatus.NAVIGATING_TO_HOSPITAL -> {
+                                Button(
+                                    onClick = { viewModel.completeCall() },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Complete Call")
+                                }
+                            }
+                            else -> {}
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (uiState.incomingCallOffer != null) {
+        IncomingCallDialog(
+            offer = uiState.incomingCallOffer!!,
+            onAccept = { viewModel.acceptCall(uiState.incomingCallOffer!!.callId) },
+            onDecline = { viewModel.declineCall(uiState.incomingCallOffer!!.callId) }
+        )
+    }
+
+    if (uiState.showHospitalSelection) {
+        HospitalSelectionDialog(
+            hospitals = uiState.availableHospitals,
+            isLoading = uiState.isLoadingHospitals || uiState.isSelectingHospital,
+            onHospitalSelected = { hospitalId ->
+                viewModel.selectHospital(hospitalId)
+            },
+            onDismiss = { /* Cannot dismiss - must select hospital */ }
+        )
+    }
+}
+
+@Composable
+private fun IncomingCallDialog(
+    offer: com.example.emergencynow.ui.util.CallOffer,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = { /* Cannot dismiss */ },
+        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Filled.Phone,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    "Incoming Emergency Call",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    "Emergency Call",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    OutlinedButton(
+                        onClick = onDecline,
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                    ) {
+                        Text("Decline")
+                    }
+                    
+                    Button(
+                        onClick = onAccept,
+                        modifier = Modifier.weight(1f).padding(start = 8.dp)
+                    ) {
+                        Text("Accept")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HospitalSelectionDialog(
+    hospitals: List<com.example.emergencynow.data.model.response.HospitalDto>,
+    isLoading: Boolean,
+    onHospitalSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.7f),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxSize()
+            ) {
+                Text(
+                    "Select Hospital",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        hospitals.forEach { hospital ->
+                            Card(
+                                onClick = { onHospitalSelected(hospital.id) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Text(
+                                        hospital.name,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    if (hospital.distance != null) {
+                                        Text(
+                                            "Distance: ${hospital.distance}m",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                    if (hospital.availableBeds != null) {
+                                        Text(
+                                            "Available Beds: ${hospital.availableBeds}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

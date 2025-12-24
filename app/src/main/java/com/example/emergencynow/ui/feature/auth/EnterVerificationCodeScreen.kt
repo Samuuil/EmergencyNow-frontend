@@ -7,36 +7,38 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import com.example.emergencynow.ui.extention.AuthSession
-import com.example.emergencynow.ui.extention.AuthStorage
-import com.example.emergencynow.ui.extention.BackendClient
-import com.example.emergencynow.ui.extention.VerifyCodeRequest
-import com.example.emergencynow.ui.extention.parseJwt
-import kotlinx.coroutines.launch
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun EnterVerificationCodeScreen(
+    egn: String,
     onBack: () -> Unit,
     onVerified: (isReturningUser: Boolean) -> Unit,
+    viewModel: VerifyCodeViewModel = koinViewModel()
 ) {
-    var code by remember { mutableStateOf("") }
-    val isValid = code.length == 6 && code.all { it.isDigit() }
-    val scope = rememberCoroutineScope()
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
+    val state by viewModel.state.collectAsState()
+    LaunchedEffect(egn) {
+        viewModel.setEgn(egn)
+    }
+
+    LaunchedEffect(state.isVerified) {
+        if (state.isVerified) {
+            onVerified(state.isReturningUser)
+        }
+    }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Verify Your Number") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) { 
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") 
+                    }
                 }
             )
         }
@@ -51,72 +53,46 @@ fun EnterVerificationCodeScreen(
             Text("Enter the 6-digit code sent to your device.", style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(24.dp))
             OutlinedTextField(
-                value = code,
-                onValueChange = { if (it.length <= 6 && it.all { ch -> ch.isDigit() }) code = it },
+                value = state.code,
+                onValueChange = { 
+                    if (it.length <= 6 && it.all { ch -> ch.isDigit() }) {
+                        viewModel.onAction(VerifyCodeAction.OnCodeChanged(it))
+                    }
+                },
                 label = { Text("Code") },
                 placeholder = { Text("000000") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                singleLine = true,
+                enabled = !state.isLoading
             )
             Spacer(Modifier.height(24.dp))
             Button(
-                onClick = {
-                    if (isLoading) {
-                        return@Button
-                    }
-                    val currentEgn = AuthSession.egn
-                    if (currentEgn.isNullOrEmpty()) {
-                        error = "Missing EGN. Go back and enter it again."
-                        return@Button
-                    }
-                    scope.launch {
-                        isLoading = true
-                        error = null
-                        try {
-                            val response = BackendClient.api.verifyCode(
-                                VerifyCodeRequest(
-                                    egn = currentEgn,
-                                    code = code
-                                )
-                            )
-                            AuthSession.accessToken = response.accessToken
-                            AuthSession.refreshToken = response.refreshToken
-                            val payload = parseJwt(response.accessToken)
-                            AuthSession.userId = payload?.sub
-                            AuthStorage.saveTokens(
-                                context = context,
-                                accessToken = response.accessToken,
-                                refreshToken = response.refreshToken
-                            )
-                            val hasExistingContacts = try {
-                                val contactsResponse = BackendClient.api.getMyContacts(
-                                    bearer = "Bearer ${response.accessToken}"
-                                )
-                                contactsResponse.data.isNotEmpty()
-                            } catch (e: Exception) {
-                                false
-                            }
-                            onVerified(hasExistingContacts)
-                        } catch (e: Exception) {
-                            error = "Invalid or expired verification code."
-                        } finally {
-                            isLoading = false
-                        }
-                    }
-                },
-                enabled = isValid && !isLoading,
+                onClick = { viewModel.onAction(VerifyCodeAction.OnVerifyClicked) },
+                enabled = state.code.length == 6 && state.code.all { it.isDigit() } && !state.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             ) {
-                Text("Verify")
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Verify")
+                }
             }
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = { /* TODO resend */ }) { Text("Resend") }
-            if (error != null) {
+            TextButton(
+                onClick = { viewModel.onAction(VerifyCodeAction.OnResendClicked) },
+                enabled = !state.isLoading
+            ) { 
+                Text("Resend") 
+            }
+            if (state.error != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = error ?: "",
+                    text = state.error ?: "",
                     color = MaterialTheme.colorScheme.error
                 )
             }
