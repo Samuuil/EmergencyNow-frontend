@@ -1,7 +1,7 @@
 package com.example.emergencynow.data.util
 
 import android.util.Base64
-import com.example.emergencynow.data.model.JwtPayload
+import com.example.emergencynow.data.model.response.JwtPayload
 import com.google.gson.Gson
 
 object JwtHelper {

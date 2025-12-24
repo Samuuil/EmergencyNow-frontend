@@ -9,11 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import com.example.emergencynow.ui.extention.AuthSession
-import com.example.emergencynow.ui.extention.BackendClient
-import com.example.emergencynow.ui.extention.InitiateLoginRequest
-import com.example.emergencynow.ui.extention.LoginMethod
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.example.emergencynow.data.model.request.InitiateLoginRequest
+import com.example.emergencynow.data.model.request.LoginMethod
+import com.example.emergencynow.ui.util.AuthSession
+import com.example.emergencynow.domain.usecase.auth.RequestVerificationCodeUseCase
+import org.koin.compose.koinInject
 import kotlinx.coroutines.launch
 
 @Composable
@@ -23,6 +24,7 @@ fun ChooseVerificationMethodScreen(
     onEmail: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val requestVerificationCodeUseCase: RequestVerificationCodeUseCase = koinInject()
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -31,7 +33,7 @@ fun ChooseVerificationMethodScreen(
             CenterAlignedTopAppBar(
                 title = { Text("Verify Your Account") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
                 }
             )
         }
@@ -58,12 +60,7 @@ fun ChooseVerificationMethodScreen(
                             error = null
                             try {
                                 AuthSession.lastMethod = LoginMethod.SMS
-                                BackendClient.api.initiateLogin(
-                                    InitiateLoginRequest(
-                                        egn = currentEgn,
-                                        method = LoginMethod.SMS
-                                    )
-                                )
+                                requestVerificationCodeUseCase(egn = currentEgn, method = "sms").getOrThrow()
                                 onPhone()
                             } catch (e: Exception) {
                                 error = "Failed to send verification code."
@@ -94,12 +91,7 @@ fun ChooseVerificationMethodScreen(
                             error = null
                             try {
                                 AuthSession.lastMethod = LoginMethod.EMAIL
-                                BackendClient.api.initiateLogin(
-                                    InitiateLoginRequest(
-                                        egn = currentEgn,
-                                        method = LoginMethod.EMAIL
-                                    )
-                                )
+                                requestVerificationCodeUseCase(egn = currentEgn, method = "email").getOrThrow()
                                 onEmail()
                             } catch (e: Exception) {
                                 error = "Failed to send verification code. LoginMethod.EMAIL"

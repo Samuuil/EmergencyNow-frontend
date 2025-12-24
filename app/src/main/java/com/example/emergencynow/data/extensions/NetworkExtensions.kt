@@ -1,9 +1,11 @@
 package com.example.emergencynow.data.extensions
 
 import com.example.emergencynow.data.error.EmergencyError
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import retrofit2.Response
 
+@OptIn(ExperimentalSerializationApi::class)
 val json = Json {
     ignoreUnknownKeys = true
     explicitNulls = false
@@ -43,4 +45,12 @@ fun <T> resultBody(result: Result<T>): Result<T> {
         onSuccess = { Result.success(it) },
         onFailure = { Result.failure(it) }
     )
+}
+
+suspend fun <T> safeApiCall(apiCall: suspend () -> T): Result<T> {
+    return try {
+        Result.success(apiCall())
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 }
