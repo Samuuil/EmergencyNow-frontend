@@ -12,4 +12,5 @@ object Routes {
     const val PROFILE_HOME = "profile_home"
     const val CALL_TRACKING = "call_tracking"
     const val AMBULANCE_SELECTION = "ambulance_selection"
+    const val HISTORY = "history"
 }

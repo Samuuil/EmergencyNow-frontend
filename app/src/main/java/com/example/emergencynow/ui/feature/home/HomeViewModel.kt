@@ -37,6 +37,7 @@ data class HomeUiState(
     val activeRoutePolyline: List<LatLng> = emptyList(),
     val activeRouteDistance: Int = 0,
     val activeRouteDuration: Int = 0,
+    val activeRouteSteps: List<String> = emptyList(),
     val driverCurrentLocation: LatLng? = null,
     val callStatus: CallStatus = CallStatus.EN_ROUTE,
     val showHospitalSelection: Boolean = false,
@@ -163,7 +164,8 @@ class HomeViewModel(
                     activeCallId = route.callId,
                     activeRoutePolyline = decodePolyline(route.polyline),
                     activeRouteDistance = route.distance,
-                    activeRouteDuration = route.duration
+                    activeRouteDuration = route.duration,
+                    activeRouteSteps = route.steps
                 )
             }
             
@@ -171,7 +173,8 @@ class HomeViewModel(
                 _uiState.value = _uiState.value.copy(
                     activeRoutePolyline = decodePolyline(route.polyline),
                     activeRouteDistance = route.distance,
-                    activeRouteDuration = route.duration
+                    activeRouteDuration = route.duration,
+                    activeRouteSteps = route.steps
                 )
             }
             

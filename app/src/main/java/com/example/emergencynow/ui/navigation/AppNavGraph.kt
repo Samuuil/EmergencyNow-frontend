@@ -21,6 +21,7 @@ import com.example.emergencynow.ui.feature.call.EmergencyCallScreen
 import com.example.emergencynow.ui.feature.profile.PersonalInformationScreen
 import com.example.emergencynow.ui.feature.profile.ProfileHomeScreen
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsScreen
+import com.example.emergencynow.ui.feature.history.HistoryScreen
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -54,6 +55,8 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
                 onMakeEmergencyCall = { navController.navigate(Routes.EMERGENCY_CALL) },
                 onOpenProfile = { navController.navigate(Routes.PROFILE_HOME) },
                 onSelectAmbulance = { navController.navigate(Routes.AMBULANCE_SELECTION) },
+                onNavigateToHistory = { navController.navigate(Routes.HISTORY) },
+                onNavigateToContacts = { navController.navigate(Routes.EMERGENCY_CONTACTS) },
                 viewModel = viewModel
             )
         }
@@ -153,6 +156,11 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
                 onBack = { navController.popBackStack() },
                 onPersonalInfo = { navController.navigate(Routes.PERSONAL_INFO) },
                 onEmergencyContacts = { navController.navigate(Routes.EMERGENCY_CONTACTS) }
+            )
+        }
+        composable(Routes.HISTORY) {
+            HistoryScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

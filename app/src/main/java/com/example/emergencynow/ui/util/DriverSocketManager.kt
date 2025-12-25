@@ -21,7 +21,7 @@ data class CallRoute(
     val polyline: String,
     val distance: Int,
     val duration: Int,
-    val steps: List<Any>
+    val steps: List<String>
 )
 
 object DriverSocketManager {
@@ -115,12 +115,30 @@ object DriverSocketManager {
                 try {
                     val data = args.firstOrNull() as? JSONObject ?: return@on
                     val routeObj = data.getJSONObject("route")
+                    val steps = mutableListOf<String>()
+                    if (routeObj.has("steps")) {
+                        val stepsAny = routeObj.get("steps")
+                        when (stepsAny) {
+                            is org.json.JSONArray -> {
+                                for (i in 0 until stepsAny.length()) {
+                                    val item = stepsAny.get(i)
+                                    when (item) {
+                                        is String -> steps.add(item)
+                                        is JSONObject -> steps.add(item.optString("instruction", item.toString()))
+                                    }
+                                }
+                            }
+                            is JSONObject -> {
+                                steps.add(stepsAny.optString("instruction", stepsAny.toString()))
+                            }
+                        }
+                    }
                     val route = CallRoute(
                         callId = data.getString("callId"),
                         polyline = routeObj.getString("polyline"),
                         distance = routeObj.getInt("distance"),
                         duration = routeObj.getInt("duration"),
-                        steps = emptyList()
+                        steps = steps
                     )
                     Log.d(TAG, "Received call route: $route")
                     onCallRoute?.invoke(route)
@@ -133,12 +151,30 @@ object DriverSocketManager {
                 try {
                     val data = args.firstOrNull() as? JSONObject ?: return@on
                     val routeObj = data.getJSONObject("route")
+                    val steps = mutableListOf<String>()
+                    if (routeObj.has("steps")) {
+                        val stepsAny = routeObj.get("steps")
+                        when (stepsAny) {
+                            is org.json.JSONArray -> {
+                                for (i in 0 until stepsAny.length()) {
+                                    val item = stepsAny.get(i)
+                                    when (item) {
+                                        is String -> steps.add(item)
+                                        is JSONObject -> steps.add(item.optString("instruction", item.toString()))
+                                    }
+                                }
+                            }
+                            is JSONObject -> {
+                                steps.add(stepsAny.optString("instruction", stepsAny.toString()))
+                            }
+                        }
+                    }
                     val route = CallRoute(
                         callId = data.getString("callId"),
                         polyline = routeObj.getString("polyline"),
                         distance = routeObj.getInt("distance"),
                         duration = routeObj.getInt("duration"),
-                        steps = emptyList()
+                        steps = steps
                     )
                     Log.d(TAG, "Received route update: $route")
                     onRouteUpdate?.invoke(route)
