@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,11 +50,14 @@ fun HomeScreen(
     onMakeEmergencyCall: () -> Unit,
     onOpenProfile: () -> Unit,
     onSelectAmbulance: () -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onNavigateToContacts: () -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
     val cameraPositionState = rememberCameraPositionState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -154,99 +158,7 @@ fun HomeScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { 
-                    Text(
-                        if (uiState.isDriver) "Driver Dashboard" else "Emergency Now",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                actions = {
-                    if (uiState.isDriver) {
-                        IconButton(onClick = onOpenProfile) {
-                            Icon(Icons.Filled.Person, contentDescription = "Profile")
-                        }
-                        if (uiState.activeCallId == null) {
-                            IconButton(onClick = onMakeEmergencyCall) {
-                                Icon(Icons.Filled.Phone, contentDescription = "Emergency Call")
-                            }
-                        }
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            if (!uiState.isDriver) {
-                BottomAppBar {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        FilledTonalButton(
-                            onClick = onMakeEmergencyCall,
-                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
-                        ) {
-                            Icon(Icons.Filled.Phone, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Emergency Call")
-                        }
-                        Button(
-                            onClick = onOpenProfile,
-                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
-                        ) {
-                            Icon(Icons.Filled.Person, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Profile")
-                        }
-                    }
-                }
-            } else {
-                BottomAppBar {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        if (uiState.assignedAmbulanceId == null) {
-                            Button(
-                                onClick = onSelectAmbulance,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-                            ) {
-                                Icon(Icons.Filled.DirectionsCar, contentDescription = null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Select Ambulance")
-                            }
-                        } else {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "Ambulance: ${uiState.assignedAmbulancePlate ?: "Unknown"}",
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    if (uiState.activeCallId == null) {
-                                        OutlinedButton(
-                                            onClick = { viewModel.unassignAmbulance() },
-                                            modifier = Modifier.height(36.dp)
-                                        ) {
-                                            Text("Unassign", fontSize = 12.sp)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         Box(
             modifier = Modifier
                 .padding(paddingValues)
@@ -310,50 +222,75 @@ fun HomeScreen(
             }
 
             if (uiState.isDriver) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                if (uiState.activeCallId != null) {
+                    // On-call: show primary instruction + ETA
+                    var expanded by remember { mutableStateOf(false) }
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(16.dp)
+                            .fillMaxWidth()
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Status", fontWeight = FontWeight.Medium)
-                            Text(
-                                when {
-                                    uiState.activeCallId != null -> "On Call"
-                                    uiState.isSocketConnected -> "Available"
-                                    else -> "Connecting..."
-                                },
-                                color = when {
-                                    uiState.activeCallId != null -> Color.Red
-                                    uiState.isSocketConnected -> Color.Green
-                                    else -> Color.Gray
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    StepIcon(uiState.activeRouteSteps.firstOrNull())
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        uiState.activeRouteSteps.firstOrNull() ?: "Drive to destination",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp
+                                    )
                                 }
-                            )
-                        }
-                        
-                        if (uiState.activeCallId != null) {
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            Text("Call Status: ${uiState.callStatus}", fontSize = 14.sp)
-                            if (uiState.activeRouteDistance > 0) {
+                                IconButton(onClick = { expanded = !expanded }) {
+                                    Icon(
+                                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                        contentDescription = if (expanded) "Collapse" else "Expand"
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+
+                            if (uiState.activeRouteDuration > 0 || uiState.activeRouteDistance > 0) {
                                 Text(
-                                    "Distance: ${uiState.activeRouteDistance}m | Time: ${uiState.activeRouteDuration}s",
-                                    fontSize = 12.sp,
-                                    color = Color.Gray
+                                    "ETA: ${uiState.activeRouteDuration / 60} min • ${uiState.activeRouteDistance} m",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
-                            if (uiState.hospitalRoutePolyline.isNotEmpty()) {
+
+                            if (expanded && uiState.activeRouteSteps.isNotEmpty()) {
+                                Spacer(Modifier.height(8.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    uiState.activeRouteSteps.forEachIndexed { index, step ->
+                                        StepItem(index + 1, step)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Not on call: show availability status like before
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(16.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Status", fontWeight = FontWeight.Medium)
                                 Text(
-                                    "🏥 Hospital route: ${uiState.hospitalRoutePolyline.size} points (${uiState.hospitalRouteDistance}m)",
-                                    fontSize = 12.sp,
-                                    color = Color.Green,
-                                    fontWeight = FontWeight.Bold
+                                    if (uiState.isSocketConnected) "Available" else "Connecting...",
+                                    color = if (uiState.isSocketConnected) Color.Green else Color.Gray
                                 )
                             }
                         }
@@ -405,6 +342,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(16.dp)
+                        .padding(bottom = 160.dp)
                         .fillMaxWidth()
                 ) {
                     Column(
@@ -430,6 +368,158 @@ fun HomeScreen(
                             }
                             else -> {}
                         }
+                    }
+                }
+            }
+
+            // Removed separate bottom steps panel; steps now integrated in top card for drivers
+
+            // Bottom Controls
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+            ) {
+                // Driver-specific controls (ambulance selection)
+                if (uiState.isDriver) {
+                    if (uiState.assignedAmbulanceId == null) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            ),
+                            onClick = onSelectAmbulance
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.DirectionsCar,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Select Ambulance",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    } else {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Filled.DirectionsCar,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.tertiary
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            "Selected Ambulance",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                        )
+                                        Text(
+                                            uiState.assignedAmbulancePlate ?: "Unknown",
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                    }
+                                }
+                                if (uiState.activeCallId == null) {
+                                    OutlinedButton(
+                                        onClick = { viewModel.unassignAmbulance() },
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        Text("Unassign", fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Emergency call button (visible for users and for drivers when not on a call)
+                if (!uiState.isDriver || (uiState.isDriver && uiState.activeCallId == null)) {
+                    Button(
+                        onClick = onMakeEmergencyCall,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(56.dp)
+                            .padding(bottom = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Filled.Phone, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Emergency Call",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Bottom Navigation Bar
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        BottomNavItem(
+                            icon = Icons.Filled.Home,
+                            label = "Home",
+                            onClick = { /* Already on home */ }
+                        )
+                        BottomNavItem(
+                            icon = Icons.Filled.History,
+                            label = "History",
+                            onClick = onNavigateToHistory
+                        )
+                        BottomNavItem(
+                            icon = Icons.Filled.Contacts,
+                            label = "Contacts",
+                            onClick = onNavigateToContacts
+                        )
+                        BottomNavItem(
+                            icon = Icons.Filled.Person,
+                            label = "Profile",
+                            onClick = onOpenProfile
+                        )
                     }
                 }
             }
@@ -520,6 +610,54 @@ private fun IncomingCallDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StepItem(index: Int, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        StepIcon(text)
+        Spacer(Modifier.width(8.dp))
+        Text("$index. $text", style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+fun StepIcon(text: String?) {
+    val icon = when {
+        text == null -> Icons.Filled.ArrowForward
+        text.contains("left", ignoreCase = true) -> Icons.Filled.ArrowBack
+        text.contains("right", ignoreCase = true) -> Icons.Filled.ArrowForward
+        text.contains("u-turn", ignoreCase = true) || text.contains("uturn", ignoreCase = true) -> Icons.Filled.ArrowBack
+        else -> Icons.Filled.Refresh
+    }
+    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+}
+
+@Composable
+private fun BottomNavItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

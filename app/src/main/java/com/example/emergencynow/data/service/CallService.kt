@@ -3,11 +3,13 @@ package com.example.emergencynow.data.service
 import com.example.emergencynow.data.model.request.CreateCallRequest
 import com.example.emergencynow.data.model.response.CallResponse
 import com.example.emergencynow.data.model.response.CallTrackingResponse
+import com.example.emergencynow.data.model.response.PaginatedResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface CallService {
     @POST("calls")
@@ -21,4 +23,11 @@ interface CallService {
         @Path("id") id: String,
         @Body body: Map<String, String>
     ): CallResponse
+
+    @GET("calls/user/{userId}")
+    suspend fun getUserCalls(
+        @Path("userId") userId: String,
+        @Query("page") page: Int? = null,
+        @Query("limit") limit: Int? = null
+    ): PaginatedResponse<CallResponse>
 }

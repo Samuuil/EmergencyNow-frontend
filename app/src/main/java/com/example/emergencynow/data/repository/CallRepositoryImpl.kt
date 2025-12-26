@@ -16,29 +16,7 @@ class CallRepositoryImpl(
         longitude: Double
     ): Result<Call> = safeApiCall {
         val response = callDataSource.createCall(description, latitude, longitude)
-        Call(
-            id = response.id,
-            description = response.description,
-            latitude = response.latitude,
-            longitude = response.longitude,
-            status = parseCallStatus(response.status),
-            routePolyline = null,
-            estimatedDistance = null,
-            estimatedDuration = null,
-            routeSteps = null,
-            ambulanceCurrentLatitude = null,
-            ambulanceCurrentLongitude = null,
-            dispatchedAt = null,
-            arrivedAt = null,
-            completedAt = null,
-            createdAt = java.util.Date(),
-            selectedHospitalId = null,
-            selectedHospitalName = null,
-            hospitalRoutePolyline = null,
-            hospitalRouteDistance = null,
-            hospitalRouteDuration = null,
-            hospitalRouteSteps = null
-        )
+        mapResponseToCall(response)
     }
     
     override suspend fun getCallTracking(callId: String): Result<Call> = safeApiCall {
@@ -73,7 +51,22 @@ class CallRepositoryImpl(
         status: String
     ): Result<Call> = safeApiCall {
         val response = callDataSource.updateCallStatus(callId, status)
-        Call(
+        mapResponseToCall(response)
+    }
+    
+    override suspend fun getUserCalls(
+        userId: String,
+        page: Int?,
+        limit: Int?
+    ): Result<List<Call>> = safeApiCall {
+        val response = callDataSource.getUserCalls(userId, page, limit)
+        response.data.map { callResponse ->
+            mapResponseToCall(callResponse)
+        }
+    }
+    
+    private fun mapResponseToCall(response: com.example.emergencynow.data.model.response.CallResponse): Call {
+        return Call(
             id = response.id,
             description = response.description,
             latitude = response.latitude,
@@ -85,17 +78,28 @@ class CallRepositoryImpl(
             routeSteps = null,
             ambulanceCurrentLatitude = null,
             ambulanceCurrentLongitude = null,
-            dispatchedAt = null,
+            dispatchedAt = parseDate(response.dispatchedAt),
             arrivedAt = null,
             completedAt = null,
-            createdAt = java.util.Date(),
-            selectedHospitalId = null,
+            createdAt = parseDate(response.createdAt) ?: java.util.Date(),
+            selectedHospitalId = response.hospitalId,
             selectedHospitalName = null,
             hospitalRoutePolyline = null,
             hospitalRouteDistance = null,
             hospitalRouteDuration = null,
             hospitalRouteSteps = null
         )
+    }
+    
+    private fun parseDate(dateString: String?): java.util.Date? {
+        if (dateString == null) return null
+        return try {
+            val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+            format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            format.parse(dateString)
+        } catch (e: Exception) {
+            null
+        }
     }
     
     private fun parseCallStatus(status: String): com.example.emergencynow.domain.model.entity.CallStatus {

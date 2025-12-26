@@ -43,8 +43,8 @@ class PersonalInformationViewModel(
                     onSuccess = { profile ->
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            height = profile.height.toString(),
-                            weight = profile.weight.toString(),
+                            height = if (profile.height > 0) profile.height.toString() else "",
+                            weight = if (profile.weight > 0) profile.weight.toString() else "",
                             gender = profile.gender.name.lowercase(),
                             allergies = profile.allergies?.joinToString(", ") ?: "",
                             isEditMode = true
@@ -68,13 +68,13 @@ class PersonalInformationViewModel(
     }
 
     fun updateHeight(value: String) {
-        if (value.all { it.isDigit() }) {
+        if (value.isEmpty() || value.all { it.isDigit() }) {
             _uiState.value = _uiState.value.copy(height = value)
         }
     }
 
     fun updateWeight(value: String) {
-        if (value.all { it.isDigit() }) {
+        if (value.isEmpty() || value.all { it.isDigit() }) {
             _uiState.value = _uiState.value.copy(weight = value)
         }
     }
@@ -93,8 +93,8 @@ class PersonalInformationViewModel(
             val heightValue = state.height.toIntOrNull()
             val weightValue = state.weight.toIntOrNull()
 
-            if (heightValue == null || weightValue == null) {
-                _uiState.value = state.copy(error = "Height and weight must be numbers")
+            if (heightValue == null || weightValue == null || heightValue <= 0 || weightValue <= 0) {
+                _uiState.value = state.copy(error = "Please enter valid height and weight")
                 return@launch
             }
 

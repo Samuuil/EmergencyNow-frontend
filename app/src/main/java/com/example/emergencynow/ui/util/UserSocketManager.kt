@@ -5,6 +5,7 @@ import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
 import java.net.URI
+import com.example.emergencynow.ui.util.NetworkConfig
 
 data class CallDispatched(
     val callId: String,
@@ -32,7 +33,6 @@ data class CallStatusUpdate(
 
 object UserSocketManager {
     private const val TAG = "UserSocketManager"
-    private const val BASE_URL = "https://emergencynow.samuil.me"
     private const val NAMESPACE = "/users"
 
     private var socket: Socket? = null
@@ -74,8 +74,9 @@ object UserSocketManager {
                 reconnectionDelay = 1000
             }
 
-            Log.d(TAG, "Creating socket for $BASE_URL$NAMESPACE")
-            socket = IO.socket(URI.create("$BASE_URL$NAMESPACE"), options)
+            val base = NetworkConfig.currentBase()
+            Log.d(TAG, "Creating socket for ${base}$NAMESPACE")
+            socket = IO.socket(URI.create("${base}$NAMESPACE"), options)
 
             socket?.on(Socket.EVENT_CONNECT) {
                 Log.d(TAG, "Connected to WebSocket /users namespace")
@@ -94,6 +95,17 @@ object UserSocketManager {
                 Log.e(TAG, "Connection error: $error (${error?.javaClass?.simpleName})")
                 isConnected = false
                 onConnectionChange?.invoke(false)
+                // One-time fallback retry
+                if (NetworkConfig.isPrimary()) {
+                    try {
+                        Log.w(TAG, "Retrying with fallback base: ${NetworkConfig.fallbackBaseUrl()}")
+                        NetworkConfig.switchToFallback()
+                        disconnect()
+                        connect(accessToken)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Fallback retry failed: ${e.message}")
+                    }
+                }
             }
 
             socket?.on("call.dispatched") { args ->

@@ -4,6 +4,7 @@ import com.example.emergencynow.data.datasource.CallDataSource
 import com.example.emergencynow.data.model.request.CreateCallRequest
 import com.example.emergencynow.data.model.response.CallResponse
 import com.example.emergencynow.data.model.response.CallTrackingResponse
+import com.example.emergencynow.data.model.response.PaginatedResponse
 import com.example.emergencynow.data.service.CallService
 
 class CallDataSourceImpl(
@@ -35,6 +36,18 @@ class CallDataSourceImpl(
         return callService.updateCallStatus(
             id = callId,
             body = mapOf("status" to status)
+        )
+    }
+    
+    override suspend fun getUserCalls(
+        userId: String,
+        page: Int?,
+        limit: Int?
+    ): PaginatedResponse<CallResponse> {
+        return callService.getUserCalls(
+            userId = userId,
+            page = page,
+            limit = limit
         )
     }
 }

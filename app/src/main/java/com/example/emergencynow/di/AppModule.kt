@@ -22,6 +22,7 @@ import com.example.emergencynow.ui.feature.call.EmergencyCallViewModel
 import com.example.emergencynow.ui.feature.profile.PersonalInformationViewModel
 import com.example.emergencynow.ui.feature.home.HomeViewModel
 import com.example.emergencynow.ui.feature.ambulance.AmbulanceSelectionViewModel
+import com.example.emergencynow.ui.feature.history.HistoryViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
@@ -122,6 +123,7 @@ val appModule = module {
     factory { CreateCallUseCase(lazy { get<CallRepository>() }) }
     factory { GetCallTrackingUseCase(lazy { get<CallRepository>() }) }
     factory { UpdateCallStatusUseCase(lazy { get<CallRepository>() }) }
+    factory { GetUserCallsUseCase(lazy { get<CallRepository>() }) }
 
     factory { GetAvailableAmbulancesUseCase(lazy { get<AmbulanceRepository>() }) }
     factory { GetAmbulanceByDriverUseCase(lazy { get<AmbulanceRepository>() }) }
@@ -158,4 +160,5 @@ val appModule = module {
     }
     viewModel { EmergencyCallViewModel(get()) }
     viewModel { PersonalInformationViewModel(get(), get(), get()) }
+    viewModel { HistoryViewModel(get()) }
 }
