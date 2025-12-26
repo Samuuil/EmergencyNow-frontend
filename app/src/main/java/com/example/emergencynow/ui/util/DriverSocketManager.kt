@@ -5,6 +5,7 @@ import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
 import java.net.URI
+import com.example.emergencynow.ui.util.NetworkConfig
 
 data class CallOffer(
     val callId: String,
@@ -26,7 +27,6 @@ data class CallRoute(
 
 object DriverSocketManager {
     private const val TAG = "DriverSocketManager"
-    private const val BASE_URL = "https://emergencynow.samuil.me"
     private const val NAMESPACE = "/drivers"
 
     private var socket: Socket? = null
@@ -63,7 +63,8 @@ object DriverSocketManager {
                 reconnectionDelay = 1000
             }
 
-            val uri = "$BASE_URL$NAMESPACE"
+            val base = NetworkConfig.currentBase()
+            val uri = "${base}$NAMESPACE"
             Log.d(TAG, "Connecting to: $uri")
             socket = IO.socket(URI.create(uri), options)
 
@@ -90,6 +91,17 @@ object DriverSocketManager {
                 }
                 isConnected = false
                 onConnectionChange?.invoke(false)
+                // One-time fallback retry to localhost if primary is unreachable
+                if (NetworkConfig.isPrimary()) {
+                    try {
+                        Log.w(TAG, "Retrying with fallback base: ${NetworkConfig.fallbackBaseUrl()}")
+                        NetworkConfig.switchToFallback()
+                        disconnect()
+                        connect(accessToken)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Fallback retry failed: ${e.message}")
+                    }
+                }
             }
 
             socket?.on("call.offer") { args ->

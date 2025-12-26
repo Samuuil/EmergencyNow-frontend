@@ -13,32 +13,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = LightBlue80,
-    secondary = SkyBlue80,
-    tertiary = LightCyan80,
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
-    error = EmergencyRed
+    primary = Primary,
+    secondary = GeoBlue,
+    tertiary = GeoYellow,
+    background = BackgroundDark,
+    surface = SurfaceDark,
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.Black,
+    onBackground = TextPrimaryDark,
+    onSurface = TextPrimaryDark,
+    error = EmergencyRed,
+    onError = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Blue40,
-    secondary = LightBlue40,
-    tertiary = DarkBlue40,
-    background = Color.White,
-    surface = Color(0xFFFAFAFA),
-    surfaceVariant = Color(0xFFF5F5F5),
+    primary = Primary,
+    secondary = GeoBlue,
+    tertiary = GeoDark,
+    background = BackgroundLight,
+    surface = SurfaceLight,
+    surfaceVariant = Color(0xFFF1F5F9),
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    primaryContainer = Color(0xFFE3F2FD),
-    onPrimaryContainer = Color(0xFF0D47A1),
-    secondaryContainer = Color(0xFFE1F5FE),
-    onSecondaryContainer = Color(0xFF01579B),
-    tertiaryContainer = Color(0xFFB3E5FC),
-    onTertiaryContainer = Color(0xFF006064),
+    onBackground = TextPrimaryLight,
+    onSurface = TextPrimaryLight,
+    primaryContainer = Color(0xFFEBF0FF),
+    onPrimaryContainer = Primary,
+    secondaryContainer = Color(0xFFDCEFFF),
+    onSecondaryContainer = GeoDark,
+    tertiaryContainer = Color(0xFFFEF3C7),
+    onTertiaryContainer = Color(0xFF78350F),
     error = EmergencyRed,
     onError = Color.White
 )

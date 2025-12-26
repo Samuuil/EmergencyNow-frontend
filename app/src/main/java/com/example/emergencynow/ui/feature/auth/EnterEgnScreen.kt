@@ -1,16 +1,39 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+﻿@file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.emergencynow.ui.feature.auth
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.emergencynow.ui.components.buttons.PrimaryButton
+import com.example.emergencynow.ui.components.decorations.AlternativeGeometricBackground
+import com.example.emergencynow.ui.components.inputs.PrimaryTextField
 import com.example.emergencynow.ui.util.AuthSession
 import org.koin.androidx.compose.koinViewModel
 
@@ -43,68 +66,114 @@ fun EnterEgnScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Log In or Register") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { inner ->
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        AlternativeGeometricBackground(modifier = Modifier.fillMaxSize())
+        
         Column(
             modifier = Modifier
-                .padding(inner)
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 24.dp)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Enter Your EGN", style = MaterialTheme.typography.headlineMedium)
-                Spacer(Modifier.height(8.dp))
-                Text("We use your EGN to securely identify you within the medical system.", style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(24.dp))
-                OutlinedTextField(
-                    value = state.egn,
-                    onValueChange = { 
-                        if (it.length <= 10 && it.all { ch -> ch.isDigit() }) {
-                            viewModel.onAction(EnterEgnAction.OnEgnChanged(it))
-                        }
-                    },
-                    label = { Text("EGN") },
-                    placeholder = { Text("10 digits") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isLoading
+            // Top bar
+            Spacer(Modifier.height(48.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "Log In or Register",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(end = 48.dp)
                 )
-                Spacer(Modifier.height(8.dp))
-                TextButton(onClick = { /* TODO: explain why required */ }) { Text("Why is this required?") }
+                Spacer(Modifier.weight(1f))
             }
-
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Button(
-                    onClick = { viewModel.onAction(EnterEgnAction.OnContinueClicked) },
-                    enabled = state.egn.length == 10 && state.egn.all { it.isDigit() } && !state.isLoading,
+            
+            Spacer(Modifier.height(32.dp))
+            
+            // Title and description
+            Text(
+                text = "Enter Your EGN",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(Modifier.height(12.dp))
+            
+            Text(
+                text = "We use your EGN to securely identify you within the medical system.",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            )
+            
+            Spacer(Modifier.height(32.dp))
+            
+            // Input field
+            PrimaryTextField(
+                value = state.egn,
+                onValueChange = { 
+                    if (it.all { ch -> ch.isDigit() }) {
+                        viewModel.onAction(EnterEgnAction.OnEgnChanged(it))
+                    }
+                },
+                label = "EGN",
+                placeholder = "10 digits",
+                keyboardType = KeyboardType.Number,
+                enabled = !state.isLoading,
+                maxLength = 10
+            )
+            
+            Spacer(Modifier.weight(1f))
+            
+            // Continue button
+            PrimaryButton(
+                text = if (state.isLoading) "" else "Continue",
+                onClick = { viewModel.onAction(EnterEgnAction.OnContinueClicked) },
+                enabled = state.egn.length == 10 && !state.isLoading,
+                backgroundColor = if (state.egn.length == 10 && !state.isLoading) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.surfaceVariant,
+                textColor = if (state.egn.length == 10 && !state.isLoading)
+                    MaterialTheme.colorScheme.onPrimary
+                else
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+            )
+            
+            if (state.isLoading) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .padding(top = 16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text("Continue")
-                    }
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
-                TextButton(onClick = { /* TODO: help */ }) { Text("Need Help?") }
             }
+            
+            Spacer(Modifier.height(32.dp))
         }
     }
 }

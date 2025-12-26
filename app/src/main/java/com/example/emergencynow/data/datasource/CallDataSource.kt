@@ -2,6 +2,7 @@ package com.example.emergencynow.data.datasource
 
 import com.example.emergencynow.data.model.response.CallResponse
 import com.example.emergencynow.data.model.response.CallTrackingResponse
+import com.example.emergencynow.data.model.response.PaginatedResponse
 
 interface CallDataSource {
     suspend fun createCall(
@@ -16,4 +17,10 @@ interface CallDataSource {
         callId: String,
         status: String
     ): CallResponse
+    
+    suspend fun getUserCalls(
+        userId: String,
+        page: Int? = null,
+        limit: Int? = null
+    ): PaginatedResponse<CallResponse>
 }

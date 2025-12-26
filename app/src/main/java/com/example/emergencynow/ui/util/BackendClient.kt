@@ -106,18 +106,18 @@ interface BackendApi {
 }
 
 object BackendClient {
-    private const val BASE_URL = "https://emergencynow.samuil.me/"
 
     private val logging: HttpLoggingInterceptor = HttpLoggingInterceptor().setLevel(
         HttpLoggingInterceptor.Level.BODY
     )
 
     private val httpClient: OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(FallbackHostInterceptor())
         .addInterceptor(logging)
         .build()
 
     private val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
+        .baseUrl(NetworkConfig.retrofitBaseUrl())
         .client(httpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
