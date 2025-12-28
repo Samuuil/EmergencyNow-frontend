@@ -14,21 +14,33 @@ class ProfileRepositoryImpl(
         height: Int,
         weight: Int,
         gender: String,
-        allergies: List<String>?
+        allergies: List<String>?,
+        bloodType: String?,
+        illnesses: List<String>?,
+        medicines: List<String>?,
+        dateOfBirth: String?
     ): Result<Profile> = safeApiCall {
-        profileDataSource.createProfile(height, weight, gender, allergies).toDomain()
+        profileDataSource.createProfile(height, weight, gender, allergies, bloodType, illnesses, medicines, dateOfBirth).toDomain()
     }
     
     override suspend fun updateProfile(
         height: Int,
         weight: Int,
         gender: String,
-        allergies: List<String>?
+        allergies: List<String>?,
+        bloodType: String?,
+        illnesses: List<String>?,
+        medicines: List<String>?,
+        dateOfBirth: String?
     ): Result<Profile> = safeApiCall {
-        profileDataSource.updateProfile(height, weight, gender, allergies).toDomain()
+        profileDataSource.updateProfile(height, weight, gender, allergies, bloodType, illnesses, medicines, dateOfBirth).toDomain()
     }
     
     override suspend fun getMyProfile(): Result<Profile> = safeApiCall {
         profileDataSource.getMyProfile().toDomain()
+    }
+    
+    override suspend fun getProfileByEgn(egn: String): Result<Profile> = safeApiCall {
+        profileDataSource.getProfileByEgn(egn).toDomain()
     }
 }

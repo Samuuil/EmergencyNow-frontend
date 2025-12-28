@@ -16,4 +16,7 @@ interface ProfileService {
     
     @PATCH("profiles/me")
     suspend fun updateProfile(@Body body: CreateProfileRequest): ProfileResponse
+    
+    @GET("profiles/by-egn/{egn}")
+    suspend fun getProfileByEgn(@retrofit2.http.Path("egn") egn: String): ProfileResponse
 }

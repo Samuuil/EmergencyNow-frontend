@@ -22,6 +22,8 @@ import com.example.emergencynow.ui.feature.profile.PersonalInformationScreen
 import com.example.emergencynow.ui.feature.profile.ProfileHomeScreen
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsScreen
 import com.example.emergencynow.ui.feature.history.HistoryScreen
+import com.example.emergencynow.ui.feature.doctor.PatientLookupScreen
+import com.example.emergencynow.ui.feature.doctor.PatientProfileScreen
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -57,6 +59,7 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
                 onSelectAmbulance = { navController.navigate(Routes.AMBULANCE_SELECTION) },
                 onNavigateToHistory = { navController.navigate(Routes.HISTORY) },
                 onNavigateToContacts = { navController.navigate(Routes.EMERGENCY_CONTACTS) },
+                onPatientLookup = { navController.navigate(Routes.PATIENT_LOOKUP) },
                 viewModel = viewModel
             )
         }
@@ -160,6 +163,26 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
         }
         composable(Routes.HISTORY) {
             HistoryScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Routes.PATIENT_LOOKUP) {
+            PatientLookupScreen(
+                onBack = { navController.popBackStack() },
+                onLookup = { egn ->
+                    navController.navigate("${Routes.PATIENT_PROFILE}/$egn")
+                }
+            )
+        }
+        composable(
+            route = "${Routes.PATIENT_PROFILE}/{egn}",
+            arguments = listOf(
+                navArgument("egn") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val egn = backStackEntry.arguments?.getString("egn") ?: ""
+            PatientProfileScreen(
+                egn = egn,
                 onBack = { navController.popBackStack() }
             )
         }

@@ -7,15 +7,25 @@ interface ProfileDataSource {
         height: Int,
         weight: Int,
         gender: String,
-        allergies: List<String>?
+        allergies: List<String>?,
+        bloodType: String?,
+        illnesses: List<String>?,
+        medicines: List<String>?,
+        dateOfBirth: String?
     ): ProfileResponse
     
     suspend fun updateProfile(
         height: Int,
         weight: Int,
         gender: String,
-        allergies: List<String>?
+        allergies: List<String>?,
+        bloodType: String?,
+        illnesses: List<String>?,
+        medicines: List<String>?,
+        dateOfBirth: String?
     ): ProfileResponse
     
     suspend fun getMyProfile(): ProfileResponse
+    
+    suspend fun getProfileByEgn(egn: String): ProfileResponse
 }

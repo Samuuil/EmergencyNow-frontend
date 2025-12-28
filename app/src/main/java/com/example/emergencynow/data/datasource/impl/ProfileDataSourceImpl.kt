@@ -14,7 +14,11 @@ class ProfileDataSourceImpl(
         height: Int,
         weight: Int,
         gender: String,
-        allergies: List<String>?
+        allergies: List<String>?,
+        bloodType: String?,
+        illnesses: List<String>?,
+        medicines: List<String>?,
+        dateOfBirth: String?
     ): ProfileResponse {
         val genderDto = when (gender.uppercase()) {
             "MALE" -> GenderDto.MALE
@@ -27,7 +31,11 @@ class ProfileDataSourceImpl(
                 height = height,
                 weight = weight,
                 gender = genderDto,
-                allergies = allergies
+                allergies = allergies,
+                bloodType = bloodType,
+                illnesses = illnesses,
+                medicines = medicines,
+                dateOfBirth = dateOfBirth
             )
         )
     }
@@ -36,7 +44,11 @@ class ProfileDataSourceImpl(
         height: Int,
         weight: Int,
         gender: String,
-        allergies: List<String>?
+        allergies: List<String>?,
+        bloodType: String?,
+        illnesses: List<String>?,
+        medicines: List<String>?,
+        dateOfBirth: String?
     ): ProfileResponse {
         val genderDto = when (gender.uppercase()) {
             "MALE" -> GenderDto.MALE
@@ -49,12 +61,20 @@ class ProfileDataSourceImpl(
                 height = height,
                 weight = weight,
                 gender = genderDto,
-                allergies = allergies
+                allergies = allergies,
+                bloodType = bloodType,
+                illnesses = illnesses,
+                medicines = medicines,
+                dateOfBirth = dateOfBirth
             )
         )
     }
     
     override suspend fun getMyProfile(): ProfileResponse {
         return profileService.getMyProfile()
+    }
+    
+    override suspend fun getProfileByEgn(egn: String): ProfileResponse {
+        return profileService.getProfileByEgn(egn)
     }
 }

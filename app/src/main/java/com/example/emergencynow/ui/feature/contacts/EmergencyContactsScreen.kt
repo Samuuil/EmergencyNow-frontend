@@ -1,4 +1,4 @@
-﻿@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.emergencynow.ui.feature.contacts
 
 import androidx.compose.foundation.background
@@ -77,9 +77,9 @@ fun EmergencyContactsScreen(
             try {
                 val remoteContacts = getContactsUseCase().getOrDefault(emptyList())
                 contacts = if (remoteContacts.isEmpty()) {
-                    listOf(Contact("", ""))
+                    listOf(Contact("", "", ""))
                 } else {
-                    remoteContacts.map { Contact(it.name, it.phoneNumber, it.id) }
+                    remoteContacts.map { Contact(it.name, it.phoneNumber, it.email ?: "", it.id) }
                 }
             } catch (e: Exception) {
                 error = "Failed to load contacts: ${e.localizedMessage ?: e::class.simpleName}"
@@ -195,7 +195,7 @@ fun EmergencyContactsScreen(
                 // Add button
                 val canAddMore = contacts.size < 5
                 OutlinedButton(
-                    onClick = { if (canAddMore) contacts = contacts + Contact("", "") },
+                    onClick = { if (canAddMore) contacts = contacts + Contact("", "", "") },
                     enabled = canAddMore,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -238,7 +238,7 @@ fun EmergencyContactsScreen(
                                     createContactUseCase(
                                         name = contact.name,
                                         phoneNumber = contact.phone,
-                                        email = null
+                                        email = contact.email.ifBlank { null }
                                     ).getOrThrow()
                                 }
                                 onFinish()
@@ -282,7 +282,7 @@ fun EmergencyContactsScreen(
     }
 }
 
-data class Contact(var name: String, var phone: String, var id: String? = null)
+data class Contact(var name: String, var phone: String, var email: String = "", var id: String? = null)
 
 @Composable
 private fun ContactCard(
@@ -338,6 +338,16 @@ private fun ContactCard(
                 label = "Phone Number",
                 placeholder = "Phone Number",
                 keyboardType = KeyboardType.Phone
+            )
+            
+            Spacer(Modifier.height(16.dp))
+            
+            PrimaryTextField(
+                value = contact.email,
+                onValueChange = { onChange(contact.copy(email = it)) },
+                label = "Email (Optional)",
+                placeholder = "Email",
+                keyboardType = KeyboardType.Email
             )
         }
     }

@@ -28,6 +28,7 @@ data class HomeUiState(
     val error: String? = null,
     val userLocation: LatLng? = null,
     val isDriver: Boolean = false,
+    val isDoctor: Boolean = false,
     val assignedAmbulanceId: String? = null,
     val assignedAmbulancePlate: String? = null,
     val isSocketConnected: Boolean = false,
@@ -90,8 +91,9 @@ class HomeViewModel(
                 if (!accessToken.isNullOrEmpty() && !userId.isNullOrEmpty()) {
                     val role = getUserRoleUseCase(userId).getOrThrow()
                     val isDriver = role == "DRIVER"
+                    val isDoctor = role == "DOCTOR"
                     
-                    _uiState.value = _uiState.value.copy(isDriver = isDriver)
+                    _uiState.value = _uiState.value.copy(isDriver = isDriver, isDoctor = isDoctor)
                     
                     if (isDriver) {
                         loadAmbulanceData(userId)
