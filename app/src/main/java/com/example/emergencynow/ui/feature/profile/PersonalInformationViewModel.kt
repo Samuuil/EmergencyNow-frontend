@@ -17,6 +17,10 @@ data class PersonalInfoUiState(
     val weight: String = "",
     val gender: String = "male",
     val allergies: String = "",
+    val bloodType: String = "",
+    val illnesses: String = "",
+    val medicines: String = "",
+    val dateOfBirth: String = "",
     val isEditMode: Boolean = false,
     val isSaving: Boolean = false
 )
@@ -47,6 +51,10 @@ class PersonalInformationViewModel(
                             weight = if (profile.weight > 0) profile.weight.toString() else "",
                             gender = profile.gender.name.lowercase(),
                             allergies = profile.allergies?.joinToString(", ") ?: "",
+                            bloodType = profile.bloodType ?: "",
+                            illnesses = profile.illnesses?.joinToString(", ") ?: "",
+                            medicines = profile.medicines?.joinToString(", ") ?: "",
+                            dateOfBirth = profile.dateOfBirth ?: "",
                             isEditMode = true
                         )
                     },
@@ -87,6 +95,22 @@ class PersonalInformationViewModel(
         _uiState.value = _uiState.value.copy(allergies = value)
     }
 
+    fun updateBloodType(value: String) {
+        _uiState.value = _uiState.value.copy(bloodType = value)
+    }
+
+    fun updateIllnesses(value: String) {
+        _uiState.value = _uiState.value.copy(illnesses = value)
+    }
+
+    fun updateMedicines(value: String) {
+        _uiState.value = _uiState.value.copy(medicines = value)
+    }
+
+    fun updateDateOfBirth(value: String) {
+        _uiState.value = _uiState.value.copy(dateOfBirth = value)
+    }
+
     fun saveProfile(onSuccess: () -> Unit) {
         viewModelScope.launch {
             val state = _uiState.value
@@ -103,13 +127,26 @@ class PersonalInformationViewModel(
                 .filter { it.isNotEmpty() }
             val allergies = if (allergiesList.isEmpty()) null else allergiesList
 
+            val illnessesList = state.illnesses.split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+            val illnesses = if (illnessesList.isEmpty()) null else illnessesList
+
+            val medicinesList = state.medicines.split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+            val medicines = if (medicinesList.isEmpty()) null else medicinesList
+
+            val bloodType = if (state.bloodType.isBlank()) null else state.bloodType
+            val dateOfBirth = if (state.dateOfBirth.isBlank()) null else state.dateOfBirth
+
             _uiState.value = state.copy(isSaving = true, error = null)
 
             try {
                 val result = if (state.isEditMode) {
-                    updateProfileUseCase(heightValue, weightValue, state.gender, allergies)
+                    updateProfileUseCase(heightValue, weightValue, state.gender, allergies, bloodType, illnesses, medicines, dateOfBirth)
                 } else {
-                    createProfileUseCase(heightValue, weightValue, state.gender, allergies)
+                    createProfileUseCase(heightValue, weightValue, state.gender, allergies, bloodType, illnesses, medicines, dateOfBirth)
                 }
 
                 result.fold(

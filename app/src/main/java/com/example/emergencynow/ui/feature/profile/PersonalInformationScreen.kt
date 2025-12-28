@@ -1,8 +1,11 @@
-﻿@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.emergencynow.ui.feature.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -101,6 +104,7 @@ fun PersonalInformationScreen(
                 Column(
                     modifier = Modifier
                         .weight(1f)
+                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp)
                 ) {
                     // Info card
@@ -184,6 +188,48 @@ fun PersonalInformationScreen(
                     
                     Spacer(Modifier.height(20.dp))
                     
+                    // Blood Type
+                    Text(
+                        text = "Blood Type",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "(Optional)",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    BloodTypeSelector(
+                        selectedBloodType = uiState.bloodType,
+                        onBloodTypeSelected = { viewModel.updateBloodType(it) }
+                    )
+                    
+                    Spacer(Modifier.height(20.dp))
+                    
+                    // Date of Birth
+                    Text(
+                        text = "Date of Birth",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "(Optional)",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    DateInputField(
+                        value = uiState.dateOfBirth,
+                        onValueChange = { viewModel.updateDateOfBirth(it) }
+                    )
+                    
+                    Spacer(Modifier.height(20.dp))
+                    
                     // Allergies
                     Text(
                         text = "Allergies",
@@ -198,12 +244,69 @@ fun PersonalInformationScreen(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                     Spacer(Modifier.height(8.dp))
-                    AllergiesTextArea(
+                    MultilineTextArea(
                         value = uiState.allergies,
-                        onValueChange = { viewModel.updateAllergies(it) }
+                        onValueChange = { viewModel.updateAllergies(it) },
+                        placeholder = "Penicillin, Peanuts, Latex..."
                     )
                     Text(
                         text = "Separate multiple allergies with commas.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
+                    
+                    Spacer(Modifier.height(20.dp))
+                    
+                    // Illnesses
+                    Text(
+                        text = "Chronic Illnesses",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "(Optional)",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    MultilineTextArea(
+                        value = uiState.illnesses,
+                        onValueChange = { viewModel.updateIllnesses(it) },
+                        placeholder = "Diabetes, Asthma, Hypertension..."
+                    )
+                    Text(
+                        text = "Separate multiple illnesses with commas.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
+                    
+                    Spacer(Modifier.height(20.dp))
+                    
+                    // Medicines
+                    Text(
+                        text = "Current Medications",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "(Optional)",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    MultilineTextArea(
+                        value = uiState.medicines,
+                        onValueChange = { viewModel.updateMedicines(it) },
+                        placeholder = "Aspirin, Insulin, Metformin..."
+                    )
+                    Text(
+                        text = "Separate multiple medications with commas.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -315,9 +418,119 @@ private fun NumberInputWithUnit(
 }
 
 @Composable
-private fun AllergiesTextArea(
+private fun BloodTypeSelector(
+    selectedBloodType: String,
+    onBloodTypeSelected: (String) -> Unit
+) {
+    val bloodTypes = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+    
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        bloodTypes.chunked(4).forEach { rowTypes ->
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowTypes.forEach { type ->
+                    val isSelected = selectedBloodType == type
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .border(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(
+                                    alpha = 0.3f
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(
+                                    alpha = 0.3f
+                                ) else MaterialTheme.colorScheme.surface,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable {
+                                onBloodTypeSelected(if (isSelected) "" else type)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = type,
+                            fontSize = 16.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DateInputField(
     value: String,
     onValueChange: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = { newValue ->
+                // Format as YYYY-MM-DD
+                val digitsOnly = newValue.filter { it.isDigit() }
+                val formatted = when {
+                    digitsOnly.length <= 4 -> digitsOnly
+                    digitsOnly.length <= 6 -> "${digitsOnly.substring(0, 4)}-${digitsOnly.substring(4)}"
+                    else -> "${digitsOnly.substring(0, 4)}-${digitsOnly.substring(4, 6)}-${digitsOnly.substring(6, minOf(8, digitsOnly.length))}"
+                }
+                if (formatted.length <= 10) {
+                    onValueChange(formatted)
+                }
+            },
+            textStyle = TextStyle(
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            decorationBox = { innerTextField ->
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    if (value.isEmpty()) {
+                        Text(
+                            "YYYY-MM-DD",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        )
+                    }
+                    innerTextField()
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun MultilineTextArea(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String
 ) {
     Box(
         modifier = Modifier
@@ -345,7 +558,7 @@ private fun AllergiesTextArea(
                 Box {
                     if (value.isEmpty()) {
                         Text(
-                            "Penicillin, Peanuts, Latex...",
+                            placeholder,
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )

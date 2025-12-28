@@ -23,6 +23,7 @@ import com.example.emergencynow.ui.feature.profile.PersonalInformationViewModel
 import com.example.emergencynow.ui.feature.home.HomeViewModel
 import com.example.emergencynow.ui.feature.ambulance.AmbulanceSelectionViewModel
 import com.example.emergencynow.ui.feature.history.HistoryViewModel
+import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
@@ -115,6 +116,7 @@ val appModule = module {
     factory { CreateProfileUseCase(lazy { get<ProfileRepository>() }) }
     factory { UpdateProfileUseCase(lazy { get<ProfileRepository>() }) }
     factory { GetProfileUseCase(lazy { get<ProfileRepository>() }) }
+    factory { GetProfileByEgnUseCase(lazy { get<ProfileRepository>() }) }
 
     factory { GetContactsUseCase(lazy { get<ContactRepository>() }) }
     factory { CreateContactUseCase(lazy { get<ContactRepository>() }) }
@@ -161,4 +163,5 @@ val appModule = module {
     viewModel { EmergencyCallViewModel(get()) }
     viewModel { PersonalInformationViewModel(get(), get(), get()) }
     viewModel { HistoryViewModel(get()) }
+    viewModel { PatientProfileViewModel(get()) }
 }

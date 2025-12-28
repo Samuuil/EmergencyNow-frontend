@@ -8,8 +8,12 @@ class CreateProfileUseCase(private val repository: Lazy<ProfileRepository>) {
         height: Int,
         weight: Int,
         gender: String,
-        allergies: List<String>?
+        allergies: List<String>?,
+        bloodType: String?,
+        illnesses: List<String>?,
+        medicines: List<String>?,
+        dateOfBirth: String?
     ): Result<Profile> {
-        return repository.value.createProfile(height, weight, gender, allergies)
+        return repository.value.createProfile(height, weight, gender, allergies, bloodType, illnesses, medicines, dateOfBirth)
     }
 }

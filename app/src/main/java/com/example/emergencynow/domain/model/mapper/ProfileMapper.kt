@@ -15,6 +15,10 @@ fun ProfileResponse.toDomain(): Profile {
             "OTHER" -> Gender.OTHER
             else -> Gender.OTHER
         },
-        allergies = allergies
+        allergies = allergies,
+        bloodType = bloodType,
+        illnesses = illnesses,
+        medicines = medicines,
+        dateOfBirth = dateOfBirth
     )
 }

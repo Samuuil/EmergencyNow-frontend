@@ -10,5 +10,9 @@ data class CreateProfileRequest(
     val height: Int,
     val weight: Int,
     val gender: GenderDto,
-    val allergies: List<String>?
+    val allergies: List<String>?,
+    val bloodType: String?,
+    val illnesses: List<String>?,
+    val medicines: List<String>?,
+    val dateOfBirth: String?
 )
