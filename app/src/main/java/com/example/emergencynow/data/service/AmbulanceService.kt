@@ -1,8 +1,8 @@
 package com.example.emergencynow.data.service
 
-import com.example.emergencynow.data.model.request.AssignDriverRequest
-import com.example.emergencynow.data.model.response.AmbulanceDto
-import com.example.emergencynow.data.model.response.PaginatedResponse
+import com.example.emergencynow.domain.model.request.AssignDriverRequest
+import com.example.emergencynow.domain.model.response.AmbulanceDto
+import com.example.emergencynow.domain.model.response.PaginatedResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PATCH

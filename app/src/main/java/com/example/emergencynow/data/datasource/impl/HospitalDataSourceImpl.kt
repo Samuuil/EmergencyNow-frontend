@@ -1,11 +1,11 @@
 package com.example.emergencynow.data.datasource.impl
 
 import com.example.emergencynow.data.datasource.HospitalDataSource
-import com.example.emergencynow.data.model.request.GetHospitalsRequest
-import com.example.emergencynow.data.model.request.SelectHospitalRequest
-import com.example.emergencynow.data.model.response.HospitalDto
-import com.example.emergencynow.data.model.response.HospitalRouteResponse
-import com.example.emergencynow.data.model.response.HospitalRouteWrapperResponse
+import com.example.emergencynow.domain.model.request.GetHospitalsRequest
+import com.example.emergencynow.domain.model.request.SelectHospitalRequest
+import com.example.emergencynow.domain.model.response.HospitalDto
+import com.example.emergencynow.domain.model.response.HospitalRouteResponse
+import com.example.emergencynow.domain.model.response.HospitalRouteWrapperResponse
 import com.example.emergencynow.data.service.HospitalService
 
 class HospitalDataSourceImpl(

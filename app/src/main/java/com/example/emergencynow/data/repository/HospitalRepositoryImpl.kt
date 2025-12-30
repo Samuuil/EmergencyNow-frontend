@@ -2,8 +2,8 @@ package com.example.emergencynow.data.repository
 
 import com.example.emergencynow.data.datasource.HospitalDataSource
 import com.example.emergencynow.data.extensions.safeApiCall
-import com.example.emergencynow.data.model.response.HospitalDto
-import com.example.emergencynow.data.model.response.HospitalRouteResponse
+import com.example.emergencynow.domain.model.response.HospitalDto
+import com.example.emergencynow.domain.model.response.HospitalRouteResponse
 import com.example.emergencynow.domain.model.entity.Hospital
 import com.example.emergencynow.domain.repository.HospitalRepository
 import java.util.Date

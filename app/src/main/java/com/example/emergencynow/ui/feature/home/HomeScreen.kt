@@ -187,7 +187,8 @@ fun HomeScreen(
                 )
             }
 
-            if (!uiState.isDriver && uiState.ambulanceLocation != null) {
+            // Only show ambulance marker for users when call is dispatched/en_route (not pending)
+            if (!uiState.isDriver && uiState.ambulanceLocation != null && uiState.userCallStatus != "pending") {
                 Marker(
                     state = MarkerState(position = uiState.ambulanceLocation!!),
                     title = "Ambulance",
@@ -739,7 +740,7 @@ private fun BottomNavItem(
 
 @Composable
 private fun HospitalSelectionDialog(
-    hospitals: List<com.example.emergencynow.data.model.response.HospitalDto>,
+    hospitals: List<com.example.emergencynow.domain.model.response.HospitalDto>,
     isLoading: Boolean,
     onHospitalSelected: (String) -> Unit,
     onDismiss: () -> Unit
@@ -797,13 +798,6 @@ private fun HospitalSelectionDialog(
                                     if (hospital.distance != null) {
                                         Text(
                                             "Distance: ${hospital.distance}m",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color.Gray
-                                        )
-                                    }
-                                    if (hospital.availableBeds != null) {
-                                        Text(
-                                            "Available Beds: ${hospital.availableBeds}",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = Color.Gray
                                         )

@@ -1,9 +1,9 @@
 package com.example.emergencynow.data.datasource.impl
 
 import com.example.emergencynow.data.datasource.ProfileDataSource
-import com.example.emergencynow.data.model.request.CreateProfileRequest
-import com.example.emergencynow.data.model.request.GenderDto
-import com.example.emergencynow.data.model.response.ProfileResponse
+import com.example.emergencynow.domain.model.request.CreateProfileRequest
+import com.example.emergencynow.domain.model.request.GenderDto
+import com.example.emergencynow.domain.model.response.ProfileResponse
 import com.example.emergencynow.data.service.ProfileService
 
 class ProfileDataSourceImpl(

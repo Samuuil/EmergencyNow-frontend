@@ -1,4 +1,4 @@
-package com.example.emergencynow.data.model.request
+package com.example.emergencynow.domain.model.request
 
 enum class GenderDto {
     MALE,

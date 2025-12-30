@@ -1,7 +1,7 @@
 package com.example.emergencynow.domain.repository
 
-import com.example.emergencynow.data.model.response.HospitalDto
-import com.example.emergencynow.data.model.response.HospitalRouteResponse
+import com.example.emergencynow.domain.model.response.HospitalDto
+import com.example.emergencynow.domain.model.response.HospitalRouteResponse
 import com.example.emergencynow.domain.model.entity.Hospital
 
 interface HospitalRepository {

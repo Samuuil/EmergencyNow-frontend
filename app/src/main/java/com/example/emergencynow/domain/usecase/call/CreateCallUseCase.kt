@@ -1,7 +1,7 @@
 package com.example.emergencynow.domain.usecase.call
 
-import com.example.emergencynow.data.model.request.CreateCallRequest
-import com.example.emergencynow.data.model.response.CallDto
+import com.example.emergencynow.domain.model.request.CreateCallRequest
+import com.example.emergencynow.domain.model.response.CallDto
 import com.example.emergencynow.domain.repository.CallRepository
 
 class CreateCallUseCase(private val repository: Lazy<CallRepository>) {

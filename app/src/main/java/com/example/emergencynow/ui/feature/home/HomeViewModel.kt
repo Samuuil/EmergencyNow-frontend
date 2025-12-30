@@ -3,7 +3,7 @@ package com.example.emergencynow.ui.feature.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.emergencynow.data.model.response.HospitalDto
+import com.example.emergencynow.domain.model.response.HospitalDto
 import com.example.emergencynow.domain.usecase.ambulance.AssignAmbulanceDriverUseCase
 import com.example.emergencynow.domain.usecase.ambulance.GetAmbulanceByDriverUseCase
 import com.example.emergencynow.domain.usecase.ambulance.GetAvailableAmbulancesUseCase

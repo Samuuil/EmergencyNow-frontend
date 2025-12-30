@@ -1,10 +1,10 @@
 package com.example.emergencynow.data.service
 
-import com.example.emergencynow.data.model.request.GetHospitalsRequest
-import com.example.emergencynow.data.model.request.SelectHospitalRequest
-import com.example.emergencynow.data.model.response.HospitalDto
-import com.example.emergencynow.data.model.response.HospitalRouteResponse
-import com.example.emergencynow.data.model.response.HospitalRouteWrapperResponse
+import com.example.emergencynow.domain.model.request.GetHospitalsRequest
+import com.example.emergencynow.domain.model.request.SelectHospitalRequest
+import com.example.emergencynow.domain.model.response.HospitalDto
+import com.example.emergencynow.domain.model.response.HospitalRouteResponse
+import com.example.emergencynow.domain.model.response.HospitalRouteWrapperResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST

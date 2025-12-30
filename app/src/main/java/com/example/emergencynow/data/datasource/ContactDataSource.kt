@@ -1,6 +1,6 @@
 package com.example.emergencynow.data.datasource
 
-import com.example.emergencynow.data.model.response.ContactResponse
+import com.example.emergencynow.domain.model.response.ContactResponse
 
 interface ContactDataSource {
     suspend fun getMyContacts(): List<ContactResponse>

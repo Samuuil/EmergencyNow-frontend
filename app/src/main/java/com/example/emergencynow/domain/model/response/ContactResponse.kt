@@ -1,4 +1,4 @@
-package com.example.emergencynow.data.model.response
+package com.example.emergencynow.domain.model.response
 
 data class ContactResponse(
     val id: String,

@@ -1,10 +1,10 @@
 package com.example.emergencynow.data.service
 
-import com.example.emergencynow.data.model.request.InitiateLoginRequest
-import com.example.emergencynow.data.model.request.RefreshTokenRequest
-import com.example.emergencynow.data.model.request.VerifyCodeRequest
-import com.example.emergencynow.data.model.response.InitiateLoginResponse
-import com.example.emergencynow.data.model.response.TokenResponse
+import com.example.emergencynow.domain.model.request.InitiateLoginRequest
+import com.example.emergencynow.domain.model.request.RefreshTokenRequest
+import com.example.emergencynow.domain.model.request.VerifyCodeRequest
+import com.example.emergencynow.domain.model.response.InitiateLoginResponse
+import com.example.emergencynow.domain.model.response.TokenResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 

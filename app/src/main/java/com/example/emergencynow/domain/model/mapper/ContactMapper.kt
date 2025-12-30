@@ -1,6 +1,6 @@
 package com.example.emergencynow.domain.model.mapper
 
-import com.example.emergencynow.data.model.response.ContactResponse
+import com.example.emergencynow.domain.model.response.ContactResponse
 import com.example.emergencynow.domain.model.entity.Contact
 
 fun ContactResponse.toDomain(): Contact {

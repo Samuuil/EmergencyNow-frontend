@@ -1,8 +1,8 @@
 package com.example.emergencynow.data.datasource
 
-import com.example.emergencynow.data.model.response.CallResponse
-import com.example.emergencynow.data.model.response.CallTrackingResponse
-import com.example.emergencynow.data.model.response.PaginatedResponse
+import com.example.emergencynow.domain.model.response.CallResponse
+import com.example.emergencynow.domain.model.response.CallTrackingResponse
+import com.example.emergencynow.domain.model.response.PaginatedResponse
 
 interface CallDataSource {
     suspend fun createCall(

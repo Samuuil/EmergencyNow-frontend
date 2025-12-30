@@ -65,7 +65,7 @@ class CallRepositoryImpl(
         }
     }
     
-    private fun mapResponseToCall(response: com.example.emergencynow.data.model.response.CallResponse): Call {
+    private fun mapResponseToCall(response: com.example.emergencynow.domain.model.response.CallResponse): Call {
         return Call(
             id = response.id,
             description = response.description,

@@ -1,6 +1,6 @@
 package com.example.emergencynow.domain.usecase.call
 
-import com.example.emergencynow.data.model.response.CallTrackingResponse
+import com.example.emergencynow.domain.model.response.CallTrackingResponse
 import com.example.emergencynow.domain.repository.CallRepository
 
 class GetCallTrackingUseCase(private val repository: Lazy<CallRepository>) {
@@ -15,7 +15,7 @@ class GetCallTrackingUseCase(private val repository: Lazy<CallRepository>) {
                 driverLongitude = call.ambulanceCurrentLongitude,
                 estimatedArrival = call.estimatedDuration,
                 route = call.routePolyline?.let { polyline ->
-                    com.example.emergencynow.data.model.response.RouteDto(
+                    com.example.emergencynow.domain.model.response.RouteDto(
                         polyline = polyline,
                         distance = call.estimatedDistance ?: 0,
                         duration = call.estimatedDuration ?: 0
