@@ -231,6 +231,26 @@ fun HomeScreen(
             if (uiState.activeCallId != null) {
                     // On-call: show primary instruction + ETA
                     var expanded by remember { mutableStateOf(false) }
+                    
+                    // Determine which route to show based on call status
+                    val currentSteps = if (uiState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
+                        uiState.hospitalRouteSteps
+                    } else {
+                        uiState.activeRouteSteps
+                    }
+                    
+                    val currentDistance = if (uiState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
+                        uiState.hospitalRouteDistance
+                    } else {
+                        uiState.activeRouteDistance
+                    }
+                    
+                    val currentDuration = if (uiState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
+                        uiState.hospitalRouteDuration
+                    } else {
+                        uiState.activeRouteDuration
+                    }
+                    
                     Card(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
@@ -247,10 +267,10 @@ fun HomeScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    StepIcon(uiState.activeRouteSteps.firstOrNull())
+                                    StepIcon(currentSteps.firstOrNull())
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        uiState.activeRouteSteps.firstOrNull() ?: "Drive to destination",
+                                        currentSteps.firstOrNull() ?: "Drive to destination",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp,
                                         maxLines = 2,
@@ -296,24 +316,24 @@ fun HomeScreen(
 
                             Spacer(Modifier.height(8.dp))
 
-                            if (uiState.activeRouteDuration > 0 || uiState.activeRouteDistance > 0) {
+                            if (currentDuration > 0 || currentDistance > 0) {
                                 Text(
-                                    "ETA: ${uiState.activeRouteDuration / 60} min • ${uiState.activeRouteDistance} m",
+                                    "ETA: ${currentDuration / 60} min • ${currentDistance} m",
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
 
-                            if (expanded && uiState.activeRouteSteps.isNotEmpty()) {
+                            if (expanded && currentSteps.isNotEmpty()) {
                                 Spacer(Modifier.height(8.dp))
                                 Text(
-                                    "All Steps (${uiState.activeRouteSteps.size} total):",
+                                    "All Steps (${currentSteps.size} total):",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp
                                 )
                                 Spacer(Modifier.height(4.dp))
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    uiState.activeRouteSteps.forEachIndexed { index, step ->
+                                    currentSteps.forEachIndexed { index, step ->
                                         StepItem(index + 1, step)
                                     }
                                 }
@@ -374,7 +394,7 @@ fun HomeScreen(
                         }
                     }
                 }
-        } else if (uiState.activeCallId != null) {
+        } else if (uiState.activeCallId != null && uiState.userCallStatus != "arrived") {
             Card(
                 modifier = Modifier
                     .align(Alignment.TopCenter)

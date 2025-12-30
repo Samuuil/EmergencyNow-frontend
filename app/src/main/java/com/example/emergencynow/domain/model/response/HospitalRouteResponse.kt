@@ -10,5 +10,8 @@ data class HospitalRouteResponse(
     val distance: Int,
     
     @SerializedName("duration")
-    val duration: Int
+    val duration: Int,
+    
+    @SerializedName("steps")
+    val steps: List<String> = emptyList()
 )

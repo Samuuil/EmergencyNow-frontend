@@ -24,6 +24,17 @@ val GeoBlue = Color(0xFF60A5FA)
 val GeoDark = Color(0xFF1E3A8A)
 val GeoYellow = Color(0xFFFACC15)
 
+// Welcome screen curvy background colors
+val CurveLightBlue = Color(0xFFBFDBFE) // #bfdbfe
+val CurveMediumBlue = Color(0xFF60A5FA) // #60a5fa
+val CurveDeepBlue = Color(0xFF3B82F6) // #3b82f6
+val CurveDarkBlue = Color(0xFF1E3A8A) // #1e3a8a
+val CurvePaleBlue = Color(0xFFEEF4FF) // #eef4ff
+val CurveLightBlueAccent = Color(0xFF93C5FD) // #93c5fd
+val CurvePaleBlueBottom = Color(0xFFEFF6FF) // #eff6ff
+val BrandBlueDark = Color(0xFF1E3A8A) // #1e3a8a
+val BrandBlueMid = Color(0xFF2563EB) // #2563eb
+
 // Legacy colors for compatibility
 val LightBlue80 = Color(0xFFB3D9FF)
 val SkyBlue80 = Color(0xFFCCE5FF)
