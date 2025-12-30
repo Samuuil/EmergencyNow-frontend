@@ -29,20 +29,11 @@ class HistoryViewModel(
     }
 
     fun loadUserCalls() {
-        val userId = AuthSession.userId
-        if (userId == null) {
-            _uiState.value = _uiState.value.copy(
-                error = "User not authenticated",
-                isLoading = false
-            )
-            return
-        }
-
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 
-                val result = getUserCallsUseCase(userId, page = 1, limit = 50)
+                val result = getUserCallsUseCase(page = 1, limit = 50)
                 result.fold(
                     onSuccess = { calls ->
                         _uiState.value = _uiState.value.copy(

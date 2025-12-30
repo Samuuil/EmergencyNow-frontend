@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -287,25 +288,44 @@ fun HomeScreen(
                         ),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(16.dp)
                         ) {
-                            Text(
-                                text = "Status",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = if (uiState.isSocketConnected) "Available" else "Connecting...",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (uiState.isSocketConnected) Color(0xFF16A34A) else Color.Gray
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Status",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = if (uiState.isSocketConnected) "Available" else "Connecting...",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (uiState.isSocketConnected) Color(0xFF16A34A) else Color.Gray
+                                    )
+                                    if (!uiState.isSocketConnected) {
+                                        Spacer(Modifier.width(8.dp))
+                                        IconButton(
+                                            onClick = { viewModel.retryConnection() },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.Refresh,
+                                                contentDescription = "Retry connection",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -351,36 +371,52 @@ fun HomeScreen(
         }
 
         if (uiState.isDriver && uiState.activeCallId != null) {
-            Card(
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
-                    .padding(bottom = 160.dp)
-                    .fillMaxWidth()
+                    .padding(bottom = 190.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    when (uiState.callStatus) {
-                        CallStatus.EN_ROUTE -> {
-                            Button(
-                                onClick = { viewModel.updateCallStatus(CallStatus.ARRIVED) },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Mark as Arrived")
-                            }
+                when (uiState.callStatus) {
+                    CallStatus.EN_ROUTE -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary)
+                                .clickable { viewModel.updateCallStatus(CallStatus.ARRIVED) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Mark as Arrived",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
                         }
-                        CallStatus.NAVIGATING_TO_HOSPITAL -> {
-                            Button(
-                                onClick = { viewModel.completeCall() },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Complete Call")
-                            }
-                        }
-                        else -> {}
                     }
+                    CallStatus.NAVIGATING_TO_HOSPITAL -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary)
+                                .clickable { viewModel.completeCall() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Complete Call",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                    else -> {}
                 }
             }
         }

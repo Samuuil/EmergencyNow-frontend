@@ -39,13 +39,11 @@ class CallDataSourceImpl(
         )
     }
     
-    override suspend fun getUserCalls(
-        userId: String,
+    override suspend fun getMyCalls(
         page: Int?,
         limit: Int?
     ): PaginatedResponse<CallResponse> {
-        return callService.getUserCalls(
-            userId = userId,
+        return callService.getMyCalls(
             page = page,
             limit = limit
         )

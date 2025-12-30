@@ -54,12 +54,11 @@ class CallRepositoryImpl(
         mapResponseToCall(response)
     }
     
-    override suspend fun getUserCalls(
-        userId: String,
+    override suspend fun getMyCalls(
         page: Int?,
         limit: Int?
     ): Result<List<Call>> = safeApiCall {
-        val response = callDataSource.getUserCalls(userId, page, limit)
+        val response = callDataSource.getMyCalls(page, limit)
         response.data.map { callResponse ->
             mapResponseToCall(callResponse)
         }

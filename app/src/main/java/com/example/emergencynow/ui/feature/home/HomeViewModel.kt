@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 data class HomeUiState(
     val isLoading: Boolean = true,
@@ -129,6 +130,25 @@ class HomeViewModel(
         }
     }
 
+    fun retryConnection() {
+        Log.d("HomeViewModel", "════════════════════════════════════════")
+        Log.d("HomeViewModel", "🔄 Retry connection requested by user")
+        Log.d("HomeViewModel", "isDriver: ${_uiState.value.isDriver}")
+        Log.d("HomeViewModel", "assignedAmbulanceId: ${_uiState.value.assignedAmbulanceId}")
+        Log.d("HomeViewModel", "Current isSocketConnected: ${_uiState.value.isSocketConnected}")
+        Log.d("HomeViewModel", "════════════════════════════════════════")
+        
+        val accessToken = AuthSession.accessToken
+        val ambulanceId = _uiState.value.assignedAmbulanceId
+        
+        if (!accessToken.isNullOrEmpty() && ambulanceId != null) {
+            // Reconnect to WebSocket
+            connectToWebSocket(ambulanceId)
+        } else {
+            Log.e("HomeViewModel", "❌ Cannot retry - missing accessToken or ambulanceId")
+        }
+    }
+
     private suspend fun loadAmbulanceData(userId: String) {
         try {
             val ambulance = getAmbulanceByDriverUseCase(userId).getOrNull()
@@ -150,7 +170,11 @@ class HomeViewModel(
     private fun connectToWebSocket(ambulanceId: String) {
         val accessToken = AuthSession.accessToken
         if (!accessToken.isNullOrEmpty()) {
+            Log.d("HomeViewModel", "Setting up driver socket callbacks...")
+            
+            // Set up callbacks BEFORE connecting
             DriverSocketManager.onCallOffer = { offer ->
+                Log.d("HomeViewModel", "📞 Call offer received: ${offer.callId}")
                 _uiState.value = _uiState.value.copy(
                     incomingCallOffer = offer,
                     emergencyLocation = LatLng(offer.latitude, offer.longitude)
@@ -158,10 +182,12 @@ class HomeViewModel(
             }
             
             DriverSocketManager.onConnectionChange = { connected ->
+                Log.d("HomeViewModel", "🔌 Driver socket connection changed: $connected")
                 _uiState.value = _uiState.value.copy(isSocketConnected = connected)
             }
             
             DriverSocketManager.onCallRoute = { route ->
+                Log.d("HomeViewModel", "🗺️ Call route received: ${route.callId}")
                 _uiState.value = _uiState.value.copy(
                     activeCallId = route.callId,
                     activeRoutePolyline = decodePolyline(route.polyline),
@@ -172,6 +198,7 @@ class HomeViewModel(
             }
             
             DriverSocketManager.onRouteUpdate = { route ->
+                Log.d("HomeViewModel", "🔄 Route update received: ${route.callId}")
                 _uiState.value = _uiState.value.copy(
                     activeRoutePolyline = decodePolyline(route.polyline),
                     activeRouteDistance = route.distance,
@@ -180,7 +207,29 @@ class HomeViewModel(
                 )
             }
             
+            // Disconnect first if already connected
+            if (DriverSocketManager.isConnected()) {
+                Log.d("HomeViewModel", "Disconnecting existing socket before reconnecting...")
+                DriverSocketManager.disconnect()
+            }
+            
+            // Now connect
+            Log.d("HomeViewModel", "Connecting driver socket...")
             DriverSocketManager.connect(accessToken)
+            
+            // Periodically verify connection state to catch any mismatches
+            viewModelScope.launch {
+                while (true) {
+                    delay(5000) // Check every 5 seconds
+                    if (_uiState.value.isDriver && _uiState.value.assignedAmbulanceId != null) {
+                        val actuallyConnected = DriverSocketManager.isConnected()
+                        if (actuallyConnected != _uiState.value.isSocketConnected) {
+                            Log.w("HomeViewModel", "⚠️ Connection state mismatch detected - fixing: actuallyConnected=$actuallyConnected, uiState=${_uiState.value.isSocketConnected}")
+                            _uiState.value = _uiState.value.copy(isSocketConnected = actuallyConnected)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -505,22 +554,27 @@ class HomeViewModel(
                 Log.d("HomeViewModel", "Previous userCallStatus: ${_uiState.value.userCallStatus}")
                 Log.d("HomeViewModel", "========================================")
                 
-                _uiState.value = _uiState.value.copy(userCallStatus = statusUpdate.status.lowercase())
-                Log.d("HomeViewModel", "✅ Updated userCallStatus to: ${_uiState.value.userCallStatus}")
+                val normalizedStatus = statusUpdate.status.lowercase().replace("_", "")
+                _uiState.value = _uiState.value.copy(userCallStatus = normalizedStatus)
+                Log.d("HomeViewModel", "✅ Updated userCallStatus to: $normalizedStatus")
                 
-                when (statusUpdate.status.lowercase()) {
-                    "dispatched", "en_route" -> {
+                when (normalizedStatus) {
+                    "dispatched", "enroute" -> {
                         Log.d("HomeViewModel", "Status is dispatched/en_route - ambulance is on the way")
                     }
                     "arrived", "completed", "cancelled" -> {
-                        Log.d("HomeViewModel", "Call ${statusUpdate.status} - clearing all call state")
+                        Log.d("HomeViewModel", "🏥 Ambulance ARRIVED/COMPLETED/CANCELLED - clearing all call state and redirecting to home")
                         _uiState.value = _uiState.value.copy(
                             activeCallId = null,
                             ambulanceLocation = null,
                             activeRoutePolyline = emptyList(),
                             activeRouteDistance = 0,
                             activeRouteDuration = 0,
-                            userCallStatus = null
+                            userCallStatus = null,
+                            emergencyLocation = null,
+                            hospitalRoutePolyline = emptyList(),
+                            selectedHospitalName = null,
+                            hospitalLocation = null
                         )
                     }
                 }
