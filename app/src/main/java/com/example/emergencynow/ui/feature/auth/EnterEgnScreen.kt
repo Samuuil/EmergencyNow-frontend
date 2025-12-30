@@ -1,6 +1,9 @@
 ﻿@file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.emergencynow.ui.feature.auth
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,8 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,14 +34,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.ui.components.buttons.PrimaryButton
-import com.example.emergencynow.ui.components.decorations.AlternativeGeometricBackground
-import com.example.emergencynow.ui.components.inputs.PrimaryTextField
+import com.example.emergencynow.ui.components.decorations.EnterEgnBackground
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.BrandBlueMid
 import com.example.emergencynow.ui.util.AuthSession
 import org.koin.androidx.compose.koinViewModel
 
@@ -69,110 +81,166 @@ fun EnterEgnScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        AlternativeGeometricBackground(modifier = Modifier.fillMaxSize())
+        // Background with blob shapes
+        EnterEgnBackground(modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp)
         ) {
-            // Top bar
+            // Header with back button and title
             Spacer(Modifier.height(48.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                IconButton(onClick = onBack) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.padding(start = 0.dp)
+                ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = BrandBlueDark,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
-                Spacer(Modifier.weight(1f))
+                
                 Text(
                     text = "Log In or Register",
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(end = 48.dp)
+                    fontWeight = FontWeight.Bold,
+                    color = BrandBlueDark.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(end = 40.dp)
                 )
-                Spacer(Modifier.weight(1f))
+                
+                Spacer(Modifier.width(40.dp))
             }
             
             Spacer(Modifier.height(32.dp))
             
-            // Title and description
-            Text(
-                text = "Enter Your EGN",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
+            // Title with blue accent line
+            Column(
                 modifier = Modifier.fillMaxWidth()
-            )
+            ) {
+                Text(
+                    text = "Enter\nYour EGN",
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Black,
+                    color = BrandBlueDark,
+                    lineHeight = 52.sp,
+                    letterSpacing = (-1).sp
+                )
+                
+                Spacer(Modifier.height(16.dp))
+                
+                Box(
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(BrandBlueMid)
+                )
+                
+                Spacer(Modifier.height(24.dp))
+                
+                Text(
+                    text = "We use your EGN to securely identify you within the medical system.",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF64748B),
+                    lineHeight = 28.sp
+                )
+            }
             
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(48.dp))
             
-            Text(
-                text = "We use your EGN to securely identify you within the medical system.",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center,
-                lineHeight = 20.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
-            
-            Spacer(Modifier.height(32.dp))
-            
-            // Input field
-            PrimaryTextField(
+            // EGN Input field with custom styling
+            BasicTextField(
                 value = state.egn,
                 onValueChange = { 
-                    if (it.all { ch -> ch.isDigit() }) {
+                    if (it.all { ch -> ch.isDigit() } && it.length <= 10) {
                         viewModel.onAction(EnterEgnAction.OnEgnChanged(it))
                     }
                 },
-                label = "EGN",
-                placeholder = "10 digits",
-                keyboardType = KeyboardType.Number,
+                textStyle = TextStyle(
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandBlueDark,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = 6.sp
+                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 enabled = !state.isLoading,
-                maxLength = 10
+                modifier = Modifier.fillMaxWidth(),
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(
+                                width = 2.dp,
+                                color = BrandBlueMid,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .padding(vertical = 20.dp, horizontal = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        innerTextField()
+                    }
+                }
             )
             
             Spacer(Modifier.weight(1f))
             
             // Continue button
-            PrimaryButton(
-                text = if (state.isLoading) "" else "Continue",
+            androidx.compose.material3.Button(
                 onClick = { viewModel.onAction(EnterEgnAction.OnContinueClicked) },
                 enabled = state.egn.length == 10 && !state.isLoading,
-                backgroundColor = if (state.egn.length == 10 && !state.isLoading) 
-                    MaterialTheme.colorScheme.primary 
-                else 
-                    MaterialTheme.colorScheme.surfaceVariant,
-                textColor = if (state.egn.length == 10 && !state.isLoading)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            )
-            
-            if (state.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(68.dp)
+                    .shadow(
+                        elevation = 20.dp,
+                        shape = RoundedCornerShape(16.dp),
+                        spotColor = Color(0xFF1E3A8A).copy(alpha = 0.2f)
+                    ),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = BrandBlueDark,
+                    contentColor = Color.White,
+                    disabledContainerColor = Color(0xFFE5E7EB),
+                    disabledContentColor = Color(0xFF6B7280)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                if (state.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color.White
                     )
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Continue",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
             
+            Spacer(Modifier.height(16.dp))
             Spacer(Modifier.height(32.dp))
         }
     }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,6 +51,8 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.androidx.compose.get
 import com.example.emergencynow.domain.usecase.profile.GetProfileByEgnUseCase
 import com.example.emergencynow.domain.model.entity.Profile
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.BrandBlueMid
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -299,7 +302,7 @@ fun HomeScreen(
                                             imageVector = Icons.Filled.Person,
                                             contentDescription = "View Patient Profile",
                                             tint = if (uiState.patientEgn != null) 
-                                                MaterialTheme.colorScheme.primary 
+                                                BrandBlueDark 
                                             else 
                                                 Color.Gray,
                                             modifier = Modifier.size(28.dp)
@@ -319,7 +322,7 @@ fun HomeScreen(
                             if (currentDuration > 0 || currentDistance > 0) {
                                 Text(
                                     "ETA: ${currentDuration / 60} min • ${currentDistance} m",
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = BrandBlueDark,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -349,7 +352,7 @@ fun HomeScreen(
                             .padding(top = 32.dp)
                             .fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFF3E8FF).copy(alpha = 0.95f)
+                            containerColor = Color.White
                         ),
                         shape = RoundedCornerShape(16.dp)
                     ) {
@@ -412,7 +415,7 @@ fun HomeScreen(
                         Icon(
                             Icons.Filled.LocalHospital,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = BrandBlueDark,
                             modifier = Modifier.size(32.dp)
                         )
                         Text(
@@ -427,7 +430,7 @@ fun HomeScreen(
                         Text(
                             "Estimated arrival: ${uiState.activeRouteDuration / 60} min (${uiState.activeRouteDistance}m)",
                             fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = BrandBlueDark,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -445,8 +448,13 @@ fun HomeScreen(
                             .padding(bottom = 190.dp)
                             .fillMaxWidth()
                             .height(56.dp)
+                            .shadow(
+                                elevation = 20.dp,
+                                shape = RoundedCornerShape(12.dp),
+                                spotColor = BrandBlueDark.copy(alpha = 0.2f)
+                            )
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primary)
+                            .background(BrandBlueDark)
                             .clickable { viewModel.updateCallStatus(CallStatus.ARRIVED) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -466,8 +474,13 @@ fun HomeScreen(
                             .padding(bottom = 190.dp)
                             .fillMaxWidth()
                             .height(56.dp)
+                            .shadow(
+                                elevation = 20.dp,
+                                shape = RoundedCornerShape(12.dp),
+                                spotColor = BrandBlueDark.copy(alpha = 0.2f)
+                            )
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primary)
+                            .background(BrandBlueDark)
                             .clickable { viewModel.completeCall() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -494,35 +507,35 @@ fun HomeScreen(
             // Driver-specific controls (ambulance selection)
             if (uiState.isDriver) {
                 if (uiState.assignedAmbulanceId == null) {
-                    Card(
+                    Button(
+                        onClick = onSelectAmbulance,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
-                            .padding(bottom = 8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                            .padding(bottom = 8.dp)
+                            .height(56.dp)
+                            .shadow(
+                                elevation = 20.dp,
+                                shape = RoundedCornerShape(16.dp),
+                                spotColor = BrandBlueDark.copy(alpha = 0.2f)
+                            ),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BrandBlueDark,
+                            contentColor = Color.White
                         ),
-                        onClick = onSelectAmbulance
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                Icons.Filled.DirectionsCar,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                "Select Ambulance",
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        Icon(
+                            Icons.Filled.DirectionsCar,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Select Ambulance",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     }
                 } else {
                     Card(
@@ -531,7 +544,7 @@ fun HomeScreen(
                             .padding(horizontal = 16.dp)
                             .padding(bottom = 16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFE0F2FE).copy(alpha = 0.95f)
+                            containerColor = Color.White
                         ),
                         shape = RoundedCornerShape(24.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -551,7 +564,7 @@ fun HomeScreen(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .background(
-                                            MaterialTheme.colorScheme.primary,
+                                            BrandBlueDark,
                                             CircleShape
                                         ),
                                     contentAlignment = Alignment.Center
@@ -575,7 +588,7 @@ fun HomeScreen(
                                         text = uiState.assignedAmbulancePlate ?: "Unknown",
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1E3A8A)
+                                        color = BrandBlueDark
                                     )
                                 }
                             }
@@ -583,7 +596,7 @@ fun HomeScreen(
                                 OutlinedButton(
                                     onClick = { viewModel.unassignAmbulance() },
                                     colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.primary
+                                        contentColor = BrandBlueDark
                                     ),
                                     shape = RoundedCornerShape(20.dp)
                                 ) {
@@ -603,7 +616,7 @@ fun HomeScreen(
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 8.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        containerColor = BrandBlueMid.copy(alpha = 0.1f)
                     ),
                     onClick = onPatientLookup
                 ) {
@@ -617,13 +630,13 @@ fun HomeScreen(
                         Icon(
                             Icons.Filled.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary
+                            tint = BrandBlueDark
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "Patient Lookup",
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.tertiary
+                            color = BrandBlueDark
                         )
                     }
                 }
@@ -756,7 +769,7 @@ private fun IncomingCallDialog(
                     Icons.Filled.Phone,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = BrandBlueDark
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -789,7 +802,19 @@ private fun IncomingCallDialog(
                     
                     Button(
                         onClick = onAccept,
-                        modifier = Modifier.weight(1f).padding(start = 8.dp)
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 8.dp)
+                            .shadow(
+                                elevation = 20.dp,
+                                shape = RoundedCornerShape(12.dp),
+                                spotColor = BrandBlueDark.copy(alpha = 0.2f)
+                            ),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BrandBlueDark,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Accept")
                     }
@@ -817,7 +842,7 @@ fun StepIcon(text: String?) {
         text.contains("u-turn", ignoreCase = true) || text.contains("uturn", ignoreCase = true) -> Icons.AutoMirrored.Filled.ArrowBack
         else -> Icons.Filled.Refresh
     }
-    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+    Icon(icon, contentDescription = null, tint = BrandBlueDark)
 }
 
 @Composable
@@ -837,7 +862,7 @@ private fun BottomNavItem(
         Icon(
             icon,
             contentDescription = label,
-            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            tint = if (isSelected) BrandBlueDark else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.size(24.dp)
         )
         Spacer(Modifier.height(4.dp))
@@ -845,7 +870,7 @@ private fun BottomNavItem(
             label,
             fontSize = 10.sp,
             fontWeight = FontWeight.Medium,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = if (isSelected) BrandBlueDark else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
 }
@@ -1102,7 +1127,7 @@ private fun ProfileInfoCard(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = BrandBlueDark
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             content()
