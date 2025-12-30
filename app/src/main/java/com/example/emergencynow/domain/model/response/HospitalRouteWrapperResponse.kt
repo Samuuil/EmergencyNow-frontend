@@ -28,5 +28,5 @@ data class HospitalRouteInnerResponse(
     val duration: Int?,
 
     @SerializedName("steps")
-    val steps: List<Any>? = null
+    val steps: List<RouteStepResponse>? = null
 )

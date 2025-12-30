@@ -55,6 +55,7 @@ data class HomeUiState(
     val hospitalRoutePolyline: List<LatLng> = emptyList(),
     val hospitalRouteDistance: Int = 0,
     val hospitalRouteDuration: Int = 0,
+    val hospitalRouteSteps: List<String> = emptyList(),
     val ambulanceLocation: LatLng? = null,
     val userCallStatus: String? = null
 )
@@ -419,6 +420,7 @@ class HomeViewModel(
             Log.d("HomeViewModel", "✅ Hospital route received from backend")
             Log.d("HomeViewModel", "   Distance: ${route.distance}m")
             Log.d("HomeViewModel", "   Duration: ${route.duration}s")
+            Log.d("HomeViewModel", "   Steps count: ${route.steps.size}")
 
             if (route.polyline.isNullOrEmpty()) {
                 Log.e("HomeViewModel", "❌ BACKEND RETURNED NULL OR EMPTY POLYLINE!")
@@ -447,11 +449,13 @@ class HomeViewModel(
             _uiState.value = _uiState.value.copy(
                 hospitalRoutePolyline = decodedPoints,
                 hospitalRouteDistance = route.distance,
-                hospitalRouteDuration = route.duration
+                hospitalRouteDuration = route.duration,
+                hospitalRouteSteps = route.steps
             )
             
             Log.d("HomeViewModel", "✅ Hospital route state updated")
             Log.d("HomeViewModel", "   Current hospitalRoutePolyline size in state: ${_uiState.value.hospitalRoutePolyline.size}")
+            Log.d("HomeViewModel", "   Current hospitalRouteSteps size in state: ${_uiState.value.hospitalRouteSteps.size}")
             Log.d("HomeViewModel", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         } catch (e: Exception) {
             Log.e("HomeViewModel", "❌❌❌ FAILED TO LOAD HOSPITAL ROUTE ❌❌❌")
@@ -600,8 +604,17 @@ class HomeViewModel(
                     "dispatched", "enroute" -> {
                         Log.d("HomeViewModel", "Status is dispatched/en_route - ambulance is on the way")
                     }
-                    "arrived", "completed", "cancelled" -> {
-                        Log.d("HomeViewModel", "🏥 Ambulance ARRIVED/COMPLETED/CANCELLED - clearing all call state and redirecting to home")
+                    "arrived" -> {
+                        Log.d("HomeViewModel", "🏥 Ambulance ARRIVED - clearing ambulance marker and route")
+                        _uiState.value = _uiState.value.copy(
+                            ambulanceLocation = null,
+                            activeRoutePolyline = emptyList(),
+                            activeRouteDistance = 0,
+                            activeRouteDuration = 0
+                        )
+                    }
+                    "completed", "cancelled" -> {
+                        Log.d("HomeViewModel", "🏥 Call COMPLETED/CANCELLED - clearing all call state and redirecting to home")
                         _uiState.value = _uiState.value.copy(
                             activeCallId = null,
                             ambulanceLocation = null,

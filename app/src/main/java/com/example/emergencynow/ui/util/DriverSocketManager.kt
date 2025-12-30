@@ -153,21 +153,62 @@ object DriverSocketManager {
                     val data = args.firstOrNull() as? JSONObject ?: return@on
                     val routeObj = data.getJSONObject("route")
                     val steps = mutableListOf<String>()
-                    if (routeObj.has("steps")) {
-                        val stepsAny = routeObj.get("steps")
-                        when (stepsAny) {
+                    
+                    // Try both "steps" and "routeSteps" field names
+                    val stepsField = when {
+                        routeObj.has("routeSteps") -> routeObj.get("routeSteps")
+                        routeObj.has("steps") -> routeObj.get("steps")
+                        else -> null
+                    }
+                    
+                    if (stepsField != null) {
+                        when (stepsField) {
                             is org.json.JSONArray -> {
-                                for (i in 0 until stepsAny.length()) {
-                                    val item = stepsAny.get(i)
+                                Log.d(TAG, "Parsing ${stepsField.length()} route steps from JSONArray")
+                                for (i in 0 until stepsField.length()) {
+                                    val item = stepsField.get(i)
                                     when (item) {
-                                        is String -> steps.add(item)
-                                        is JSONObject -> steps.add(item.optString("instruction", item.toString()))
+                                        is String -> {
+                                            steps.add(item)
+                                            Log.d(TAG, "Step $i (String): $item")
+                                        }
+                                        is JSONObject -> {
+                                            val instruction = item.optString("instruction", "")
+                                            if (instruction.isNotEmpty()) {
+                                                steps.add(instruction)
+                                                Log.d(TAG, "Step $i (Object): $instruction")
+                                            } else {
+                                                Log.w(TAG, "Step $i has no instruction field: $item")
+                                            }
+                                        }
+                                        else -> {
+                                            Log.w(TAG, "Step $i is unexpected type: ${item.javaClass.name}")
+                                        }
                                     }
                                 }
                             }
                             is JSONObject -> {
-                                steps.add(stepsAny.optString("instruction", stepsAny.toString()))
+                                val instruction = stepsField.optString("instruction", "")
+                                if (instruction.isNotEmpty()) {
+                                    steps.add(instruction)
+                                    Log.d(TAG, "Single step (Object): $instruction")
+                                } else {
+                                    Log.w(TAG, "Single step object has no instruction: $stepsField")
+                                }
                             }
+                            else -> {
+                                Log.w(TAG, "Steps field is unexpected type: ${stepsField.javaClass.name}")
+                            }
+                        }
+                    } else {
+                        Log.w(TAG, "No steps or routeSteps field found in route object")
+                    }
+                    
+                    Log.d(TAG, "Total steps parsed from call.route: ${steps.size}")
+                    if (steps.size > 0) {
+                        Log.d(TAG, "First step: ${steps.first()}")
+                        if (steps.size > 1) {
+                            Log.d(TAG, "Last step: ${steps.last()}")
                         }
                     }
                     val route = CallRoute(
@@ -177,10 +218,10 @@ object DriverSocketManager {
                         duration = routeObj.getInt("duration"),
                         steps = steps
                     )
-                    Log.d(TAG, "Received call route: $route")
+                    Log.d(TAG, "✅ Received INITIAL call.route with ${route.steps.size} steps")
                     onCallRoute?.invoke(route)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing call.route: ${e.message}")
+                    Log.e(TAG, "Error parsing call.route: ${e.message}", e)
                 }
             }
 
@@ -189,23 +230,58 @@ object DriverSocketManager {
                     val data = args.firstOrNull() as? JSONObject ?: return@on
                     val routeObj = data.getJSONObject("route")
                     val steps = mutableListOf<String>()
-                    if (routeObj.has("steps")) {
-                        val stepsAny = routeObj.get("steps")
-                        when (stepsAny) {
+                    
+                    // Try both "steps" and "routeSteps" field names
+                    val stepsField = when {
+                        routeObj.has("routeSteps") -> routeObj.get("routeSteps")
+                        routeObj.has("steps") -> routeObj.get("steps")
+                        else -> null
+                    }
+                    
+                    if (stepsField != null) {
+                        when (stepsField) {
                             is org.json.JSONArray -> {
-                                for (i in 0 until stepsAny.length()) {
-                                    val item = stepsAny.get(i)
+                                Log.d(TAG, "Parsing ${stepsField.length()} route steps from JSONArray (update)")
+                                for (i in 0 until stepsField.length()) {
+                                    val item = stepsField.get(i)
                                     when (item) {
-                                        is String -> steps.add(item)
-                                        is JSONObject -> steps.add(item.optString("instruction", item.toString()))
+                                        is String -> {
+                                            steps.add(item)
+                                            Log.d(TAG, "Step $i (String): $item")
+                                        }
+                                        is JSONObject -> {
+                                            val instruction = item.optString("instruction", "")
+                                            if (instruction.isNotEmpty()) {
+                                                steps.add(instruction)
+                                                Log.d(TAG, "Step $i (Object): $instruction")
+                                            } else {
+                                                Log.w(TAG, "Step $i has no instruction field: $item")
+                                            }
+                                        }
+                                        else -> {
+                                            Log.w(TAG, "Step $i is unexpected type: ${item.javaClass.name}")
+                                        }
                                     }
                                 }
                             }
                             is JSONObject -> {
-                                steps.add(stepsAny.optString("instruction", stepsAny.toString()))
+                                val instruction = stepsField.optString("instruction", "")
+                                if (instruction.isNotEmpty()) {
+                                    steps.add(instruction)
+                                    Log.d(TAG, "Single step (Object): $instruction")
+                                } else {
+                                    Log.w(TAG, "Single step object has no instruction: $stepsField")
+                                }
+                            }
+                            else -> {
+                                Log.w(TAG, "Steps field is unexpected type: ${stepsField.javaClass.name}")
                             }
                         }
+                    } else {
+                        Log.w(TAG, "No steps or routeSteps field found in route object (update)")
                     }
+                    
+                    Log.d(TAG, "Total steps parsed (update): ${steps.size}")
                     val route = CallRoute(
                         callId = data.getString("callId"),
                         polyline = routeObj.getString("polyline"),
@@ -213,10 +289,10 @@ object DriverSocketManager {
                         duration = routeObj.getInt("duration"),
                         steps = steps
                     )
-                    Log.d(TAG, "Received route update: $route")
+                    Log.d(TAG, "Received route update with ${route.steps.size} steps: $route")
                     onRouteUpdate?.invoke(route)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing route.update: ${e.message}")
+                    Log.e(TAG, "Error parsing route.update: ${e.message}", e)
                 }
             }
 
