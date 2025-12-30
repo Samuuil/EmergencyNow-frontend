@@ -151,7 +151,9 @@ val appModule = module {
             getHospitalsForCallUseCase = get(),
             selectHospitalUseCase = get(),
             getHospitalRouteUseCase = get(),
-            ambulanceService = get()
+            ambulanceService = get(),
+            callRepository = get(),
+            userRepository = get()
         )
     }
     viewModel {
@@ -160,7 +162,7 @@ val appModule = module {
             assignAmbulanceDriverUseCase = get()
         )
     }
-    viewModel { EmergencyCallViewModel(get()) }
+    viewModel { EmergencyCallViewModel(get(), get()) }
     viewModel { PersonalInformationViewModel(get(), get(), get()) }
     viewModel { HistoryViewModel(get()) }
     viewModel { PatientProfileViewModel(get()) }

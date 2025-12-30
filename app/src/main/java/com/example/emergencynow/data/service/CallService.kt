@@ -29,4 +29,7 @@ interface CallService {
         @Query("page") page: Int? = null,
         @Query("limit") limit: Int? = null
     ): PaginatedResponse<CallResponse>
+    
+    @GET("calls/{id}")
+    suspend fun getCallById(@Path("id") id: String): CallResponse
 }

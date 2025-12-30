@@ -11,4 +11,14 @@ class UserDataSourceImpl(
         val body: ResponseBody = userService.getUserRole(id = userId)
         return body.string().trim()
     }
+    
+    override suspend fun getUserEgn(userId: String): String {
+        val response = userService.getUserEgn(id = userId)
+        return response.egn
+    }
+    
+    override suspend fun getMyEgn(): String {
+        val response = userService.getMyEgn()
+        return response.egn
+    }
 }
