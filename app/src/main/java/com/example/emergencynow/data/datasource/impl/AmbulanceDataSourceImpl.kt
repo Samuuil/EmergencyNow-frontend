@@ -1,8 +1,8 @@
 package com.example.emergencynow.data.datasource.impl
 
 import com.example.emergencynow.data.datasource.AmbulanceDataSource
-import com.example.emergencynow.data.model.request.AssignDriverRequest
-import com.example.emergencynow.data.model.response.AmbulanceDto
+import com.example.emergencynow.domain.model.request.AssignDriverRequest
+import com.example.emergencynow.domain.model.response.AmbulanceDto
 import com.example.emergencynow.data.service.AmbulanceService
 
 class AmbulanceDataSourceImpl(

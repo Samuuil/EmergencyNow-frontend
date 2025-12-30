@@ -1,10 +1,10 @@
 package com.example.emergencynow.data.datasource.impl
 
 import com.example.emergencynow.data.datasource.CallDataSource
-import com.example.emergencynow.data.model.request.CreateCallRequest
-import com.example.emergencynow.data.model.response.CallResponse
-import com.example.emergencynow.data.model.response.CallTrackingResponse
-import com.example.emergencynow.data.model.response.PaginatedResponse
+import com.example.emergencynow.domain.model.request.CreateCallRequest
+import com.example.emergencynow.domain.model.response.CallResponse
+import com.example.emergencynow.domain.model.response.CallTrackingResponse
+import com.example.emergencynow.domain.model.response.PaginatedResponse
 import com.example.emergencynow.data.service.CallService
 
 class CallDataSourceImpl(

@@ -1,7 +1,7 @@
 package com.example.emergencynow.data.service
 
-import com.example.emergencynow.data.model.request.CreateProfileRequest
-import com.example.emergencynow.data.model.response.ProfileResponse
+import com.example.emergencynow.domain.model.request.CreateProfileRequest
+import com.example.emergencynow.domain.model.response.ProfileResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PATCH

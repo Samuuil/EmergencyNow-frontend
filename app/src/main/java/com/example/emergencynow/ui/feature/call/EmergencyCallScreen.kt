@@ -1,4 +1,4 @@
-﻿package com.example.emergencynow.ui.feature.call
+package com.example.emergencynow.ui.feature.call
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.example.emergencynow.data.model.request.CreateCallRequest
+import com.example.emergencynow.domain.model.request.CreateCallRequest
 import com.example.emergencynow.domain.usecase.call.CreateCallUseCase
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
 import com.example.emergencynow.ui.components.decorations.DottedPatternBackground

@@ -1,9 +1,9 @@
 package com.example.emergencynow.data.service
 
-import com.example.emergencynow.data.model.request.CreateCallRequest
-import com.example.emergencynow.data.model.response.CallResponse
-import com.example.emergencynow.data.model.response.CallTrackingResponse
-import com.example.emergencynow.data.model.response.PaginatedResponse
+import com.example.emergencynow.domain.model.request.CreateCallRequest
+import com.example.emergencynow.domain.model.response.CallResponse
+import com.example.emergencynow.domain.model.response.CallTrackingResponse
+import com.example.emergencynow.domain.model.response.PaginatedResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PATCH

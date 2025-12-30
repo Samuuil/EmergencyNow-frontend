@@ -1,7 +1,7 @@
 package com.example.emergencynow.ui.util
 
-import com.example.emergencynow.data.model.request.*
-import com.example.emergencynow.data.model.response.*
+import com.example.emergencynow.domain.model.request.*
+import com.example.emergencynow.domain.model.response.*
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor

@@ -1,6 +1,6 @@
 package com.example.emergencynow.domain.model.mapper
 
-import com.example.emergencynow.data.model.response.ProfileResponse
+import com.example.emergencynow.domain.model.response.ProfileResponse
 import com.example.emergencynow.domain.model.entity.Gender
 import com.example.emergencynow.domain.model.entity.Profile
 

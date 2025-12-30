@@ -1,6 +1,6 @@
 package com.example.emergencynow.domain.usecase.ambulance
 
-import com.example.emergencynow.data.model.response.AmbulanceDto
+import com.example.emergencynow.domain.model.response.AmbulanceDto
 import com.example.emergencynow.domain.model.entity.Ambulance
 import com.example.emergencynow.domain.repository.AmbulanceRepository
 

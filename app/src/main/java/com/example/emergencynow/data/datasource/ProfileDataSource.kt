@@ -1,6 +1,6 @@
 package com.example.emergencynow.data.datasource
 
-import com.example.emergencynow.data.model.response.ProfileResponse
+import com.example.emergencynow.domain.model.response.ProfileResponse
 
 interface ProfileDataSource {
     suspend fun createProfile(

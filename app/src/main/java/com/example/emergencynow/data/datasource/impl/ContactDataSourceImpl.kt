@@ -1,8 +1,8 @@
 package com.example.emergencynow.data.datasource.impl
 
 import com.example.emergencynow.data.datasource.ContactDataSource
-import com.example.emergencynow.data.model.request.CreateContactRequest
-import com.example.emergencynow.data.model.response.ContactResponse
+import com.example.emergencynow.domain.model.request.CreateContactRequest
+import com.example.emergencynow.domain.model.response.ContactResponse
 import com.example.emergencynow.data.service.ContactService
 
 class ContactDataSourceImpl(

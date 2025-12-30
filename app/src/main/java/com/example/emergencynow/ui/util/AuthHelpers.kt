@@ -2,8 +2,8 @@ package com.example.emergencynow.ui.util
 
 import android.content.Context
 import android.util.Base64
-import com.example.emergencynow.data.model.request.LoginMethod
-import com.example.emergencynow.data.model.response.JwtPayload
+import com.example.emergencynow.domain.model.request.LoginMethod
+import com.example.emergencynow.domain.model.response.JwtPayload
 import com.google.gson.Gson
 
 fun parseJwt(token: String): JwtPayload? {

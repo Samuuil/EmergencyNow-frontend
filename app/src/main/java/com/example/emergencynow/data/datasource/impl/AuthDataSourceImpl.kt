@@ -1,11 +1,11 @@
 package com.example.emergencynow.data.datasource.impl
 
 import com.example.emergencynow.data.datasource.AuthDataSource
-import com.example.emergencynow.data.model.request.InitiateLoginRequest
-import com.example.emergencynow.data.model.request.LoginMethod
-import com.example.emergencynow.data.model.request.RefreshTokenRequest
-import com.example.emergencynow.data.model.request.VerifyCodeRequest
-import com.example.emergencynow.data.model.response.TokenResponse
+import com.example.emergencynow.domain.model.request.InitiateLoginRequest
+import com.example.emergencynow.domain.model.request.LoginMethod
+import com.example.emergencynow.domain.model.request.RefreshTokenRequest
+import com.example.emergencynow.domain.model.request.VerifyCodeRequest
+import com.example.emergencynow.domain.model.response.TokenResponse
 import com.example.emergencynow.data.service.AuthService
 
 class AuthDataSourceImpl(

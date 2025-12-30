@@ -1,4 +1,4 @@
-﻿package com.example.emergencynow.ui.feature.ambulance
+package com.example.emergencynow.ui.feature.ambulance
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -206,7 +206,7 @@ fun AmbulanceSelectionScreen(
 
 @Composable
 private fun AmbulanceCard(
-    ambulance: com.example.emergencynow.data.model.response.AmbulanceDto,
+    ambulance: com.example.emergencynow.domain.model.response.AmbulanceDto,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {

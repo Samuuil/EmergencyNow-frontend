@@ -1,4 +1,4 @@
-﻿@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.emergencynow.ui.feature.auth
 
 import androidx.compose.foundation.background
@@ -29,7 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.data.model.request.LoginMethod
+import com.example.emergencynow.domain.model.request.LoginMethod
 import com.example.emergencynow.domain.usecase.auth.RequestVerificationCodeUseCase
 import com.example.emergencynow.ui.components.cards.SelectionCard
 import com.example.emergencynow.ui.components.decorations.AlternativeGeometricBackground
