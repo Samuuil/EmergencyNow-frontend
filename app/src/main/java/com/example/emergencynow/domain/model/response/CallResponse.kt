@@ -31,5 +31,8 @@ data class CallResponse(
     val ambulanceId: String? = null,
     
     @SerializedName("hospitalId")
-    val hospitalId: String? = null
+    val hospitalId: String? = null,
+    
+    @SerializedName("userEgn")
+    val userEgn: String? = null
 )

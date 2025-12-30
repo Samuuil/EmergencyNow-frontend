@@ -10,4 +10,12 @@ class UserRepositoryImpl(
     override suspend fun getUserRole(userId: String): Result<String> = safeApiCall {
         userDataSource.getUserRole(userId)
     }
+    
+    override suspend fun getUserEgn(userId: String): Result<String> = safeApiCall {
+        userDataSource.getUserEgn(userId)
+    }
+    
+    override suspend fun getMyEgn(): Result<String> = safeApiCall {
+        userDataSource.getMyEgn()
+    }
 }

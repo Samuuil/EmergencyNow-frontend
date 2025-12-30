@@ -8,7 +8,8 @@ interface CallDataSource {
     suspend fun createCall(
         description: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        userEgn: String
     ): CallResponse
     
     suspend fun getCallTracking(callId: String): CallTrackingResponse
@@ -22,4 +23,6 @@ interface CallDataSource {
         page: Int? = null,
         limit: Int? = null
     ): PaginatedResponse<CallResponse>
+    
+    suspend fun getCallById(callId: String): CallResponse
 }

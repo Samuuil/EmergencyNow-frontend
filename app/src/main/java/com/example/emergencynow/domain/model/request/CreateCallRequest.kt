@@ -10,5 +10,8 @@ data class CreateCallRequest(
     val latitude: Double,
     
     @SerializedName("longitude")
-    val longitude: Double
+    val longitude: Double,
+    
+    @SerializedName("userEgn")
+    val userEgn: String
 )

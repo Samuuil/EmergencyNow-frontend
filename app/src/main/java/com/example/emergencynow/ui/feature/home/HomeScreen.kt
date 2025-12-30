@@ -45,7 +45,11 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.androidx.compose.get
+import com.example.emergencynow.domain.usecase.profile.GetProfileByEgnUseCase
+import com.example.emergencynow.domain.model.entity.Profile
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +66,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    var showPatientProfile by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -238,20 +243,54 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     StepIcon(uiState.activeRouteSteps.firstOrNull())
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         uiState.activeRouteSteps.firstOrNull() ?: "Drive to destination",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp
+                                        fontSize = 18.sp,
+                                        maxLines = 2,
+                                        modifier = Modifier.weight(1f, fill = false)
                                     )
                                 }
-                                IconButton(onClick = { expanded = !expanded }) {
-                                    Icon(
-                                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                                        contentDescription = if (expanded) "Collapse" else "Expand"
-                                    )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    // Patient profile icon button
+                                    IconButton(
+                                        onClick = { 
+                                            Log.d("HomeScreen", "🔍 Profile icon clicked!")
+                                            Log.d("HomeScreen", "   patientEgn: ${uiState.patientEgn}")
+                                            if (uiState.patientEgn != null) {
+                                                showPatientProfile = true
+                                            } else {
+                                                Log.w("HomeScreen", "⚠️ Patient EGN is not available yet")
+                                            }
+                                        },
+                                        modifier = Modifier.size(48.dp),
+                                        enabled = uiState.patientEgn != null
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Person,
+                                            contentDescription = "View Patient Profile",
+                                            tint = if (uiState.patientEgn != null) 
+                                                MaterialTheme.colorScheme.primary 
+                                            else 
+                                                Color.Gray,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                    IconButton(onClick = { expanded = !expanded }) {
+                                        Icon(
+                                            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                            contentDescription = if (expanded) "Collapse" else "Expand"
+                                        )
+                                    }
                                 }
                             }
 
@@ -267,6 +306,12 @@ fun HomeScreen(
 
                             if (expanded && uiState.activeRouteSteps.isNotEmpty()) {
                                 Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "All Steps (${uiState.activeRouteSteps.size} total):",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(Modifier.height(4.dp))
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     uiState.activeRouteSteps.forEachIndexed { index, step ->
                                         StepItem(index + 1, step)
@@ -371,53 +416,50 @@ fun HomeScreen(
         }
 
         if (uiState.isDriver && uiState.activeCallId != null) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .padding(bottom = 190.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                when (uiState.callStatus) {
-                    CallStatus.EN_ROUTE -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.primary)
-                                .clickable { viewModel.updateCallStatus(CallStatus.ARRIVED) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Mark as Arrived",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
-                        }
+            when (uiState.callStatus) {
+                CallStatus.EN_ROUTE -> {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                            .padding(bottom = 190.dp)
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickable { viewModel.updateCallStatus(CallStatus.ARRIVED) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Mark as Arrived",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
                     }
-                    CallStatus.NAVIGATING_TO_HOSPITAL -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.primary)
-                                .clickable { viewModel.completeCall() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Complete Call",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-                    else -> {}
                 }
+                CallStatus.NAVIGATING_TO_HOSPITAL -> {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                            .padding(bottom = 190.dp)
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickable { viewModel.completeCall() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Complete Call",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+                else -> {}
             }
         }
 
@@ -654,6 +696,20 @@ fun HomeScreen(
             onDismiss = { /* Cannot dismiss - must select hospital */ }
         )
     }
+    
+    // Patient profile dialog
+    uiState.patientEgn?.let { egn ->
+        if (showPatientProfile) {
+            Log.d("HomeScreen", "📋 Showing patient profile dialog for EGN: $egn")
+            PatientProfileDialog(
+                egn = egn,
+                onDismiss = { 
+                    Log.d("HomeScreen", "❌ Closing patient profile dialog")
+                    showPatientProfile = false 
+                }
+            )
+        }
+    }
 }
 
 @Composable
@@ -845,5 +901,210 @@ private fun HospitalSelectionDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PatientProfileDialog(
+    egn: String,
+    onDismiss: () -> Unit
+) {
+    val getProfileByEgnUseCase: GetProfileByEgnUseCase = get()
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var profile by remember { mutableStateOf<Profile?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(egn) {
+        isLoading = true
+        error = null
+        profile = null
+        coroutineScope.launch {
+            try {
+                val result = getProfileByEgnUseCase(egn)
+                result.fold(
+                    onSuccess = { loadedProfile ->
+                        profile = loadedProfile
+                        isLoading = false
+                    },
+                    onFailure = { e ->
+                        error = e.message ?: "Failed to load patient profile"
+                        isLoading = false
+                    }
+                )
+            } catch (e: Exception) {
+                error = e.message ?: "An unexpected error occurred"
+                isLoading = false
+            }
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .fillMaxHeight(0.8f),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Patient Medical Profile",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Filled.Close, "Close")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    error != null -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Error",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = error ?: "Unknown error",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                    }
+                    profile != null -> {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            val loadedProfile = profile!!
+                            
+                            Text(
+                                text = "EGN: $egn",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            
+                            Spacer(Modifier.height(8.dp))
+                            
+                            ProfileInfoCard(title = "Physical Information") {
+                                InfoRow("Height", "${loadedProfile.height} cm")
+                                InfoRow("Weight", "${loadedProfile.weight} kg")
+                                InfoRow("Gender", loadedProfile.gender.name)
+                                if (loadedProfile.dateOfBirth != null) {
+                                    InfoRow("Date of Birth", loadedProfile.dateOfBirth!!)
+                                }
+                                if (loadedProfile.bloodType != null) {
+                                    InfoRow("Blood Type", loadedProfile.bloodType!!)
+                                }
+                            }
+                            
+                            if (!loadedProfile.allergies.isNullOrEmpty()) {
+                                ProfileInfoCard(title = "Allergies") {
+                                    loadedProfile.allergies!!.forEach { allergy ->
+                                        Text("• $allergy", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
+                            
+                            if (!loadedProfile.illnesses.isNullOrEmpty()) {
+                                ProfileInfoCard(title = "Chronic Illnesses") {
+                                    loadedProfile.illnesses!!.forEach { illness ->
+                                        Text("• $illness", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
+                            
+                            if (!loadedProfile.medicines.isNullOrEmpty()) {
+                                ProfileInfoCard(title = "Current Medications") {
+                                    loadedProfile.medicines!!.forEach { medicine ->
+                                        Text("• $medicine", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileInfoCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }

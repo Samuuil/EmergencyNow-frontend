@@ -12,6 +12,9 @@ import com.example.emergencynow.domain.usecase.hospital.GetHospitalRouteUseCase
 import com.example.emergencynow.domain.usecase.hospital.GetHospitalsForCallUseCase
 import com.example.emergencynow.domain.usecase.hospital.SelectHospitalUseCase
 import com.example.emergencynow.domain.usecase.user.GetUserRoleUseCase
+import com.example.emergencynow.domain.repository.CallRepository
+import com.example.emergencynow.domain.repository.UserRepository
+import com.example.emergencynow.domain.model.response.CallResponse
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.CallOffer
 import com.example.emergencynow.ui.util.DriverSocketManager
@@ -35,6 +38,7 @@ data class HomeUiState(
     val isSocketConnected: Boolean = false,
     val incomingCallOffer: CallOffer? = null,
     val activeCallId: String? = null,
+    val patientEgn: String? = null,
     val emergencyLocation: LatLng? = null,
     val activeRoutePolyline: List<LatLng> = emptyList(),
     val activeRouteDistance: Int = 0,
@@ -71,7 +75,9 @@ class HomeViewModel(
     private val getHospitalsForCallUseCase: GetHospitalsForCallUseCase,
     private val selectHospitalUseCase: SelectHospitalUseCase,
     private val getHospitalRouteUseCase: GetHospitalRouteUseCase,
-    private val ambulanceService: AmbulanceService
+    private val ambulanceService: AmbulanceService,
+    private val callRepository: CallRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -195,6 +201,8 @@ class HomeViewModel(
                     activeRouteDuration = route.duration,
                     activeRouteSteps = route.steps
                 )
+                // Fetch patient EGN when route is received
+                fetchPatientEgn(route.callId)
             }
             
             DriverSocketManager.onRouteUpdate = { route ->
@@ -243,6 +251,36 @@ class HomeViewModel(
             incomingCallOffer = null,
             activeCallId = callId
         )
+        // Fetch patient EGN when call is accepted
+        fetchPatientEgn(callId)
+    }
+    
+    private fun fetchPatientEgn(callId: String) {
+        viewModelScope.launch {
+            try {
+                Log.d("HomeViewModel", "🔍 Fetching patient EGN for call: $callId")
+                
+                // Get the call - userEgn should already be included in the response
+                val callResult = callRepository.getCallById(callId)
+                callResult.fold(
+                    onSuccess = { callResponse ->
+                        Log.d("HomeViewModel", "✅ Call response received - userEgn: ${callResponse.userEgn}")
+                        if (callResponse.userEgn != null) {
+                            _uiState.value = _uiState.value.copy(patientEgn = callResponse.userEgn)
+                            Log.d("HomeViewModel", "✅ Patient EGN set in UI state: ${callResponse.userEgn}")
+                        } else {
+                            Log.w("HomeViewModel", "⚠️ User EGN is null in call response")
+                            _uiState.value = _uiState.value.copy(patientEgn = null)
+                        }
+                    },
+                    onFailure = { error ->
+                        Log.e("HomeViewModel", "❌ Failed to fetch call details: ${error.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "❌ Error fetching patient EGN: ${e.message}", e)
+            }
+        }
     }
 
     fun declineCall(callId: String) {

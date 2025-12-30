@@ -9,7 +9,8 @@ class CreateCallUseCase(private val repository: Lazy<CallRepository>) {
         val result = repository.value.createCall(
             description = request.description,
             latitude = request.latitude,
-            longitude = request.longitude
+            longitude = request.longitude,
+            userEgn = request.userEgn
         )
         return result.map { call ->
             CallDto(

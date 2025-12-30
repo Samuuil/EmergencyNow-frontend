@@ -72,7 +72,8 @@ data class EmergencyCallUiState(
 )
 
 class EmergencyCallViewModel(
-    private val createCallUseCase: CreateCallUseCase
+    private val createCallUseCase: CreateCallUseCase,
+    private val userRepository: com.example.emergencynow.domain.repository.UserRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EmergencyCallUiState())
     val uiState: StateFlow<EmergencyCallUiState> = _uiState.asStateFlow()
@@ -95,10 +96,22 @@ class EmergencyCallViewModel(
 
             _uiState.value = state.copy(isLoading = true, error = null)
             try {
+                // Fetch current user's EGN using /users/me/egn endpoint
+                val egnResult = userRepository.getMyEgn()
+                val userEgn = egnResult.getOrElse { error ->
+                    android.util.Log.e("EmergencyCallViewModel", "Failed to fetch user EGN: ${error.message}")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Failed to fetch user information. Please try again."
+                    )
+                    return@launch
+                }
+                
                 val request = CreateCallRequest(
                     description = state.description.ifEmpty { "Emergency" },
                     latitude = state.latitude,
-                    longitude = state.longitude
+                    longitude = state.longitude,
+                    userEgn = userEgn
                 )
                 val result = createCallUseCase(request)
                 result.fold(
