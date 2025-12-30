@@ -18,8 +18,7 @@ interface CallDataSource {
         status: String
     ): CallResponse
     
-    suspend fun getUserCalls(
-        userId: String,
+    suspend fun getMyCalls(
         page: Int? = null,
         limit: Int? = null
     ): PaginatedResponse<CallResponse>

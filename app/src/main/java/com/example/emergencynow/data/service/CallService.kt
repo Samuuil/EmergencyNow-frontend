@@ -24,9 +24,8 @@ interface CallService {
         @Body body: Map<String, String>
     ): CallResponse
 
-    @GET("calls/user/{userId}")
-    suspend fun getUserCalls(
-        @Path("userId") userId: String,
+    @GET("calls/me")
+    suspend fun getMyCalls(
         @Query("page") page: Int? = null,
         @Query("limit") limit: Int? = null
     ): PaginatedResponse<CallResponse>

@@ -16,8 +16,7 @@ interface CallRepository {
         status: String
     ): Result<Call>
     
-    suspend fun getUserCalls(
-        userId: String,
+    suspend fun getMyCalls(
         page: Int? = null,
         limit: Int? = null
     ): Result<List<Call>>
