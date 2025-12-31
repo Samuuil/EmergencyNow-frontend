@@ -23,6 +23,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,9 +44,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
-import com.example.emergencynow.ui.components.decorations.ProfileGeometricBackground
+import com.example.emergencynow.ui.components.decorations.EnterEgnBackground
 import com.example.emergencynow.ui.components.inputs.GenderSelector
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.CurvePaleBlue
 import org.koin.androidx.compose.koinViewModel
 
 enum class Gender { Male, Female, Other }
@@ -58,7 +64,7 @@ fun PersonalInformationScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ProfileGeometricBackground(modifier = Modifier.fillMaxSize())
+        EnterEgnBackground(modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()
@@ -75,15 +81,15 @@ fun PersonalInformationScreen(
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = BrandBlueDark
                     )
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
                     text = "Your Health Profile",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandBlueDark,
                     modifier = Modifier.padding(end = 48.dp)
                 )
                 Spacer(Modifier.weight(1f))
@@ -111,7 +117,7 @@ fun PersonalInformationScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            containerColor = CurvePaleBlue
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -122,14 +128,14 @@ fun PersonalInformationScreen(
                             Icon(
                                 Icons.Filled.Security,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = BrandBlueDark,
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
                                 text = "This information will be shared securely with first responders in an emergency to help them provide better care.",
                                 fontSize = 14.sp,
                                 lineHeight = 20.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                color = BrandBlueDark.copy(alpha = 0.8f)
                             )
                         }
                     }
@@ -146,7 +152,7 @@ fun PersonalInformationScreen(
                                 text = "Height",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                color = BrandBlueDark.copy(alpha = 0.7f)
                             )
                             Spacer(Modifier.height(8.dp))
                             NumberInputWithUnit(
@@ -160,7 +166,7 @@ fun PersonalInformationScreen(
                                 text = "Weight",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                color = BrandBlueDark.copy(alpha = 0.7f)
                             )
                             Spacer(Modifier.height(8.dp))
                             NumberInputWithUnit(
@@ -199,7 +205,7 @@ fun PersonalInformationScreen(
                     Text(
                         text = "(Optional)",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        color = BrandBlueDark.copy(alpha = 0.6f)
                     )
                     Spacer(Modifier.height(8.dp))
                     BloodTypeSelector(
@@ -220,7 +226,7 @@ fun PersonalInformationScreen(
                     Text(
                         text = "(Optional)",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        color = BrandBlueDark.copy(alpha = 0.6f)
                     )
                     Spacer(Modifier.height(8.dp))
                     DateInputField(
@@ -241,7 +247,7 @@ fun PersonalInformationScreen(
                     Text(
                         text = "(Optional)",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        color = BrandBlueDark.copy(alpha = 0.6f)
                     )
                     Spacer(Modifier.height(8.dp))
                     MultilineTextArea(
@@ -252,7 +258,7 @@ fun PersonalInformationScreen(
                     Text(
                         text = "Separate multiple allergies with commas.",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        color = BrandBlueDark.copy(alpha = 0.6f),
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                     )
                     
@@ -269,7 +275,7 @@ fun PersonalInformationScreen(
                     Text(
                         text = "(Optional)",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        color = BrandBlueDark.copy(alpha = 0.6f)
                     )
                     Spacer(Modifier.height(8.dp))
                     MultilineTextArea(
@@ -280,7 +286,7 @@ fun PersonalInformationScreen(
                     Text(
                         text = "Separate multiple illnesses with commas.",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        color = BrandBlueDark.copy(alpha = 0.6f),
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                     )
                     
@@ -297,7 +303,7 @@ fun PersonalInformationScreen(
                     Text(
                         text = "(Optional)",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        color = BrandBlueDark.copy(alpha = 0.6f)
                     )
                     Spacer(Modifier.height(8.dp))
                     MultilineTextArea(
@@ -308,7 +314,7 @@ fun PersonalInformationScreen(
                     Text(
                         text = "Separate multiple medications with commas.",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        color = BrandBlueDark.copy(alpha = 0.6f),
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                     )
                     
@@ -324,11 +330,38 @@ fun PersonalInformationScreen(
                 
                 // Continue button
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    PrimaryButton(
-                        text = if (uiState.isSaving) "" else if (uiState.isEditMode) "Save Changes" else "Continue",
+                    Button(
                         onClick = { viewModel.saveProfile(onSuccess = onContinue) },
-                        enabled = !uiState.isSaving
-                    )
+                        enabled = !uiState.isSaving,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(68.dp)
+                            .shadow(
+                                elevation = 20.dp,
+                                shape = RoundedCornerShape(16.dp),
+                                spotColor = BrandBlueDark.copy(alpha = 0.2f)
+                            ),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BrandBlueDark,
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFFE5E7EB),
+                            disabledContentColor = Color(0xFF6B7280)
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                text = if (uiState.isEditMode) "Save Changes" else "Continue",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                     
                     if (uiState.isSaving) {
                         Box(
@@ -372,10 +405,10 @@ private fun NumberInputWithUnit(
             .height(52.dp)
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                color = BrandBlueDark.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(12.dp)
             )
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .background(CurvePaleBlue, RoundedCornerShape(12.dp))
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -384,10 +417,10 @@ private fun NumberInputWithUnit(
             onValueChange = onValueChange,
             textStyle = TextStyle(
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = BrandBlueDark
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            cursorBrush = SolidColor(BrandBlueDark),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             decorationBox = { innerTextField ->
@@ -401,7 +434,7 @@ private fun NumberInputWithUnit(
                             Text(
                                 "0",
                                 fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                color = BrandBlueDark.copy(alpha = 0.4f)
                             )
                         }
                         innerTextField()
@@ -409,7 +442,7 @@ private fun NumberInputWithUnit(
                     Text(
                         text = unit,
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        color = BrandBlueDark.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -441,15 +474,11 @@ private fun BloodTypeSelector(
                             .height(44.dp)
                             .border(
                                 width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(
-                                    alpha = 0.3f
-                                ),
+                                color = if (isSelected) BrandBlueDark else BrandBlueDark.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .background(
-                                if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(
-                                    alpha = 0.3f
-                                ) else MaterialTheme.colorScheme.surface,
+                                if (isSelected) BrandBlueDark else CurvePaleBlue,
                                 RoundedCornerShape(12.dp)
                             )
                             .clickable {
@@ -461,7 +490,7 @@ private fun BloodTypeSelector(
                             text = type,
                             fontSize = 16.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            color = if (isSelected) Color.White else BrandBlueDark
                         )
                     }
                 }
@@ -481,10 +510,10 @@ private fun DateInputField(
             .height(52.dp)
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                color = BrandBlueDark.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(12.dp)
             )
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .background(CurvePaleBlue, RoundedCornerShape(12.dp))
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -504,10 +533,10 @@ private fun DateInputField(
             },
             textStyle = TextStyle(
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = BrandBlueDark
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            cursorBrush = SolidColor(BrandBlueDark),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             decorationBox = { innerTextField ->
@@ -516,7 +545,7 @@ private fun DateInputField(
                         Text(
                             "YYYY-MM-DD",
                             fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            color = BrandBlueDark.copy(alpha = 0.4f)
                         )
                     }
                     innerTextField()
@@ -538,10 +567,10 @@ private fun MultilineTextArea(
             .height(120.dp)
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                color = BrandBlueDark.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(12.dp)
             )
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .background(CurvePaleBlue, RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
         BasicTextField(
@@ -549,10 +578,10 @@ private fun MultilineTextArea(
             onValueChange = onValueChange,
             textStyle = TextStyle(
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = BrandBlueDark,
                 lineHeight = 24.sp
             ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            cursorBrush = SolidColor(BrandBlueDark),
             modifier = Modifier.fillMaxSize(),
             decorationBox = { innerTextField ->
                 Box {
@@ -560,7 +589,7 @@ private fun MultilineTextArea(
                         Text(
                             placeholder,
                             fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            color = BrandBlueDark.copy(alpha = 0.4f)
                         )
                     }
                     innerTextField()

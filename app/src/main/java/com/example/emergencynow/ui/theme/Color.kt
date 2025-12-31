@@ -35,6 +35,19 @@ val CurvePaleBlueBottom = Color(0xFFEFF6FF) // #eff6ff
 val BrandBlueDark = Color(0xFF1E3A8A) // #1e3a8a
 val BrandBlueMid = Color(0xFF2563EB) // #2563eb
 
+// Enter EGN screen colors
+val EgnBlobLight = Color(0xFFEFF6FF) // #eff6ff - gradient end
+val EgnBlobDark = Color(0xFFBFDBFE) // #bfdbfe - gradient start
+val EgnBlobBottom = Color(0xFFDBEAFE) // #dbeafe - bottom blob
+
+// Verify screen colors
+val VerifyBlueLightOpaque = Color(0x4D93C5FD) // #93c5fd with 30% opacity
+val VerifyBlueMediumOpaque = Color(0x6693C5FD) // #93c5fd with 40% opacity
+val VerifyBlueBottomLight = Color(0x9993C5FD) // blue-50/60
+val PrimaryDarkBlue = Color(0xFF1D3A8A) // #1D3A8A
+val PrimaryDarkerBlue = Color(0xFF172554) // #172554
+val AccentBrightBlue = Color(0xFF3B82F6) // #3B82F6
+
 // Legacy colors for compatibility
 val LightBlue80 = Color(0xFFB3D9FF)
 val SkyBlue80 = Color(0xFFCCE5FF)

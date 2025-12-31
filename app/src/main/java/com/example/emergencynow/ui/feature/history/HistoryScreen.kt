@@ -15,14 +15,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.emergencynow.domain.model.entity.Call
 import com.example.emergencynow.domain.model.entity.CallStatus
+import com.example.emergencynow.ui.components.decorations.EnterEgnBackground
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.CurvePaleBlue
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit,
@@ -30,27 +33,43 @@ fun HistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Call History", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        EnterEgnBackground(modifier = Modifier.fillMaxSize())
+        
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = BrandBlueDark
+                    )
                 }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Call History",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandBlueDark
+                )
+            }
+            
+            // Content
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                when {
                 uiState.isLoading -> {
                     CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = BrandBlueDark
                     )
                 }
                 uiState.error != null -> {
@@ -63,18 +82,24 @@ fun HistoryScreen(
                     ) {
                         Text(
                             text = "Error loading call history",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandBlueDark
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = uiState.error ?: "Unknown error",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 16.sp,
+                            color = BrandBlueDark.copy(alpha = 0.7f)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.retry() }) {
-                            Text("Retry")
+                        Button(
+                            onClick = { viewModel.retry() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = BrandBlueDark
+                            )
+                        ) {
+                            Text("Retry", color = Color.White)
                         }
                     }
                 }
@@ -88,27 +113,29 @@ fun HistoryScreen(
                     ) {
                         Text(
                             text = "No Call History",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandBlueDark
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Your emergency call history will appear here",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 16.sp,
+                            color = BrandBlueDark.copy(alpha = 0.7f)
                         )
                     }
                 }
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(uiState.calls) { call ->
                             CallHistoryItem(call = call)
                         }
                     }
+                }
                 }
             }
         }
@@ -119,8 +146,11 @@ fun HistoryScreen(
 fun CallHistoryItem(call: Call) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CurvePaleBlue
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -134,8 +164,9 @@ fun CallHistoryItem(call: Call) {
             ) {
                 Text(
                     text = call.description,
-                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
+                    color = BrandBlueDark,
                     modifier = Modifier.weight(1f)
                 )
                 CallStatusChip(status = call.status)
@@ -145,16 +176,16 @@ fun CallHistoryItem(call: Call) {
             
             Text(
                 text = formatDate(call.createdAt),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontSize = 14.sp,
+                color = BrandBlueDark.copy(alpha = 0.7f)
             )
             
             if (call.dispatchedAt != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Dispatched: ${formatDate(call.dispatchedAt)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontSize = 12.sp,
+                    color = BrandBlueDark.copy(alpha = 0.6f)
                 )
             }
         }
@@ -187,7 +218,7 @@ fun CallStatusChip(status: CallStatus) {
     }
 }
 
-private fun formatDate(date: java.util.Date): String {
+fun formatDate(date: java.util.Date): String {
     val format = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
     return format.format(date)
 }

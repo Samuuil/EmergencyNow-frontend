@@ -2,8 +2,8 @@ package com.example.emergencynow.data.session
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.emergencynow.data.extensions.requestBody
 import com.example.emergencynow.data.service.AuthService
+import com.example.emergencynow.domain.model.request.RefreshTokenRequest
 import kotlinx.coroutines.runBlocking
 import okhttp3.Authenticator
 import okhttp3.Request
@@ -27,7 +27,7 @@ class TokenAuthenticator(
         val requestUrl = response.request.url.toString()
         
         // Don't retry if already trying to refresh token (avoid infinite loop)
-        if (requestUrl.contains("/auth/refresh-token") || requestUrl.contains("/auth/refresh")) {
+        if (requestUrl.contains("/auth/refresh")) {
             logout()
             return null
         }
@@ -44,29 +44,24 @@ class TokenAuthenticator(
             return null
         }
 
-        // Try to refresh token
-        val refreshResult = requestBody(
-            authService.refreshToken(mapOf("refreshToken" to refreshToken)).execute()
-        )
+        // Try to refresh token using the correct endpoint
+        return try {
+            val tokens = authService.refresh(RefreshTokenRequest(refreshToken = refreshToken))
+            
+            // Save new tokens
+            prefs.edit()
+                .putString("access_token", tokens.accessToken)
+                .putString("refresh_token", tokens.refreshToken)
+                .apply()
 
-        return refreshResult.fold(
-            onSuccess = { tokens ->
-                // Save new tokens
-                prefs.edit()
-                    .putString("access_token", tokens.accessToken)
-                    .putString("refresh_token", tokens.refreshToken)
-                    .apply()
-
-                // Retry original request with new token
-                response.request.newBuilder()
-                    .header("Authorization", "Bearer ${tokens.accessToken}")
-                    .build()
-            },
-            onFailure = {
-                logout()
-                null
-            }
-        )
+            // Retry original request with new token
+            response.request.newBuilder()
+                .header("Authorization", "Bearer ${tokens.accessToken}")
+                .build()
+        } catch (e: Exception) {
+            logout()
+            null
+        }
     }
 
     private fun logout() {

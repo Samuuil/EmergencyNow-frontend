@@ -23,8 +23,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Emergency
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -52,8 +52,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.example.emergencynow.domain.model.request.CreateCallRequest
 import com.example.emergencynow.domain.usecase.call.CreateCallUseCase
-import com.example.emergencynow.ui.components.buttons.PrimaryButton
-import com.example.emergencynow.ui.components.decorations.DottedPatternBackground
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.draw.shadow
+import com.example.emergencynow.ui.components.decorations.WelcomeScreenBackground
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.CurvePaleBlue
+import com.example.emergencynow.ui.theme.EmergencyRed
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -180,10 +185,7 @@ fun EmergencyCallScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        DottedPatternBackground(
-            modifier = Modifier.fillMaxSize(),
-            dotColor = Color(0xFFE1F5FE)
-        )
+        WelcomeScreenBackground(modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()
@@ -200,15 +202,15 @@ fun EmergencyCallScreen(
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = BrandBlueDark
                     )
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "Emergency Call",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandBlueDark
                 )
             }
             
@@ -221,18 +223,19 @@ fun EmergencyCallScreen(
             ) {
                 Text(
                     text = "Emergency Assistance",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Black,
+                    color = BrandBlueDark,
+                    lineHeight = 40.sp
                 )
                 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(32.dp))
                 
                 Text(
                     text = "Describe your emergency (optional):",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = BrandBlueDark.copy(alpha = 0.7f)
                 )
                 
                 Spacer(Modifier.height(8.dp))
@@ -244,11 +247,11 @@ fun EmergencyCallScreen(
                         .height(160.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                            width = 2.dp,
+                            color = BrandBlueDark.copy(alpha = 0.3f),
                             shape = RoundedCornerShape(16.dp)
                         )
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(CurvePaleBlue)
                         .padding(16.dp)
                 ) {
                     BasicTextField(
@@ -256,17 +259,17 @@ fun EmergencyCallScreen(
                         onValueChange = { viewModel.updateDescription(it) },
                         textStyle = TextStyle(
                             fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = BrandBlueDark,
                             lineHeight = 24.sp
                         ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        cursorBrush = SolidColor(BrandBlueDark),
                         modifier = Modifier.fillMaxSize(),
                         decorationBox = { innerTextField ->
                             if (uiState.description.isEmpty()) {
                                 Text(
                                     "Medical emergency, accident, etc.",
                                     fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                    color = BrandBlueDark.copy(alpha = 0.4f)
                                 )
                             }
                             innerTextField()
@@ -282,7 +285,7 @@ fun EmergencyCallScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            containerColor = CurvePaleBlue
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
@@ -296,13 +299,13 @@ fun EmergencyCallScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                    .background(BrandBlueDark),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     Icons.Filled.MyLocation,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = Color.White,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -314,7 +317,7 @@ fun EmergencyCallScreen(
                                     text = "Location acquired",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = BrandBlueDark
                                 )
                                 Text(
                                     text = "Lat: %.6f, Lon: %.6f".format(
@@ -323,7 +326,7 @@ fun EmergencyCallScreen(
                                     ),
                                     fontSize = 12.sp,
                                     fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                    color = BrandBlueDark.copy(alpha = 0.8f)
                                 )
                             }
                             
@@ -362,31 +365,31 @@ fun EmergencyCallScreen(
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
                     .padding(24.dp)
             ) {
-                PrimaryButton(
-                    text = if (uiState.isLoading) "" else "Call Emergency Services",
+                Button(
                     onClick = { viewModel.createCall() },
                     enabled = !uiState.isLoading && uiState.latitude != null,
-                    backgroundColor = Color(0xFFD32F2F),
-                    textColor = Color.White,
-                    modifier = Modifier.height(56.dp)
-                )
-                
-                if (uiState.isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = Color.White
-                            )
-                        }
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFEF4444)
+                    ),
+                    shape = RoundedCornerShape(28.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                ) {
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White
+                        )
+                    } else {
+                        Icon(Icons.Filled.Phone, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Call Emergency Services",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

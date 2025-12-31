@@ -17,7 +17,4 @@ interface AuthService {
 
     @POST("auth/refresh")
     suspend fun refresh(@Body body: RefreshTokenRequest): TokenResponse
-
-    @POST("auth/refresh-token")
-    fun refreshToken(@Body body: Map<String, String>): retrofit2.Call<TokenResponse>
 }

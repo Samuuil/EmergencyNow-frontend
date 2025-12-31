@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.CurvePaleBlue
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,10 +36,10 @@ fun GenderSelector(
             .clip(RoundedCornerShape(12.dp))
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                color = BrandBlueDark.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(12.dp)
             )
-            .background(MaterialTheme.colorScheme.surface)
+            .background(CurvePaleBlue)
             .padding(4.dp)
     ) {
         Row(
@@ -53,7 +55,7 @@ fun GenderSelector(
                         .clip(RoundedCornerShape(8.dp))
                         .background(
                             if (isSelected) 
-                                MaterialTheme.colorScheme.primary 
+                                BrandBlueDark 
                             else 
                                 Color.Transparent
                         )
@@ -68,7 +70,7 @@ fun GenderSelector(
                         color = if (isSelected) 
                             Color.White 
                         else 
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            BrandBlueDark.copy(alpha = 0.7f)
                     )
                 }
             }

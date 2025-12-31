@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.emergencynow.ui.components.decorations.DottedPatternBackground
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.BrandBlueMid
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -173,12 +176,18 @@ fun AmbulanceSelectionScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     enabled = uiState.selectedAmbulanceId != null && !uiState.isAssigning,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BrandBlueDark,
+                        contentColor = Color.White,
+                        disabledContainerColor = BrandBlueMid,
+                        disabledContentColor = Color.White
+                    ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     if (uiState.isAssigning) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = if (uiState.selectedAmbulanceId != null) Color.White else Color.White,
                             strokeWidth = 2.dp
                         )
                     } else {
@@ -220,7 +229,7 @@ private fun AmbulanceCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                BrandBlueDark
             } else {
                 MaterialTheme.colorScheme.surface
             }
@@ -239,7 +248,9 @@ private fun AmbulanceCard(
                     .size(56.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isAvailable) {
+                        if (isSelected) {
+                            Color.White.copy(alpha = 0.2f)
+                        } else if (isAvailable) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
                             MaterialTheme.colorScheme.surfaceVariant
@@ -251,7 +262,9 @@ private fun AmbulanceCard(
                     if (isAvailable) Icons.Filled.LocalHospital else Icons.Filled.DirectionsCar,
                     contentDescription = null,
                     modifier = Modifier.size(32.dp),
-                    tint = if (isAvailable) {
+                    tint = if (isSelected) {
+                        Color.White
+                    } else if (isAvailable) {
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -271,14 +284,16 @@ private fun AmbulanceCard(
                         text = ambulance.licensePlate,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
                     )
                     
                     // Status badge
                     Box(
                         modifier = Modifier
                             .background(
-                                color = if (isAvailable) {
+                                color = if (isSelected) {
+                                    Color.White.copy(alpha = 0.2f)
+                                } else if (isAvailable) {
                                     Color(0xFF4CAF50).copy(alpha = 0.2f)
                                 } else {
                                     Color(0xFFFFC107).copy(alpha = 0.2f)
@@ -291,7 +306,9 @@ private fun AmbulanceCard(
                             text = status.uppercase(),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = if (isAvailable) {
+                            color = if (isSelected) {
+                                Color.White
+                            } else if (isAvailable) {
                                 Color(0xFF2E7D32)
                             } else {
                                 Color(0xFFF57C00)
@@ -305,14 +322,14 @@ private fun AmbulanceCard(
                 Text(
                     text = "Type: ${ambulance.type ?: "Mercedes Sprinter"}",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = if (isSelected) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
                 
                 if (!isAvailable) {
                     Text(
                         text = "Completing run • ~15 mins",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        color = if (isSelected) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -323,13 +340,13 @@ private fun AmbulanceCard(
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                        .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Filled.Check,
                         contentDescription = "Selected",
-                        tint = Color.White,
+                        tint = BrandBlueDark,
                         modifier = Modifier.size(16.dp)
                     )
                 }

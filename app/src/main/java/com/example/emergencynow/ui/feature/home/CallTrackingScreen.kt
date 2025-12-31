@@ -31,6 +31,9 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.*
 import org.koin.androidx.compose.koinViewModel
+import com.example.emergencynow.ui.util.createAmbulanceMarker
+import com.example.emergencynow.ui.util.createUserLocationMarker
+import com.example.emergencynow.R
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,7 +183,7 @@ fun CallTrackingScreen(
                     Marker(
                         state = MarkerState(position = location),
                         title = "Your Location",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                        icon = createUserLocationMarker(context, R.drawable.user)
                     )
                 }
 
@@ -189,7 +192,7 @@ fun CallTrackingScreen(
                     Marker(
                         state = MarkerState(position = uiState.ambulanceLocation!!),
                         title = "Ambulance",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                        icon = createAmbulanceMarker(context, R.drawable.ambulance)
                     )
                 }
 

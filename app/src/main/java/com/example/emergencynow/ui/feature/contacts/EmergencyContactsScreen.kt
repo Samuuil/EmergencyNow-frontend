@@ -26,7 +26,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,8 +50,10 @@ import com.example.emergencynow.domain.usecase.contact.CreateContactUseCase
 import com.example.emergencynow.domain.usecase.contact.DeleteContactUseCase
 import com.example.emergencynow.domain.usecase.contact.GetContactsUseCase
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
-import com.example.emergencynow.ui.components.decorations.ProfileGeometricBackground
+import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
 import com.example.emergencynow.ui.components.inputs.PrimaryTextField
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.CurvePaleBlue
 import com.example.emergencynow.ui.util.AuthSession
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -90,7 +95,7 @@ fun EmergencyContactsScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ProfileGeometricBackground(modifier = Modifier.fillMaxSize())
+        ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()
@@ -113,26 +118,15 @@ fun EmergencyContactsScreen(
                 Spacer(Modifier.weight(1f))
                 Text(
                     text = "Emergency Contacts",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandBlueDark,
                     modifier = Modifier.padding(end = 48.dp)
                 )
                 Spacer(Modifier.weight(1f))
             }
             
             Spacer(Modifier.height(16.dp))
-            
-            // Description
-            Text(
-                text = "Add up to 5 people we can notify in an emergency.",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-            )
             
             if (error != null) {
                 Spacer(Modifier.height(8.dp))
@@ -201,33 +195,36 @@ fun EmergencyContactsScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .height(52.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = BrandBlueDark
+                    ),
                     shape = RoundedCornerShape(26.dp)
                 ) {
                     Icon(
                         Icons.Filled.Add,
                         contentDescription = "Add",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
+                        tint = BrandBlueDark
                     )
                     Spacer(Modifier.size(8.dp))
-                    Text("Add Another Contact", fontWeight = FontWeight.Medium)
+                    Text("Add Another Contact", fontWeight = FontWeight.Medium, color = BrandBlueDark)
                 }
                 
                 Spacer(Modifier.height(16.dp))
                 
                 // Finish button
-                PrimaryButton(
-                    text = if (isSaving) "" else "Finish Setup",
+                Button(
                     onClick = {
-                        if (isSaving) return@PrimaryButton
+                        if (isSaving) return@Button
                         val accessToken = AuthSession.accessToken
                         if (accessToken.isNullOrEmpty()) {
                             error = "Missing session. Log in again."
-                            return@PrimaryButton
+                            return@Button
                         }
                         val validContacts = contacts.filter { it.name.isNotBlank() && it.phone.isNotBlank() }
                         if (validContacts.isEmpty()) {
                             error = "Add at least one contact."
-                            return@PrimaryButton
+                            return@Button
                         }
                         val newContacts = validContacts.filter { it.id == null }
                         scope.launch {
@@ -250,8 +247,36 @@ fun EmergencyContactsScreen(
                         }
                     },
                     enabled = contacts.any { it.name.isNotBlank() && it.phone.isNotBlank() } && !isSaving,
-                    modifier = Modifier.padding(horizontal = 20.dp)
-                )
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(68.dp)
+                        .shadow(
+                            elevation = 20.dp,
+                            shape = RoundedCornerShape(16.dp),
+                            spotColor = BrandBlueDark.copy(alpha = 0.2f)
+                        ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BrandBlueDark,
+                        contentColor = Color.White,
+                        disabledContainerColor = Color(0xFFE5E7EB),
+                        disabledContentColor = Color(0xFF6B7280)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White
+                        )
+                    } else {
+                        Text(
+                            text = "Finish Setup",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
                 
                 if (isSaving) {
                     Box(
@@ -295,7 +320,7 @@ private fun ContactCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = CurvePaleBlue
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -308,8 +333,8 @@ private fun ContactCard(
                 Text(
                     text = "Contact ${index + 1}",
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontWeight = FontWeight.Bold,
+                    color = BrandBlueDark
                 )
                 IconButton(onClick = onRemove) {
                     Icon(
@@ -327,7 +352,8 @@ private fun ContactCard(
                 onValueChange = { onChange(contact.copy(name = it)) },
                 label = "Full Name",
                 placeholder = "Full Name",
-                keyboardType = KeyboardType.Text
+                keyboardType = KeyboardType.Text,
+                textColor = BrandBlueDark
             )
             
             Spacer(Modifier.height(16.dp))
@@ -337,7 +363,8 @@ private fun ContactCard(
                 onValueChange = { onChange(contact.copy(phone = it)) },
                 label = "Phone Number",
                 placeholder = "Phone Number",
-                keyboardType = KeyboardType.Phone
+                keyboardType = KeyboardType.Phone,
+                textColor = BrandBlueDark
             )
             
             Spacer(Modifier.height(16.dp))
@@ -347,7 +374,8 @@ private fun ContactCard(
                 onValueChange = { onChange(contact.copy(email = it)) },
                 label = "Email (Optional)",
                 placeholder = "Email",
-                keyboardType = KeyboardType.Email
+                keyboardType = KeyboardType.Email,
+                textColor = BrandBlueDark
             )
         }
     }
