@@ -58,7 +58,7 @@ import com.example.emergencynow.ui.util.AuthSession
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
-@Composable
+    @Composable
 fun ChooseVerificationMethodScreen(
     onBack: () -> Unit,
     onPhone: () -> Unit,
@@ -72,16 +72,13 @@ fun ChooseVerificationMethodScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background with curved shapes
         ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Status bar placeholder
             Spacer(Modifier.height(48.dp))
             
-            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,14 +114,12 @@ fun ChooseVerificationMethodScreen(
             
             Spacer(Modifier.height(40.dp))
             
-            // Main content
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(horizontal = 24.dp)
             ) {
-                // Description
                 Text(
                     text = "Choose how to receive your verification code.",
                     fontSize = 16.sp,
@@ -137,7 +132,6 @@ fun ChooseVerificationMethodScreen(
                 
                 Spacer(Modifier.height(40.dp))
                 
-                // Phone option card
                 VerificationMethodCard(
                     title = "Send to Phone Number",
                     subtitle = "••• ••• ••89",
@@ -167,7 +161,6 @@ fun ChooseVerificationMethodScreen(
                 
                 Spacer(Modifier.height(20.dp))
                 
-                // Email option card
                 VerificationMethodCard(
                     title = "Send to Email",
                     subtitle = "j•••@email.com",
@@ -207,7 +200,6 @@ fun ChooseVerificationMethodScreen(
                 Spacer(Modifier.weight(1f))
             }
             
-            // Bottom navigation bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -225,7 +217,7 @@ fun ChooseVerificationMethodScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { /* Recent apps */ },
+                    onClick = { },
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
@@ -243,7 +235,7 @@ fun ChooseVerificationMethodScreen(
                 )
                 
                 IconButton(
-                    onClick = { /* Back */ },
+                    onClick = { },
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
@@ -255,7 +247,6 @@ fun ChooseVerificationMethodScreen(
             }
         }
 
-        // Fullscreen loading overlay
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -306,7 +297,6 @@ private fun VerificationMethodCard(
                 onClick = onClick
             )
     ) {
-        // Left border accent
         if (isSelected) {
             Box(
                 modifier = Modifier

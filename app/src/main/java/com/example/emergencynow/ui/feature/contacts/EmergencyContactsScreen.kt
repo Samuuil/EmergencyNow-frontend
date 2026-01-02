@@ -52,6 +52,8 @@ import com.example.emergencynow.domain.usecase.contact.GetContactsUseCase
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
 import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
 import com.example.emergencynow.ui.components.inputs.PrimaryTextField
+import com.example.emergencynow.ui.feature.contacts.ContactCard
+import com.example.emergencynow.ui.feature.contacts.Contact
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
 import com.example.emergencynow.ui.util.AuthSession
@@ -100,7 +102,6 @@ fun EmergencyContactsScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Top bar
             Spacer(Modifier.height(48.dp))
             Row(
                 modifier = Modifier
@@ -150,7 +151,6 @@ fun EmergencyContactsScreen(
                     CircularProgressIndicator()
                 }
             } else {
-                // Contact list
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
@@ -186,7 +186,6 @@ fun EmergencyContactsScreen(
                 
                 Spacer(Modifier.height(16.dp))
                 
-                // Add button
                 val canAddMore = contacts.size < 5
                 OutlinedButton(
                     onClick = { if (canAddMore) contacts = contacts + Contact("", "", "") },
@@ -212,7 +211,6 @@ fun EmergencyContactsScreen(
                 
                 Spacer(Modifier.height(16.dp))
                 
-                // Finish button
                 Button(
                     onClick = {
                         if (isSaving) return@Button
@@ -293,7 +291,6 @@ fun EmergencyContactsScreen(
             }
         }
         
-        // Full-screen loading overlay when saving
         if (isSaving) {
             Box(
                 modifier = Modifier
@@ -307,76 +304,3 @@ fun EmergencyContactsScreen(
     }
 }
 
-data class Contact(var name: String, var phone: String, var email: String = "", var id: String? = null)
-
-@Composable
-private fun ContactCard(
-    index: Int,
-    contact: Contact,
-    onChange: (Contact) -> Unit,
-    onRemove: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = CurvePaleBlue
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Contact ${index + 1}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = BrandBlueDark
-                )
-                IconButton(onClick = onRemove) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = "Remove",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            
-            Spacer(Modifier.height(16.dp))
-            
-            PrimaryTextField(
-                value = contact.name,
-                onValueChange = { onChange(contact.copy(name = it)) },
-                label = "Full Name",
-                placeholder = "Full Name",
-                keyboardType = KeyboardType.Text,
-                textColor = BrandBlueDark
-            )
-            
-            Spacer(Modifier.height(16.dp))
-            
-            PrimaryTextField(
-                value = contact.phone,
-                onValueChange = { onChange(contact.copy(phone = it)) },
-                label = "Phone Number",
-                placeholder = "Phone Number",
-                keyboardType = KeyboardType.Phone,
-                textColor = BrandBlueDark
-            )
-            
-            Spacer(Modifier.height(16.dp))
-            
-            PrimaryTextField(
-                value = contact.email,
-                onValueChange = { onChange(contact.copy(email = it)) },
-                label = "Email (Optional)",
-                placeholder = "Email",
-                keyboardType = KeyboardType.Email,
-                textColor = BrandBlueDark
-            )
-        }
-    }
-}

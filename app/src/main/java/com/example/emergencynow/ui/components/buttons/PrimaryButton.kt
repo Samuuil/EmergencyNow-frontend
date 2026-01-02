@@ -67,7 +67,6 @@ fun PrimaryButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Subtle gradient overlay for depth
         Box(
             modifier = Modifier
                 .matchParentSize()

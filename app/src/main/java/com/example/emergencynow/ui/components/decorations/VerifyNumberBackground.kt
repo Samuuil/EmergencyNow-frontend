@@ -27,16 +27,12 @@ fun VerifyNumberBackground(
             val height = size.height
             
             if (!isDarkMode) {
-                // Top right curved shape
                 drawTopRightShape(width, height)
                 
-                // Top left curved shape
                 drawTopLeftShape(width, height)
                 
-                // Bottom curved shape
                 drawBottomShape(width, height)
             } else {
-                // Dark mode versions with reduced opacity
                 drawTopRightShape(width, height, darkMode = true)
                 drawTopLeftShape(width, height, darkMode = true)
                 drawBottomShape(width, height, darkMode = true)
@@ -46,13 +42,9 @@ fun VerifyNumberBackground(
 }
 
 private fun DrawScope.drawTopRightShape(width: Float, height: Float, darkMode: Boolean = false) {
-    // w-[90%] h-[55%] bg-blue-300/30
-    // rounded-bl-[100%] rounded-tl-[20%]
-    // transform translate-x-[20%] -translate-y-[10%]
     val opacity = if (darkMode) 0.1f else 0.3f
-    val color = Color(0xFF93C5FD).copy(alpha = opacity) // blue-300
+    val color = Color(0xFF93C5FD).copy(alpha = opacity)
     
-    // Approximate rounded corners with an ellipse
     drawOval(
         color = color,
         topLeft = Offset(width * 0.3f, -height * 0.1f),
@@ -64,11 +56,8 @@ private fun DrawScope.drawTopRightShape(width: Float, height: Float, darkMode: B
 }
 
 private fun DrawScope.drawTopLeftShape(width: Float, height: Float, darkMode: Boolean = false) {
-    // w-[70%] h-[45%] bg-blue-200/40
-    // rounded-br-[100%] rounded-tr-[30%]
-    // transform -translate-x-[10%] -translate-y-[15%]
     val opacity = if (darkMode) 0.1f else 0.4f
-    val color = Color(0xFFBFDBFE).copy(alpha = opacity) // blue-200
+    val color = Color(0xFFBFDBFE).copy(alpha = opacity)
     
     drawOval(
         color = color,
@@ -81,13 +70,11 @@ private fun DrawScope.drawTopLeftShape(width: Float, height: Float, darkMode: Bo
 }
 
 private fun DrawScope.drawBottomShape(width: Float, height: Float, darkMode: Boolean = false) {
-    // w-full h-[35%] bg-blue-50/60
-    // rounded-tr-[100%]
     val opacity = if (darkMode) 0.05f else 0.6f
     val color = if (darkMode) {
-        Color(0xFF1E3A8A).copy(alpha = opacity) // blue-900 for dark mode
+        Color(0xFF1E3A8A).copy(alpha = opacity)
     } else {
-        Color(0xFFEFF6FF).copy(alpha = opacity) // blue-50 for light mode
+        Color(0xFFEFF6FF).copy(alpha = opacity)
     }
     
     drawOval(

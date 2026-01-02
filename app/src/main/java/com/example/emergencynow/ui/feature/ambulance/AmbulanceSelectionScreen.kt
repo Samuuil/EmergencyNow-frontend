@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.emergencynow.ui.components.decorations.DottedPatternBackground
+import com.example.emergencynow.ui.feature.ambulance.AmbulanceCard
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.BrandBlueMid
 import org.koin.androidx.compose.koinViewModel
@@ -63,7 +64,6 @@ fun AmbulanceSelectionScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Top bar
             Spacer(Modifier.height(48.dp))
             Row(
                 modifier = Modifier
@@ -91,7 +91,6 @@ fun AmbulanceSelectionScreen(
             
             Spacer(Modifier.height(24.dp))
             
-            // Content
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -163,7 +162,6 @@ fun AmbulanceSelectionScreen(
                 }
             }
             
-            // Bottom button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -199,7 +197,6 @@ fun AmbulanceSelectionScreen(
             }
         }
         
-        // Full-screen loading overlay when assigning
         if (uiState.isAssigning) {
             Box(
                 modifier = Modifier
@@ -213,144 +210,3 @@ fun AmbulanceSelectionScreen(
     }
 }
 
-@Composable
-private fun AmbulanceCard(
-    ambulance: com.example.emergencynow.domain.model.response.AmbulanceDto,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val status = ambulance.status ?: "AVAILABLE"
-    val isAvailable = status.equals("AVAILABLE", ignoreCase = true)
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                BrandBlueDark
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Icon circle
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isSelected) {
-                            Color.White.copy(alpha = 0.2f)
-                        } else if (isAvailable) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    if (isAvailable) Icons.Filled.LocalHospital else Icons.Filled.DirectionsCar,
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp),
-                    tint = if (isSelected) {
-                        Color.White
-                    } else if (isAvailable) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = ambulance.licensePlate,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    // Status badge
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = if (isSelected) {
-                                    Color.White.copy(alpha = 0.2f)
-                                } else if (isAvailable) {
-                                    Color(0xFF4CAF50).copy(alpha = 0.2f)
-                                } else {
-                                    Color(0xFFFFC107).copy(alpha = 0.2f)
-                                },
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = status.uppercase(),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = if (isSelected) {
-                                Color.White
-                            } else if (isAvailable) {
-                                Color(0xFF2E7D32)
-                            } else {
-                                Color(0xFFF57C00)
-                            }
-                        )
-                    }
-                }
-                
-                Spacer(Modifier.height(4.dp))
-                
-                Text(
-                    text = "Type: ${ambulance.type ?: "Mercedes Sprinter"}",
-                    fontSize = 14.sp,
-                    color = if (isSelected) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                
-                if (!isAvailable) {
-                    Text(
-                        text = "Completing run • ~15 mins",
-                        fontSize = 12.sp,
-                        color = if (isSelected) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    )
-                }
-            }
-            
-            // Checkmark circle
-            if (isSelected) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Filled.Check,
-                        contentDescription = "Selected",
-                        tint = BrandBlueDark,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
-    }
-}

@@ -120,7 +120,6 @@ fun CallTrackingScreen(
     }
 
     LaunchedEffect(uiState.activeRoutePolyline, uiState.ambulanceLocation, uiState.userCallStatus) {
-        // Only adjust camera for route when call is dispatched/en_route (not pending)
         if (uiState.userCallStatus != "pending" && uiState.activeRoutePolyline.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
             uiState.activeRoutePolyline.forEach { builder.include(it) }
@@ -129,7 +128,6 @@ fun CallTrackingScreen(
             val bounds = builder.build()
             cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100))
         } else {
-            // When pending, just center on user location
             uiState.userLocation?.let { userLocation ->
                 cameraPositionState.position = CameraPosition.fromLatLngZoom(userLocation, 15f)
             }
@@ -187,7 +185,6 @@ fun CallTrackingScreen(
                     )
                 }
 
-                // Only show ambulance marker when call is dispatched/en_route (not pending)
                 if (uiState.userCallStatus != "pending" && uiState.ambulanceLocation != null) {
                     Marker(
                         state = MarkerState(position = uiState.ambulanceLocation!!),
@@ -196,7 +193,6 @@ fun CallTrackingScreen(
                     )
                 }
 
-                // Only show route when call is dispatched/en_route (not pending)
                 if (uiState.userCallStatus != "pending" && uiState.activeRoutePolyline.isNotEmpty()) {
                     Polyline(
                         points = uiState.activeRoutePolyline,

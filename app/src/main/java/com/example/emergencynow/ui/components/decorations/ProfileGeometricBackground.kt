@@ -25,13 +25,10 @@ fun ProfileGeometricBackground(
     val alpha = if (isDarkMode) 0.2f else 0.9f
     
     Box(modifier = modifier.fillMaxSize()) {
-        // Top-right decoration with rounded shapes
         TopRightProfileDecoration(alpha = alpha)
         
-        // Bottom-left decoration with rounded shapes
         BottomLeftProfileDecoration(alpha = alpha)
         
-        // Small decorative dots
         SmallDecorativeDots(alpha = alpha)
     }
 }
@@ -48,7 +45,6 @@ private fun TopRightProfileDecoration(alpha: Float) {
             val canvasWidth = size.width
             val canvasHeight = size.height
             
-            // Rounded rectangle (top right curve)
             drawRoundRect(
                 color = GeoDark.copy(alpha = alpha),
                 topLeft = Offset(canvasWidth * 0.7f, -canvasHeight * 0.15f),
@@ -56,14 +52,12 @@ private fun TopRightProfileDecoration(alpha: Float) {
                 cornerRadius = CornerRadius(80.dp.toPx(), 80.dp.toPx())
             )
             
-            // Large semi-transparent circle
             drawCircle(
                 color = GeoBlue.copy(alpha = 0.25f * alpha),
                 radius = 130.dp.toPx(),
                 center = Offset(canvasWidth * 0.85f, canvasHeight * 0.12f)
             )
-            
-            // Rotated yellow bar
+
             rotate(degrees = -30f, pivot = Offset(canvasWidth * 0.75f, canvasHeight * 0.12f)) {
                 drawRect(
                     color = GeoYellow.copy(alpha = alpha),
@@ -71,8 +65,7 @@ private fun TopRightProfileDecoration(alpha: Float) {
                     size = Size(canvasWidth * 0.6f, canvasHeight * 0.03f)
                 )
             }
-            
-            // Thin blue line
+
             rotate(degrees = -30f, pivot = Offset(canvasWidth * 0.75f, canvasHeight * 0.08f)) {
                 drawRect(
                     color = GeoDark.copy(alpha = 0.4f * alpha),
@@ -96,7 +89,6 @@ private fun BottomLeftProfileDecoration(alpha: Float) {
             val canvasWidth = size.width
             val canvasHeight = size.height
             
-            // Rounded rectangle bottom left
             drawRoundRect(
                 color = GeoBlue.copy(alpha = 0.3f * alpha),
                 topLeft = Offset(-canvasWidth * 0.1f, canvasHeight * 0.7f),
@@ -104,7 +96,6 @@ private fun BottomLeftProfileDecoration(alpha: Float) {
                 cornerRadius = CornerRadius(60.dp.toPx(), 60.dp.toPx())
             )
             
-            // Rotated dark blue bar
             rotate(degrees = -20f, pivot = Offset(canvasWidth * 0.2f, canvasHeight * 0.9f)) {
                 drawRect(
                     color = GeoDark.copy(alpha = alpha),
@@ -113,7 +104,6 @@ private fun BottomLeftProfileDecoration(alpha: Float) {
                 )
             }
             
-            // Rotated yellow bar
             rotate(degrees = -20f, pivot = Offset(canvasWidth * 0.2f, canvasHeight * 0.82f)) {
                 drawRect(
                     color = GeoYellow.copy(alpha = 0.8f * alpha),
@@ -122,7 +112,6 @@ private fun BottomLeftProfileDecoration(alpha: Float) {
                 )
             }
             
-            // Thin line
             rotate(degrees = -20f, pivot = Offset(canvasWidth * 0.2f, canvasHeight * 0.75f)) {
                 drawRect(
                     color = GeoDark.copy(alpha = 0.4f * alpha),
@@ -143,7 +132,6 @@ private fun SmallDecorativeDots(alpha: Float) {
             val canvasWidth = size.width
             val canvasHeight = size.height
             
-            // Top left dots
             drawCircle(
                 color = GeoBlue.copy(alpha = 0.6f * alpha),
                 radius = 3.dp.toPx(),
@@ -159,8 +147,7 @@ private fun SmallDecorativeDots(alpha: Float) {
                 radius = 1.5.dp.toPx(),
                 center = Offset(canvasWidth * 0.18f, canvasHeight * 0.05f)
             )
-            
-            // Bottom right dots
+
             drawCircle(
                 color = GeoBlue.copy(alpha = 0.4f * alpha),
                 radius = 2.dp.toPx(),

@@ -1,16 +1,11 @@
 package com.example.emergencynow.ui.feature.auth
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.emergencynow.domain.usecase.auth.RequestVerificationCodeUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
-class EnterEgnViewModel(
-    private val requestVerificationCodeUseCase: RequestVerificationCodeUseCase
-) : ViewModel() {
+class EnterEgnViewModel : ViewModel() {
     
     private val _state = MutableStateFlow(EnterEgnUIState())
     val state = _state.asStateFlow()
@@ -22,7 +17,7 @@ class EnterEgnViewModel(
             }
             
             is EnterEgnAction.OnContinueClicked -> {
-                requestVerificationCode()
+                validateAndNavigate()
             }
             
             is EnterEgnAction.OnErrorDismissed -> {
@@ -35,7 +30,7 @@ class EnterEgnViewModel(
         }
     }
     
-    private fun requestVerificationCode() {
+    private fun validateAndNavigate() {
         val egn = _state.value.egn
 
         if (egn.length != 10 || !egn.all { it.isDigit() }) {
@@ -43,26 +38,10 @@ class EnterEgnViewModel(
             return
         }
         
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            
-            requestVerificationCodeUseCase(egn = egn, method = "sms").fold(
-                onSuccess = { message ->
-                    _state.update { 
-                        it.copy(
-                            isLoading = false,
-                            shouldNavigateToVerification = true
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to send verification code"
-                        )
-                    }
-                }
+        _state.update { 
+            it.copy(
+                error = null,
+                shouldNavigateToVerification = true
             )
         }
     }

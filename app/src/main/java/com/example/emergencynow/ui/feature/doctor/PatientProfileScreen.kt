@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.emergencynow.ui.feature.doctor
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,11 +12,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.emergencynow.ui.components.decorations.ProfileGeometricBackground
+import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
+import com.example.emergencynow.ui.components.cards.InfoRow
+import com.example.emergencynow.ui.components.cards.ProfileInfoCard
+import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.BrandBlueMid
+import com.example.emergencynow.ui.theme.CurvePaleBlue
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -31,55 +39,83 @@ fun PatientProfileScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ProfileGeometricBackground(modifier = Modifier.fillMaxSize())
+        ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
         
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Patient Medical Profile") },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+        ) {
+            Spacer(modifier = Modifier.height(48.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.padding(start = 0.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = BrandBlueDark,
+                        modifier = Modifier.size(28.dp)
                     )
-                )
-            },
-            containerColor = androidx.compose.ui.graphics.Color.Transparent
-        ) { paddingValues ->
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Text(
+                text = "Patient Medical Profile",
+                fontSize = 36.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = BrandBlueDark,
+                lineHeight = 44.sp
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Box(
+                modifier = Modifier
+                    .width(80.dp)
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(BrandBlueMid)
+            )
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
             when {
                 uiState.isLoading -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues),
+                            .weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = BrandBlueDark)
                     }
                 }
                 uiState.error != null -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues)
-                            .padding(20.dp),
+                            .weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = "Error",
-                                style = MaterialTheme.typography.headlineMedium,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error
+                                color = BrandBlueDark
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = uiState.error ?: "Unknown error",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                fontSize = 16.sp,
+                                color = BrandBlueDark.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -87,59 +123,82 @@ fun PatientProfileScreen(
                 uiState.profile != null -> {
                     Column(
                         modifier = Modifier
-                            .padding(paddingValues)
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(20.dp),
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         val profile = uiState.profile!!
                         
                         Text(
                             text = "EGN: $egn",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandBlueDark
                         )
                         
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         
-                        ProfileInfoCard(title = "Physical Information") {
-                            InfoRow("Height", "${profile.height} cm")
-                            InfoRow("Weight", "${profile.weight} kg")
-                            InfoRow("Gender", profile.gender.name)
-                            if (profile.dateOfBirth != null) {
-                                InfoRow("Date of Birth", profile.dateOfBirth!!)
-                            }
-                            if (profile.bloodType != null) {
-                                InfoRow("Blood Type", profile.bloodType!!)
-                            }
-                        }
-                        
-                        if (!profile.allergies.isNullOrEmpty()) {
-                            ProfileInfoCard(title = "Allergies") {
-                                profile.allergies!!.forEach { allergy ->
-                                    Text("• $allergy", style = MaterialTheme.typography.bodyMedium)
+                        ProfileInfoCard(
+                            title = "Physical Information",
+                            content = {
+                                InfoRow("Height", "${profile.height} cm")
+                                InfoRow("Weight", "${profile.weight} kg")
+                                InfoRow("Gender", profile.gender.name)
+                                if (profile.dateOfBirth != null) {
+                                    InfoRow("Date of Birth", profile.dateOfBirth!!)
+                                }
+                                if (profile.bloodType != null) {
+                                    InfoRow("Blood Type", profile.bloodType!!)
                                 }
                             }
+                        )
+                        
+                        if (!profile.allergies.isNullOrEmpty()) {
+                            ProfileInfoCard(
+                                title = "Allergies",
+                                content = {
+                                    profile.allergies!!.forEach { allergy ->
+                                        Text(
+                                            "• $allergy",
+                                            fontSize = 14.sp,
+                                            color = BrandBlueDark
+                                        )
+                                    }
+                                }
+                            )
                         }
                         
                         if (!profile.illnesses.isNullOrEmpty()) {
-                            ProfileInfoCard(title = "Chronic Illnesses") {
-                                profile.illnesses!!.forEach { illness ->
-                                    Text("• $illness", style = MaterialTheme.typography.bodyMedium)
+                            ProfileInfoCard(
+                                title = "Chronic Illnesses",
+                                content = {
+                                    profile.illnesses!!.forEach { illness ->
+                                        Text(
+                                            "• $illness",
+                                            fontSize = 14.sp,
+                                            color = BrandBlueDark
+                                        )
+                                    }
                                 }
-                            }
+                            )
                         }
                         
                         if (!profile.medicines.isNullOrEmpty()) {
-                            ProfileInfoCard(title = "Current Medications") {
-                                profile.medicines!!.forEach { medicine ->
-                                    Text("• $medicine", style = MaterialTheme.typography.bodyMedium)
+                            ProfileInfoCard(
+                                title = "Current Medications",
+                                content = {
+                                    profile.medicines!!.forEach { medicine ->
+                                        Text(
+                                            "• $medicine",
+                                            fontSize = 14.sp,
+                                            color = BrandBlueDark
+                                        )
+                                    }
                                 }
-                            }
+                            )
                         }
                         
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
@@ -147,50 +206,3 @@ fun PatientProfileScreen(
     }
 }
 
-@Composable
-private fun ProfileInfoCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-            content()
-        }
-    }
-}
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}

@@ -49,6 +49,10 @@ import androidx.compose.ui.graphics.Color
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
 import com.example.emergencynow.ui.components.decorations.EnterEgnBackground
 import com.example.emergencynow.ui.components.inputs.GenderSelector
+import com.example.emergencynow.ui.feature.profile.BloodTypeSelector
+import com.example.emergencynow.ui.feature.profile.DateInputField
+import com.example.emergencynow.ui.feature.profile.MultilineTextArea
+import com.example.emergencynow.ui.feature.profile.NumberInputWithUnit
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
 import org.koin.androidx.compose.koinViewModel
@@ -69,7 +73,6 @@ fun PersonalInformationScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Top bar
             Spacer(Modifier.height(48.dp))
             Row(
                 modifier = Modifier
@@ -113,7 +116,6 @@ fun PersonalInformationScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp)
                 ) {
-                    // Info card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -142,7 +144,6 @@ fun PersonalInformationScreen(
                     
                     Spacer(Modifier.height(24.dp))
                     
-                    // Height and Weight row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -179,7 +180,6 @@ fun PersonalInformationScreen(
                     
                     Spacer(Modifier.height(20.dp))
                     
-                    // Gender selector
                     Text(
                         text = "Gender",
                         fontSize = 14.sp,
@@ -194,7 +194,6 @@ fun PersonalInformationScreen(
                     
                     Spacer(Modifier.height(20.dp))
                     
-                    // Blood Type
                     Text(
                         text = "Blood Type",
                         fontSize = 14.sp,
@@ -215,7 +214,6 @@ fun PersonalInformationScreen(
                     
                     Spacer(Modifier.height(20.dp))
                     
-                    // Date of Birth
                     Text(
                         text = "Date of Birth",
                         fontSize = 14.sp,
@@ -236,7 +234,6 @@ fun PersonalInformationScreen(
                     
                     Spacer(Modifier.height(20.dp))
                     
-                    // Allergies
                     Text(
                         text = "Allergies",
                         fontSize = 14.sp,
@@ -264,7 +261,6 @@ fun PersonalInformationScreen(
                     
                     Spacer(Modifier.height(20.dp))
                     
-                    // Illnesses
                     Text(
                         text = "Chronic Illnesses",
                         fontSize = 14.sp,
@@ -292,7 +288,6 @@ fun PersonalInformationScreen(
                     
                     Spacer(Modifier.height(20.dp))
                     
-                    // Medicines
                     Text(
                         text = "Current Medications",
                         fontSize = 14.sp,
@@ -328,7 +323,6 @@ fun PersonalInformationScreen(
                     }
                 }
                 
-                // Continue button
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     Button(
                         onClick = { viewModel.saveProfile(onSuccess = onContinue) },
@@ -379,7 +373,6 @@ fun PersonalInformationScreen(
             }
         }
         
-        // Full-screen loading overlay when saving
         if (uiState.isSaving) {
             Box(
                 modifier = Modifier
@@ -393,208 +386,3 @@ fun PersonalInformationScreen(
     }
 }
 
-@Composable
-private fun NumberInputWithUnit(
-    value: String,
-    onValueChange: (String) -> Unit,
-    unit: String
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .border(
-                width = 1.dp,
-                color = BrandBlueDark.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .background(CurvePaleBlue, RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            textStyle = TextStyle(
-                fontSize = 16.sp,
-                color = BrandBlueDark
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            cursorBrush = SolidColor(BrandBlueDark),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            decorationBox = { innerTextField ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (value.isEmpty()) {
-                            Text(
-                                "0",
-                                fontSize = 16.sp,
-                                color = BrandBlueDark.copy(alpha = 0.4f)
-                            )
-                        }
-                        innerTextField()
-                    }
-                    Text(
-                        text = unit,
-                        fontSize = 14.sp,
-                        color = BrandBlueDark.copy(alpha = 0.5f)
-                    )
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun BloodTypeSelector(
-    selectedBloodType: String,
-    onBloodTypeSelected: (String) -> Unit
-) {
-    val bloodTypes = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
-    
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        bloodTypes.chunked(4).forEach { rowTypes ->
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                rowTypes.forEach { type ->
-                    val isSelected = selectedBloodType == type
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .border(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) BrandBlueDark else BrandBlueDark.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .background(
-                                if (isSelected) BrandBlueDark else CurvePaleBlue,
-                                RoundedCornerShape(12.dp)
-                            )
-                            .clickable {
-                                onBloodTypeSelected(if (isSelected) "" else type)
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = type,
-                            fontSize = 16.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (isSelected) Color.White else BrandBlueDark
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DateInputField(
-    value: String,
-    onValueChange: (String) -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .border(
-                width = 1.dp,
-                color = BrandBlueDark.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .background(CurvePaleBlue, RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        BasicTextField(
-            value = value,
-            onValueChange = { newValue ->
-                // Format as YYYY-MM-DD
-                val digitsOnly = newValue.filter { it.isDigit() }
-                val formatted = when {
-                    digitsOnly.length <= 4 -> digitsOnly
-                    digitsOnly.length <= 6 -> "${digitsOnly.substring(0, 4)}-${digitsOnly.substring(4)}"
-                    else -> "${digitsOnly.substring(0, 4)}-${digitsOnly.substring(4, 6)}-${digitsOnly.substring(6, minOf(8, digitsOnly.length))}"
-                }
-                if (formatted.length <= 10) {
-                    onValueChange(formatted)
-                }
-            },
-            textStyle = TextStyle(
-                fontSize = 16.sp,
-                color = BrandBlueDark
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            cursorBrush = SolidColor(BrandBlueDark),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            decorationBox = { innerTextField ->
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    if (value.isEmpty()) {
-                        Text(
-                            "YYYY-MM-DD",
-                            fontSize = 16.sp,
-                            color = BrandBlueDark.copy(alpha = 0.4f)
-                        )
-                    }
-                    innerTextField()
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun MultilineTextArea(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(120.dp)
-            .border(
-                width = 1.dp,
-                color = BrandBlueDark.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .background(CurvePaleBlue, RoundedCornerShape(12.dp))
-            .padding(16.dp)
-    ) {
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            textStyle = TextStyle(
-                fontSize = 16.sp,
-                color = BrandBlueDark,
-                lineHeight = 24.sp
-            ),
-            cursorBrush = SolidColor(BrandBlueDark),
-            modifier = Modifier.fillMaxSize(),
-            decorationBox = { innerTextField ->
-                Box {
-                    if (value.isEmpty()) {
-                        Text(
-                            placeholder,
-                            fontSize = 16.sp,
-                            color = BrandBlueDark.copy(alpha = 0.4f)
-                        )
-                    }
-                    innerTextField()
-                }
-            }
-        )
-    }
-}

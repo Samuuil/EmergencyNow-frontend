@@ -101,7 +101,6 @@ class EmergencyCallViewModel(
 
             _uiState.value = state.copy(isLoading = true, error = null)
             try {
-                // Fetch current user's EGN using /users/me/egn endpoint
                 val egnResult = userRepository.getMyEgn()
                 val userEgn = egnResult.getOrElse { error ->
                     android.util.Log.e("EmergencyCallViewModel", "Failed to fetch user EGN: ${error.message}")
@@ -190,7 +189,6 @@ fun EmergencyCallScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Top bar
             Spacer(Modifier.height(48.dp))
             Row(
                 modifier = Modifier
@@ -240,7 +238,6 @@ fun EmergencyCallScreen(
                 
                 Spacer(Modifier.height(8.dp))
                 
-                // Text area
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -279,7 +276,6 @@ fun EmergencyCallScreen(
                 
                 Spacer(Modifier.height(24.dp))
                 
-                // Location card
                 if (uiState.latitude != null && uiState.longitude != null) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -358,7 +354,6 @@ fun EmergencyCallScreen(
                 }
             }
             
-            // Bottom button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -395,7 +390,6 @@ fun EmergencyCallScreen(
             }
         }
         
-        // Full-screen loading overlay
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier

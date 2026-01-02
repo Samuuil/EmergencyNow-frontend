@@ -51,8 +51,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun EmergencyNowTheme(
-    darkTheme: Boolean = false, // Default to light theme
-    // Dynamic color is disabled to use custom white and blue theme
+    darkTheme: Boolean = false,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

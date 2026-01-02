@@ -50,7 +50,6 @@ fun EnterVerificationCodeScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background with curved shapes
         VerifyNumberBackground(modifier = Modifier.fillMaxSize())
         
         Column(
@@ -58,10 +57,8 @@ fun EnterVerificationCodeScreen(
                 .fillMaxSize()
                 .padding(horizontal = 32.dp)
         ) {
-            // Status bar placeholder
             Spacer(Modifier.height(48.dp))
-            
-            // Back button
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -80,8 +77,7 @@ fun EnterVerificationCodeScreen(
             }
             
             Spacer(Modifier.height(32.dp))
-            
-            // Title and description
+
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -115,12 +111,10 @@ fun EnterVerificationCodeScreen(
             }
             
             Spacer(Modifier.height(32.dp))
-            
-            // Code input field with label
+
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Input field box (drawn first, so it's behind the label)
                 BasicTextField(
                     value = state.code,
                     onValueChange = { 
@@ -155,8 +149,7 @@ fun EnterVerificationCodeScreen(
                         }
                     }
                 )
-                
-                // Label floating above the border (drawn on top, overlapping the border)
+
                 Text(
                     text = "Code",
                     fontSize = 12.sp,
@@ -170,8 +163,7 @@ fun EnterVerificationCodeScreen(
             }
             
             Spacer(Modifier.height(32.dp))
-            
-            // Verify button
+
             Button(
                 onClick = { viewModel.onAction(VerifyCodeAction.OnVerifyClicked) },
                 enabled = state.code.length == 6 && state.code.all { it.isDigit() } && !state.isLoading,
@@ -207,8 +199,7 @@ fun EnterVerificationCodeScreen(
             }
             
             Spacer(Modifier.height(24.dp))
-            
-            // Resend Code button
+
             TextButton(
                 onClick = { viewModel.onAction(VerifyCodeAction.OnResendClicked) },
                 enabled = !state.isLoading,
@@ -221,8 +212,7 @@ fun EnterVerificationCodeScreen(
                     color = PrimaryDarkBlue
                 )
             }
-            
-            // Error message
+
             if (state.error != null) {
                 Spacer(Modifier.height(16.dp))
                 Text(

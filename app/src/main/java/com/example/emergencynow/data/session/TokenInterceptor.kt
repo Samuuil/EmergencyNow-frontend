@@ -15,7 +15,6 @@ class TokenInterceptor(private val context: Context) : Interceptor {
             val requestBuilder = chain.request().newBuilder()
             val requestUrl = chain.request().url.toString()
 
-            // Use refresh token for the refresh endpoint, access token for everything else
             val token = if (requestUrl.contains("/auth/refresh")) {
                 getRefreshToken()
             } else {
