@@ -29,10 +29,8 @@ fun GeometricBackground(
     val alpha = if (isDarkMode) 0.2f else 0.9f
     
     Box(modifier = modifier.fillMaxSize()) {
-        // Top-right decoration
         TopRightDecoration(alpha = alpha)
         
-        // Bottom-left decoration
         BottomLeftDecoration(alpha = alpha)
     }
 }
@@ -49,7 +47,6 @@ private fun TopRightDecoration(alpha: Float) {
             val canvasWidth = size.width
             val canvasHeight = size.height
             
-            // Quarter circle background
             val path = Path().apply {
                 moveTo(canvasWidth, 0f)
                 lineTo(canvasWidth, canvasHeight * 0.47f)
@@ -68,23 +65,19 @@ private fun TopRightDecoration(alpha: Float) {
             }
             drawPath(path = path, color = GeoBlue.copy(alpha = 0.3f * alpha))
             
-            // Rotated rectangles
             rotate(degrees = 35f, pivot = Offset(canvasWidth * 0.6f, canvasHeight * 0.13f)) {
-                // Dark blue bar
                 drawRect(
                     color = GeoDark.copy(alpha = alpha),
                     topLeft = Offset(canvasWidth * 0.6f, -canvasHeight * 0.13f),
                     size = androidx.compose.ui.geometry.Size(canvasWidth * 0.67f, canvasHeight * 0.08f)
                 )
                 
-                // Yellow bar
                 drawRect(
                     color = GeoYellow.copy(alpha = alpha),
                     topLeft = Offset(canvasWidth * 0.53f, canvasHeight * 0.03f),
                     size = androidx.compose.ui.geometry.Size(canvasWidth * 0.67f, canvasHeight * 0.06f)
                 )
                 
-                // Thin blue line
                 drawRect(
                     color = GeoBlue.copy(alpha = alpha),
                     topLeft = Offset(canvasWidth * 0.43f, -canvasHeight * 0.07f),
@@ -92,7 +85,6 @@ private fun TopRightDecoration(alpha: Float) {
                 )
             }
             
-            // Small circles
             drawCircle(
                 color = GeoBlue.copy(alpha = alpha),
                 radius = 5.dp.toPx(),
@@ -124,7 +116,6 @@ private fun BottomLeftDecoration(alpha: Float) {
             val canvasWidth = size.width
             val canvasHeight = size.height
             
-            // Quarter circle background
             val path = Path().apply {
                 moveTo(0f, canvasHeight)
                 lineTo(0f, canvasHeight * 0.53f)
@@ -143,23 +134,19 @@ private fun BottomLeftDecoration(alpha: Float) {
             }
             drawPath(path = path, color = GeoBlue.copy(alpha = 0.3f * alpha))
             
-            // Rotated rectangles
             rotate(degrees = -35f, pivot = Offset(canvasWidth * 0.13f, canvasHeight * 0.73f)) {
-                // Yellow bar
                 drawRect(
                     color = GeoYellow.copy(alpha = alpha),
                     topLeft = Offset(-canvasWidth * 0.07f, canvasHeight * 0.73f),
                     size = androidx.compose.ui.geometry.Size(canvasWidth * 0.67f, canvasHeight * 0.06f)
                 )
                 
-                // Dark blue bar
                 drawRect(
                     color = GeoDark.copy(alpha = alpha),
                     topLeft = Offset(0f, canvasHeight * 0.87f),
                     size = androidx.compose.ui.geometry.Size(canvasWidth * 0.67f, canvasHeight * 0.08f)
                 )
                 
-                // Thin blue line
                 drawRect(
                     color = GeoBlue.copy(alpha = alpha),
                     topLeft = Offset(-canvasWidth * 0.13f, canvasHeight * 0.67f),
@@ -167,7 +154,6 @@ private fun BottomLeftDecoration(alpha: Float) {
                 )
             }
             
-            // Small circles
             drawCircle(
                 color = GeoBlue.copy(alpha = alpha),
                 radius = 5.dp.toPx(),

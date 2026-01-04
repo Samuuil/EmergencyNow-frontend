@@ -3,9 +3,7 @@ package com.example.emergencynow.ui.util
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
 object NetworkConfig {
-    // Primary public URL
     private const val PRIMARY_BASE = "https://emergencynow.samuil.me"
-    // Fallback to local dev server (requires ADB reverse when using a physical device)
     private const val FALLBACK_BASE = "http://127.0.0.1:3000"
 
     @Volatile
@@ -19,7 +17,6 @@ object NetworkConfig {
 
     fun currentBase(): String = current
 
-    // Retrofit requires a trailing slash
     fun retrofitBaseUrl(): String {
         val base = current
         return if (base.endsWith("/")) base else "$base/"

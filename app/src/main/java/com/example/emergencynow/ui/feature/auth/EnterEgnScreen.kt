@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -81,7 +80,6 @@ fun EnterEgnScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background with blob shapes
         EnterEgnBackground(modifier = Modifier.fillMaxSize())
         
         Column(
@@ -89,7 +87,6 @@ fun EnterEgnScreen(
                 .fillMaxSize()
                 .padding(horizontal = 24.dp)
         ) {
-            // Header with back button and title
             Spacer(Modifier.height(48.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -121,7 +118,6 @@ fun EnterEgnScreen(
             
             Spacer(Modifier.height(32.dp))
             
-            // Title with blue accent line
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -157,7 +153,6 @@ fun EnterEgnScreen(
             
             Spacer(Modifier.height(48.dp))
             
-            // EGN Input field with custom styling
             BasicTextField(
                 value = state.egn,
                 onValueChange = { 
@@ -173,7 +168,6 @@ fun EnterEgnScreen(
                     letterSpacing = 6.sp
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = !state.isLoading,
                 modifier = Modifier.fillMaxWidth(),
                 decorationBox = { innerTextField ->
                     Box(
@@ -195,10 +189,9 @@ fun EnterEgnScreen(
             
             Spacer(Modifier.weight(1f))
             
-            // Continue button
             androidx.compose.material3.Button(
                 onClick = { viewModel.onAction(EnterEgnAction.OnContinueClicked) },
-                enabled = state.egn.length == 10 && !state.isLoading,
+                enabled = state.egn.length == 10,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(68.dp)
@@ -215,28 +208,21 @@ fun EnterEgnScreen(
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Continue",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                } else {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Continue",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
             

@@ -38,32 +38,27 @@ import com.example.emergencynow.ui.theme.BrandBlueMid
 @Composable
 fun WelcomeScreen(
     onRegisterEgn: () -> Unit,
-    onLogin: () -> Unit, // kept for compatibility; not used in this design
+    onLogin: () -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background with curvy shapes
         WelcomeScreenBackground(modifier = Modifier.fillMaxSize())
 
-        // Main content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Status bar placeholder
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Content in the middle
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-                // Title
                 Text(
                     text = "Emergency\nNow",
                     fontSize = 60.sp,
@@ -75,7 +70,6 @@ fun WelcomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Blue accent line
                 Box(
                     modifier = Modifier
                         .width(80.dp)
@@ -86,7 +80,6 @@ fun WelcomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Description
                 Text(
                     text = "Fast emergency response when you need it most.",
                     fontSize = 20.sp,
@@ -97,11 +90,9 @@ fun WelcomeScreen(
                 )
             }
 
-            // Bottom section with button
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Register button with arrow
                 Button(
                     onClick = onRegisterEgn,
                     modifier = Modifier
@@ -150,7 +141,6 @@ fun WelcomeScreen(
 
                 Spacer(modifier = Modifier.height(64.dp))
 
-                // Bottom indicator bar
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)

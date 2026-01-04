@@ -31,7 +31,7 @@ fun PrimaryTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    placeholder: String, // kept for API compatibility; not shown when focused per requirement
+    placeholder: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     keyboardType: KeyboardType = KeyboardType.Text,
@@ -43,7 +43,6 @@ fun PrimaryTextField(
     Box(
         modifier = modifier.fillMaxWidth()
     ) {
-        // Text field
         BasicTextField(
             value = value,
             onValueChange = { if (it.length <= maxLength) onValueChange(it) },
@@ -71,7 +70,6 @@ fun PrimaryTextField(
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
-                    // Requirement: when not focused and empty -> show label inside field; when focused -> show nothing
                     if (value.isEmpty()) {
                         if (!isFocused) {
                             Text(
@@ -79,7 +77,7 @@ fun PrimaryTextField(
                                 fontSize = 18.sp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                             )
-                        } // else focused & empty -> show nothing
+                        }
                     }
                     innerTextField()
                 }

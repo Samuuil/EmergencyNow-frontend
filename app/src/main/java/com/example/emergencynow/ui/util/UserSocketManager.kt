@@ -95,7 +95,6 @@ object UserSocketManager {
                 Log.e(TAG, "Connection error: $error (${error?.javaClass?.simpleName})")
                 isConnected = false
                 onConnectionChange?.invoke(false)
-                // One-time fallback retry
                 if (NetworkConfig.isPrimary()) {
                     try {
                         Log.w(TAG, "Retrying with fallback base: ${NetworkConfig.fallbackBaseUrl()}")

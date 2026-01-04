@@ -139,7 +139,7 @@ class HomeViewModel(
 
     fun retryConnection() {
         Log.d("HomeViewModel", "════════════════════════════════════════")
-        Log.d("HomeViewModel", "🔄 Retry connection requested by user")
+        Log.d("HomeViewModel", "Retry connection requested by user")
         Log.d("HomeViewModel", "isDriver: ${_uiState.value.isDriver}")
         Log.d("HomeViewModel", "assignedAmbulanceId: ${_uiState.value.assignedAmbulanceId}")
         Log.d("HomeViewModel", "Current isSocketConnected: ${_uiState.value.isSocketConnected}")
@@ -149,10 +149,27 @@ class HomeViewModel(
         val ambulanceId = _uiState.value.assignedAmbulanceId
         
         if (!accessToken.isNullOrEmpty() && ambulanceId != null) {
-            // Reconnect to WebSocket
-            connectToWebSocket(ambulanceId)
+            DriverSocketManager.disconnect()
+            
+            viewModelScope.launch {
+                delay(500)
+                Log.d("HomeViewModel", "Attempting reconnection after cleanup...")
+                connectToWebSocket(ambulanceId)
+            }
         } else {
-            Log.e("HomeViewModel", "❌ Cannot retry - missing accessToken or ambulanceId")
+            Log.e("HomeViewModel", "Cannot retry - missing accessToken or ambulanceId")
+            Log.e("HomeViewModel", "   accessToken: ${if (accessToken.isNullOrEmpty()) "MISSING" else "present (${accessToken.length} chars)"}")
+            Log.e("HomeViewModel", "   ambulanceId: ${ambulanceId ?: "MISSING"}")
+            
+            val errorMsg = when {
+                accessToken.isNullOrEmpty() -> "Cannot connect: Access token is missing. Please log out and log in again."
+                ambulanceId == null -> "Cannot connect: No ambulance assigned. Please select an ambulance first."
+                else -> "Cannot connect: Unknown error"
+            }
+            
+            _uiState.value = _uiState.value.copy(
+                error = errorMsg
+            )
         }
     }
 
@@ -177,11 +194,16 @@ class HomeViewModel(
     private fun connectToWebSocket(ambulanceId: String) {
         val accessToken = AuthSession.accessToken
         if (!accessToken.isNullOrEmpty()) {
-            Log.d("HomeViewModel", "Setting up driver socket callbacks...")
+            Log.d("HomeViewModel", "════════════════════════════════════════")
+            Log.d("HomeViewModel", "Setting up driver socket connection...")
+            Log.d("HomeViewModel", "Ambulance ID: $ambulanceId")
+            Log.d("HomeViewModel", "Token present: ${!accessToken.isNullOrEmpty()}")
+            Log.d("HomeViewModel", "Token length: ${accessToken.length}")
+            Log.d("HomeViewModel", "Base URL: ${com.example.emergencynow.ui.util.NetworkConfig.currentBase()}")
+            Log.d("HomeViewModel", "════════════════════════════════════════")
             
-            // Set up callbacks BEFORE connecting
             DriverSocketManager.onCallOffer = { offer ->
-                Log.d("HomeViewModel", "📞 Call offer received: ${offer.callId}")
+                Log.d("HomeViewModel", "Call offer received: ${offer.callId}")
                 _uiState.value = _uiState.value.copy(
                     incomingCallOffer = offer,
                     emergencyLocation = LatLng(offer.latitude, offer.longitude)
@@ -189,12 +211,15 @@ class HomeViewModel(
             }
             
             DriverSocketManager.onConnectionChange = { connected ->
-                Log.d("HomeViewModel", "🔌 Driver socket connection changed: $connected")
-                _uiState.value = _uiState.value.copy(isSocketConnected = connected)
+                Log.d("HomeViewModel", "Driver socket connection changed: $connected")
+                _uiState.value = _uiState.value.copy(
+                    isSocketConnected = connected,
+                    error = if (!connected) "Connection failed. Check logs for details." else null
+                )
             }
             
             DriverSocketManager.onCallRoute = { route ->
-                Log.d("HomeViewModel", "🗺️ Call route received: ${route.callId}")
+                Log.d("HomeViewModel", "Call route received: ${route.callId}")
                 _uiState.value = _uiState.value.copy(
                     activeCallId = route.callId,
                     activeRoutePolyline = decodePolyline(route.polyline),
@@ -202,12 +227,11 @@ class HomeViewModel(
                     activeRouteDuration = route.duration,
                     activeRouteSteps = route.steps
                 )
-                // Fetch patient EGN when route is received
                 fetchPatientEgn(route.callId)
             }
             
             DriverSocketManager.onRouteUpdate = { route ->
-                Log.d("HomeViewModel", "🔄 Route update received: ${route.callId}")
+                Log.d("HomeViewModel", "Route update received: ${route.callId}")
                 _uiState.value = _uiState.value.copy(
                     activeRoutePolyline = decodePolyline(route.polyline),
                     activeRouteDistance = route.distance,
@@ -216,24 +240,21 @@ class HomeViewModel(
                 )
             }
             
-            // Disconnect first if already connected
             if (DriverSocketManager.isConnected()) {
                 Log.d("HomeViewModel", "Disconnecting existing socket before reconnecting...")
                 DriverSocketManager.disconnect()
             }
             
-            // Now connect
             Log.d("HomeViewModel", "Connecting driver socket...")
             DriverSocketManager.connect(accessToken)
             
-            // Periodically verify connection state to catch any mismatches
             viewModelScope.launch {
                 while (true) {
-                    delay(5000) // Check every 5 seconds
+                    delay(5000)
                     if (_uiState.value.isDriver && _uiState.value.assignedAmbulanceId != null) {
                         val actuallyConnected = DriverSocketManager.isConnected()
                         if (actuallyConnected != _uiState.value.isSocketConnected) {
-                            Log.w("HomeViewModel", "⚠️ Connection state mismatch detected - fixing: actuallyConnected=$actuallyConnected, uiState=${_uiState.value.isSocketConnected}")
+                            Log.w("HomeViewModel", "Connection state mismatch detected - fixing: actuallyConnected=$actuallyConnected, uiState=${_uiState.value.isSocketConnected}")
                             _uiState.value = _uiState.value.copy(isSocketConnected = actuallyConnected)
                         }
                     }
@@ -252,34 +273,32 @@ class HomeViewModel(
             incomingCallOffer = null,
             activeCallId = callId
         )
-        // Fetch patient EGN when call is accepted
         fetchPatientEgn(callId)
     }
     
     private fun fetchPatientEgn(callId: String) {
         viewModelScope.launch {
             try {
-                Log.d("HomeViewModel", "🔍 Fetching patient EGN for call: $callId")
+                Log.d("HomeViewModel", "Fetching patient EGN for call: $callId")
                 
-                // Get the call - userEgn should already be included in the response
                 val callResult = callRepository.getCallById(callId)
                 callResult.fold(
                     onSuccess = { callResponse ->
-                        Log.d("HomeViewModel", "✅ Call response received - userEgn: ${callResponse.userEgn}")
+                        Log.d("HomeViewModel", "Call response received - userEgn: ${callResponse.userEgn}")
                         if (callResponse.userEgn != null) {
                             _uiState.value = _uiState.value.copy(patientEgn = callResponse.userEgn)
-                            Log.d("HomeViewModel", "✅ Patient EGN set in UI state: ${callResponse.userEgn}")
+                            Log.d("HomeViewModel", "Patient EGN set in UI state: ${callResponse.userEgn}")
                         } else {
-                            Log.w("HomeViewModel", "⚠️ User EGN is null in call response")
+                            Log.w("HomeViewModel", "User EGN is null in call response")
                             _uiState.value = _uiState.value.copy(patientEgn = null)
                         }
                     },
                     onFailure = { error ->
-                        Log.e("HomeViewModel", "❌ Failed to fetch call details: ${error.message}")
+                        Log.e("HomeViewModel", "Failed to fetch call details: ${error.message}")
                     }
                 )
             } catch (e: Exception) {
-                Log.e("HomeViewModel", "❌ Error fetching patient EGN: ${e.message}", e)
+                Log.e("HomeViewModel", "Error fetching patient EGN: ${e.message}", e)
             }
         }
     }
@@ -395,10 +414,10 @@ class HomeViewModel(
                     )
 
                     Log.d("HomeViewModel", "════════════════════════════════════════")
-                    Log.d("HomeViewModel", "⚕️  FETCHING HOSPITAL ROUTE NOW...")
+                    Log.d("HomeViewModel", "FETCHING HOSPITAL ROUTE NOW...")
                     Log.d("HomeViewModel", "════════════════════════════════════════")
                     loadHospitalRoute(callId)
-                    Log.d("HomeViewModel", "✅ Hospital route fetch completed")
+                    Log.d("HomeViewModel", "Hospital route fetch completed")
                     Log.d("HomeViewModel", "   Final hospitalRoutePolyline size: ${_uiState.value.hospitalRoutePolyline.size} points")
                 } else {
                     Log.e("HomeViewModel", "Hospital not found in available list")
@@ -417,13 +436,13 @@ class HomeViewModel(
             Log.d("HomeViewModel", "━━━━━━━━ LOADING HOSPITAL ROUTE ━━━━━━━━")
             Log.d("HomeViewModel", "Loading hospital route for callId: $callId")
             val route = getHospitalRouteUseCase(callId).getOrThrow()
-            Log.d("HomeViewModel", "✅ Hospital route received from backend")
+            Log.d("HomeViewModel", "Hospital route received from backend")
             Log.d("HomeViewModel", "   Distance: ${route.distance}m")
             Log.d("HomeViewModel", "   Duration: ${route.duration}s")
             Log.d("HomeViewModel", "   Steps count: ${route.steps.size}")
 
             if (route.polyline.isNullOrEmpty()) {
-                Log.e("HomeViewModel", "❌ BACKEND RETURNED NULL OR EMPTY POLYLINE!")
+                Log.e("HomeViewModel", "BACKEND RETURNED NULL OR EMPTY POLYLINE!")
                 Log.e("HomeViewModel", "   This means the backend couldn't generate a route")
                 Log.e("HomeViewModel", "   Possible reasons: invalid coordinates, no route available, Google Maps API failure")
                 _uiState.value = _uiState.value.copy(
@@ -437,13 +456,13 @@ class HomeViewModel(
             Log.d("HomeViewModel", "   First 50 chars of polyline: ${route.polyline.take(50)}")
             
             val decodedPoints = decodePolyline(route.polyline)
-            Log.d("HomeViewModel", "✅ Decoded ${decodedPoints.size} points from polyline")
+            Log.d("HomeViewModel", "Decoded ${decodedPoints.size} points from polyline")
             
             if (decodedPoints.isNotEmpty()) {
                 Log.d("HomeViewModel", "   First point: ${decodedPoints.first()}")
                 Log.d("HomeViewModel", "   Last point: ${decodedPoints.last()}")
             } else {
-                Log.e("HomeViewModel", "❌ POLYLINE DECODED TO ZERO POINTS!")
+                Log.e("HomeViewModel", "POLYLINE DECODED TO ZERO POINTS!")
             }
             
             _uiState.value = _uiState.value.copy(
@@ -453,12 +472,12 @@ class HomeViewModel(
                 hospitalRouteSteps = route.steps
             )
             
-            Log.d("HomeViewModel", "✅ Hospital route state updated")
+            Log.d("HomeViewModel", "Hospital route state updated")
             Log.d("HomeViewModel", "   Current hospitalRoutePolyline size in state: ${_uiState.value.hospitalRoutePolyline.size}")
             Log.d("HomeViewModel", "   Current hospitalRouteSteps size in state: ${_uiState.value.hospitalRouteSteps.size}")
             Log.d("HomeViewModel", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         } catch (e: Exception) {
-            Log.e("HomeViewModel", "❌❌❌ FAILED TO LOAD HOSPITAL ROUTE ❌❌❌")
+            Log.e("HomeViewModel", "FAILED TO LOAD HOSPITAL ROUTE")
             Log.e("HomeViewModel", "Error type: ${e.javaClass.simpleName}")
             Log.e("HomeViewModel", "Error message: ${e.message}", e)
             e.printStackTrace()
@@ -553,7 +572,7 @@ class HomeViewModel(
             
             UserSocketManager.onCallDispatched = { dispatched ->
                 Log.d("HomeViewModel", "========================================")
-                Log.d("HomeViewModel", "📞 CALL DISPATCHED EVENT RECEIVED!")
+                Log.d("HomeViewModel", "CALL DISPATCHED EVENT RECEIVED!")
                 Log.d("HomeViewModel", "CallID: ${dispatched.callId}")
                 Log.d("HomeViewModel", "AmbulanceID: ${dispatched.ambulanceId}")
                 Log.d("HomeViewModel", "Location: ${dispatched.ambulanceLatitude}, ${dispatched.ambulanceLongitude}")
@@ -571,7 +590,7 @@ class HomeViewModel(
                     userCallStatus = "dispatched"
                 )
                 
-                Log.d("HomeViewModel", "✅ State updated!")
+                Log.d("HomeViewModel", "State updated!")
                 Log.d("HomeViewModel", "   ambulanceLocation: ${_uiState.value.ambulanceLocation}")
                 Log.d("HomeViewModel", "   userCallStatus: ${_uiState.value.userCallStatus}")
                 Log.d("HomeViewModel", "   activeRoutePolyline size: ${_uiState.value.activeRoutePolyline.size}")
@@ -590,7 +609,7 @@ class HomeViewModel(
             
             UserSocketManager.onCallStatus = { statusUpdate ->
                 Log.d("HomeViewModel", "========================================")
-                Log.d("HomeViewModel", "📊 CALL STATUS EVENT RECEIVED!")
+                Log.d("HomeViewModel", "CALL STATUS EVENT RECEIVED!")
                 Log.d("HomeViewModel", "CallID: ${statusUpdate.callId}")
                 Log.d("HomeViewModel", "New Status: ${statusUpdate.status}")
                 Log.d("HomeViewModel", "Previous userCallStatus: ${_uiState.value.userCallStatus}")
@@ -598,14 +617,14 @@ class HomeViewModel(
                 
                 val normalizedStatus = statusUpdate.status.lowercase().replace("_", "")
                 _uiState.value = _uiState.value.copy(userCallStatus = normalizedStatus)
-                Log.d("HomeViewModel", "✅ Updated userCallStatus to: $normalizedStatus")
+                Log.d("HomeViewModel", "Updated userCallStatus to: $normalizedStatus")
                 
                 when (normalizedStatus) {
                     "dispatched", "enroute" -> {
                         Log.d("HomeViewModel", "Status is dispatched/en_route - ambulance is on the way")
                     }
                     "arrived" -> {
-                        Log.d("HomeViewModel", "🏥 Ambulance ARRIVED - clearing ambulance marker and route")
+                        Log.d("HomeViewModel", "Ambulance ARRIVED - clearing ambulance marker and route")
                         _uiState.value = _uiState.value.copy(
                             ambulanceLocation = null,
                             activeRoutePolyline = emptyList(),
@@ -614,7 +633,7 @@ class HomeViewModel(
                         )
                     }
                     "completed", "cancelled" -> {
-                        Log.d("HomeViewModel", "🏥 Call COMPLETED/CANCELLED - clearing all call state and redirecting to home")
+                        Log.d("HomeViewModel", "Call COMPLETED/CANCELLED - clearing all call state and redirecting to home")
                         _uiState.value = _uiState.value.copy(
                             activeCallId = null,
                             ambulanceLocation = null,
@@ -633,7 +652,7 @@ class HomeViewModel(
             
             UserSocketManager.onConnectionChange = { connected ->
                 Log.d("HomeViewModel", "========================================")
-                Log.d("HomeViewModel", if (connected) "✅ User WebSocket CONNECTED" else "❌ User WebSocket DISCONNECTED")
+                Log.d("HomeViewModel", if (connected) "User WebSocket CONNECTED" else "User WebSocket DISCONNECTED")
                 Log.d("HomeViewModel", "isSocketConnected: $connected")
                 Log.d("HomeViewModel", "========================================")
                 _uiState.value = _uiState.value.copy(isSocketConnected = connected)
@@ -647,7 +666,7 @@ class HomeViewModel(
 
     fun setActiveCallId(callId: String) {
         Log.d("HomeViewModel", "========================================")
-        Log.d("HomeViewModel", "📞 setActiveCallId called")
+        Log.d("HomeViewModel", "setActiveCallId called")
         Log.d("HomeViewModel", "CallID: $callId")
         Log.d("HomeViewModel", "isDriver: ${_uiState.value.isDriver}")
         Log.d("HomeViewModel", "isSocketConnected: ${_uiState.value.isSocketConnected}")
@@ -658,13 +677,13 @@ class HomeViewModel(
             userCallStatus = "pending"
         )
         
-        Log.d("HomeViewModel", "✅ State updated - userCallStatus set to 'pending'")
+        Log.d("HomeViewModel", "State updated - userCallStatus set to 'pending'")
 
         if (!_uiState.value.isDriver && !_uiState.value.isSocketConnected) {
-            Log.d("HomeViewModel", "⚠️ User WebSocket not connected - connecting now for call tracking")
+            Log.d("HomeViewModel", "User WebSocket not connected - connecting now for call tracking")
             connectUserToWebSocket()
         } else if (_uiState.value.isSocketConnected) {
-            Log.d("HomeViewModel", "✅ WebSocket already connected - ready to receive events")
+            Log.d("HomeViewModel", "WebSocket already connected - ready to receive events")
         }
     }
 

@@ -29,13 +29,10 @@ fun EnterEgnBackground(
             val height = size.height
             
             if (!isDarkMode) {
-                // Main blob at top - large gradient circle
                 drawMainBlobTop(width, height)
-                
-                // Bottom blob - rotated ellipse at bottom left
+
                 drawBottomBlob(width, height)
             } else {
-                // Darker version for dark mode
                 drawMainBlobTop(width, height, darkMode = true)
                 drawBottomBlob(width, height, darkMode = true)
             }
@@ -44,8 +41,6 @@ fun EnterEgnBackground(
 }
 
 private fun DrawScope.drawMainBlobTop(width: Float, height: Float, darkMode: Boolean = false) {
-    // Position: top: -15%, left: -25%, width: 140%, padding-bottom: 140%
-    // Gradient from #BFDBFE to #EFF6FF
     val opacity = if (darkMode) 0.2f else 1.0f
     val gradient = Brush.linearGradient(
         colors = listOf(
@@ -56,23 +51,17 @@ private fun DrawScope.drawMainBlobTop(width: Float, height: Float, darkMode: Boo
         end = Offset(width * 1.4f, height * 1.4f)
     )
     
-    // Draw large circle at top left
     drawCircle(
         brush = gradient,
-        radius = width * 0.7f, // 140% width becomes 70% radius
-        center = Offset(width * 0.45f, -height * 0.15f) // Adjusted to account for left: -25%
+        radius = width * 0.7f,
+        center = Offset(width * 0.45f, -height * 0.15f)
     )
 }
 
 private fun DrawScope.drawBottomBlob(width: Float, height: Float, darkMode: Boolean = false) {
-    // Position: bottom: -10%, left: -20%, width: 100%, height: 40%
-    // border-radius: 50% 50% 0 0 / 30% 30% 0 0
-    // transform: rotate(-10deg)
-    // Background: #DBEAFE, opacity: 0.5
     val opacity = if (darkMode) 0.15f else 0.5f
     
     rotate(degrees = -10f, pivot = Offset(width * 0.3f, height * 0.95f)) {
-        // Draw ellipse at bottom left with specific border radius
         drawOval(
             color = EgnBlobBottom.copy(alpha = opacity),
             topLeft = Offset(-width * 0.2f, height * 0.7f),

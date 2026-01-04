@@ -45,7 +45,6 @@ class HospitalDataSourceImpl(
     override suspend fun getHospitalRoute(callId: String): HospitalRouteResponse {
         val wrapper: HospitalRouteWrapperResponse = hospitalService.getHospitalRoute(id = callId)
         val route = wrapper.route
-        // Explicitly convert nullable instructions to non-nullable list
         val instructions = route?.steps?.map { it.instruction } ?: emptyList()
         val steps: List<String> = instructions.filterNotNull()
         return HospitalRouteResponse(

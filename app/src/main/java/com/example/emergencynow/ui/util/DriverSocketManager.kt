@@ -28,7 +28,7 @@ data class CallRoute(
 object DriverSocketManager {
     private const val TAG = "DriverSocketManager"
     private const val NAMESPACE = "/drivers"
-    private const val CONNECTION_TIMEOUT_MS = 10000L // 10 seconds
+    private const val CONNECTION_TIMEOUT_MS = 10000L
 
     private var socket: Socket? = null
     private var isConnected = false
@@ -43,54 +43,51 @@ object DriverSocketManager {
 
     fun connect(accessToken: String) {
         Log.d(TAG, "════════════════════════════════════════")
-        Log.d(TAG, "🔌 DRIVER SOCKET CONNECT REQUESTED")
+        Log.d(TAG, "DRIVER SOCKET CONNECT REQUESTED")
         Log.d(TAG, "Token: ${accessToken.take(20)}...")
         Log.d(TAG, "Current socket state: ${socket?.connected()}")
         Log.d(TAG, "isConnected flag: $isConnected")
         Log.d(TAG, "════════════════════════════════════════")
         
-        // Check if already connected and socket is actually connected
         if (socket != null && socket?.connected() == true && isConnected) {
-            Log.d(TAG, "✅ Already connected - socket ID: ${socket?.id()}")
+            Log.d(TAG, "Already connected - socket ID: ${socket?.id()}")
             onConnectionChange?.invoke(true)
             return
         }
 
         if (socket != null) {
-            Log.d(TAG, "🧹 Cleaning up existing disconnected socket...")
+            Log.d(TAG, "Cleaning up existing disconnected socket...")
             socket?.disconnect()
             socket?.off()
             socket = null
             isConnected = false
         }
 
-        // Cancel any pending timeout
         connectionTimeoutHandler?.removeCallbacksAndMessages(null)
         connectionTimeoutHandler = null
         
-        // Notify that we're connecting
         onConnectionChange?.invoke(false)
 
         try {
-            Log.d(TAG, "⚙️ Creating socket options...")
+            Log.d(TAG, "Creating socket options...")
             val options = IO.Options().apply {
                 auth = mapOf("token" to accessToken)
                 transports = arrayOf("websocket")
                 reconnection = true
-                reconnectionAttempts = Integer.MAX_VALUE // Keep trying
+                reconnectionAttempts = Integer.MAX_VALUE
                 reconnectionDelay = 1000
                 reconnectionDelayMax = 5000
-                timeout = 20000 // 20 second connection timeout
-                forceNew = true // Force a new connection
+                timeout = 20000
+                forceNew = true
             }
 
             val base = NetworkConfig.currentBase()
             val uri = "${base}$NAMESPACE"
-            Log.d(TAG, "🌐 Connecting to: $uri")
+            Log.d(TAG, "Connecting to: $uri")
             socket = IO.socket(URI.create(uri), options)
 
             socket?.on(Socket.EVENT_CONNECT) {
-                Log.d(TAG, "✅ Connected to WebSocket - socket ID: ${socket?.id()}")
+                Log.d(TAG, "Connected to WebSocket - socket ID: ${socket?.id()}")
                 connectionTimeoutHandler?.removeCallbacksAndMessages(null)
                 isConnected = true
                 onConnectionChange?.invoke(true)
@@ -106,17 +103,36 @@ object DriverSocketManager {
 
             socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
                 val error = args.firstOrNull()
-                when (error) {
+                val errorMessage = when (error) {
                     is Exception -> {
                         Log.e(TAG, "Connection error (Exception): ${error.message}", error)
                         error.printStackTrace()
+                        error.message ?: "Unknown connection error"
                     }
-                    else -> Log.e(TAG, "Connection error: $error (${error?.javaClass?.simpleName})")
+                    is String -> {
+                        Log.e(TAG, "Connection error (String): $error")
+                        error
+                    }
+                    else -> {
+                        Log.e(TAG, "Connection error: $error (${error?.javaClass?.simpleName})")
+                        error?.toString() ?: "Unknown connection error"
+                    }
                 }
+                
+                Log.e(TAG, "════════════════════════════════════════")
+                Log.e(TAG, "WEBSOCKET CONNECTION FAILED")
+                Log.e(TAG, "Error: $errorMessage")
+                Log.e(TAG, "Base URL: ${NetworkConfig.currentBase()}")
+                Log.e(TAG, "Namespace: $NAMESPACE")
+                Log.e(TAG, "Full URI: ${NetworkConfig.currentBase()}$NAMESPACE")
+                Log.e(TAG, "Token present: ${!accessToken.isNullOrEmpty()}")
+                Log.e(TAG, "Token length: ${accessToken.length}")
+                Log.e(TAG, "════════════════════════════════════════")
+                
                 connectionTimeoutHandler?.removeCallbacksAndMessages(null)
                 isConnected = false
                 onConnectionChange?.invoke(false)
-                // One-time fallback retry to localhost if primary is unreachable
+                
                 if (NetworkConfig.isPrimary()) {
                     try {
                         Log.w(TAG, "Retrying with fallback base: ${NetworkConfig.fallbackBaseUrl()}")
@@ -154,7 +170,6 @@ object DriverSocketManager {
                     val routeObj = data.getJSONObject("route")
                     val steps = mutableListOf<String>()
                     
-                    // Try both "steps" and "routeSteps" field names
                     val stepsField = when {
                         routeObj.has("routeSteps") -> routeObj.get("routeSteps")
                         routeObj.has("steps") -> routeObj.get("steps")
@@ -218,7 +233,7 @@ object DriverSocketManager {
                         duration = routeObj.getInt("duration"),
                         steps = steps
                     )
-                    Log.d(TAG, "✅ Received INITIAL call.route with ${route.steps.size} steps")
+                    Log.d(TAG, "Received INITIAL call.route with ${route.steps.size} steps")
                     onCallRoute?.invoke(route)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing call.route: ${e.message}", e)
@@ -231,7 +246,6 @@ object DriverSocketManager {
                     val routeObj = data.getJSONObject("route")
                     val steps = mutableListOf<String>()
                     
-                    // Try both "steps" and "routeSteps" field names
                     val stepsField = when {
                         routeObj.has("routeSteps") -> routeObj.get("routeSteps")
                         routeObj.has("steps") -> routeObj.get("steps")
@@ -310,22 +324,21 @@ object DriverSocketManager {
             socket?.connect()
             Log.d(TAG, "socket.connect() initiated...")
             
-            // Set up a timeout to check connection status
             connectionTimeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
             connectionTimeoutHandler?.postDelayed({
                 if (socket != null && !socket!!.connected() && !isConnected) {
-                    Log.w(TAG, "Connection timeout - socket still not connected after ${CONNECTION_TIMEOUT_MS}ms")
-                    // Force disconnect and try again
-                    socket?.disconnect()
-                    socket?.off()
-                    socket = null
+                    Log.e(TAG, "Connection timeout - socket still not connected after ${CONNECTION_TIMEOUT_MS}ms")
+                    Log.e(TAG, "   This usually means:")
+                    Log.e(TAG, "   1. Server is down or unreachable")
+                    Log.e(TAG, "   2. Network connectivity issue")
+                    Log.e(TAG, "   3. JWT token is invalid")
+                    
+                    connectionTimeoutHandler?.removeCallbacksAndMessages(null)
                     isConnected = false
                     onConnectionChange?.invoke(false)
-                    // Retry connection
-                    Log.d(TAG, "Retrying connection after timeout...")
-                    connect(accessToken)
+                    
+                    Log.w(TAG, "Connection failed. User can manually retry.")
                 } else if (socket != null && socket!!.connected() && !isConnected) {
-                    // Socket is connected but our state is wrong - fix it
                     Log.w(TAG, "Socket is connected but state was wrong - fixing...")
                     isConnected = true
                     onConnectionChange?.invoke(true)
@@ -404,7 +417,7 @@ object DriverSocketManager {
 
     fun sendLocationUpdate(callId: String, latitude: Double, longitude: Double) {
         if (socket == null || !isConnected) {
-            Log.w(TAG, "⚠️ Cannot send location - socket not connected (socket=${socket != null}, connected=$isConnected)")
+            Log.w(TAG, "Cannot send location - socket not connected (socket=${socket != null}, connected=$isConnected)")
             return
         }
 
@@ -441,7 +454,7 @@ object DriverSocketManager {
     }
 
     fun disconnect() {
-        Log.d(TAG, "🔌 Disconnect requested")
+        Log.d(TAG, "Disconnect requested")
         connectionTimeoutHandler?.removeCallbacksAndMessages(null)
         connectionTimeoutHandler = null
         socket?.disconnect()
@@ -449,16 +462,14 @@ object DriverSocketManager {
         socket = null
         val wasConnected = isConnected
         isConnected = false
-        // Notify listeners if we were connected
         if (wasConnected) {
             Log.d(TAG, "Notifying listeners of disconnection")
             onConnectionChange?.invoke(false)
         }
-        Log.d(TAG, "✅ Disconnected and cleaned up socket")
+        Log.d(TAG, "Disconnected and cleaned up socket")
     }
 
     fun isConnected(): Boolean {
-        // Verify actual socket state, not just our cached state
         val actuallyConnected = socket?.connected() == true
         if (actuallyConnected != isConnected) {
             Log.w(TAG, "Connection state mismatch - socket.connected()=$actuallyConnected, isConnected=$isConnected - fixing...")
@@ -470,14 +481,13 @@ object DriverSocketManager {
     
     fun forceReconnect(accessToken: String) {
         Log.d(TAG, "════════════════════════════════════════")
-        Log.d(TAG, "🔄 FORCE RECONNECT REQUESTED")
+        Log.d(TAG, "FORCE RECONNECT REQUESTED")
         Log.d(TAG, "Current state: socket=${socket != null}, connected=${socket?.connected()}, isConnected=$isConnected")
         Log.d(TAG, "Callbacks set: onConnectionChange=${onConnectionChange != null}, onCallOffer=${onCallOffer != null}")
         Log.d(TAG, "════════════════════════════════════════")
         
-        // Don't call disconnect as it might interfere - just reconnect
         connect(accessToken)
         
-        Log.d(TAG, "✅ Force reconnect initiated")
+        Log.d(TAG, "Force reconnect initiated")
     }
 }

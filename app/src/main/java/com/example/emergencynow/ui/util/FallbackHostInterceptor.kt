@@ -12,10 +12,8 @@ class FallbackHostInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalReq = chain.request()
         return try {
-            // Try normally first
             chain.proceed(originalReq)
         } catch (e: IOException) {
-            // Network error: attempt fallback once
             val fallbackBase = NetworkConfig.fallbackBaseUrl()
             val fallbackUrl = NetworkConfig.withHostFrom(fallbackBase, originalReq.url.toString())
             val newReq = originalReq.newBuilder()
@@ -25,7 +23,6 @@ class FallbackHostInterceptor : Interceptor {
                 NetworkConfig.switchToFallback()
                 chain.proceed(newReq)
             } catch (e2: IOException) {
-                // If fallback also fails, bubble up original error context
                 throw e
             }
         }

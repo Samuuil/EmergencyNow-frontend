@@ -138,7 +138,7 @@ val appModule = module {
 
     factory { GetUserRoleUseCase(lazy { get<UserRepository>() }) }
 
-    viewModel { EnterEgnViewModel(get()) }
+    viewModel { EnterEgnViewModel() }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), androidContext()) }
     viewModel { 
         HomeViewModel(

@@ -26,16 +26,13 @@ class TokenAuthenticator(
     private suspend fun getRequest(response: Response): Request? {
         val requestUrl = response.request.url.toString()
         
-        // Don't retry if already trying to refresh token (avoid infinite loop)
         if (requestUrl.contains("/auth/refresh")) {
             logout()
             return null
         }
 
-        // Don't retry login/registration endpoints
         if (requestUrl.contains("/auth/initiate-login") || 
-            requestUrl.contains("/auth/verify-code") ||
-            requestUrl.contains("/auth/login")) {
+            requestUrl.contains("/auth/verify-code")) {
             return null
         }
 
@@ -44,17 +41,14 @@ class TokenAuthenticator(
             return null
         }
 
-        // Try to refresh token using the correct endpoint
         return try {
             val tokens = authService.refresh(RefreshTokenRequest(refreshToken = refreshToken))
             
-            // Save new tokens
             prefs.edit()
                 .putString("access_token", tokens.accessToken)
                 .putString("refresh_token", tokens.refreshToken)
                 .apply()
 
-            // Retry original request with new token
             response.request.newBuilder()
                 .header("Authorization", "Bearer ${tokens.accessToken}")
                 .build()

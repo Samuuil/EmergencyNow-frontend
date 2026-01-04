@@ -16,7 +16,6 @@ sealed class EmergencyError : Exception() {
         val code: String? = null,
         @SerialName("message")
         val messageString: String? = null,
-        // This is populated from HTTP response, not JSON body
         @kotlinx.serialization.Transient
         val httpStatusCode: Int? = null,
         @kotlinx.serialization.Transient
