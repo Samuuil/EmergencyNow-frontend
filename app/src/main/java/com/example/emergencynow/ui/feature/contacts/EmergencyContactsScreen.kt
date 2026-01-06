@@ -46,9 +46,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.domain.usecase.contact.CreateContactUseCase
-import com.example.emergencynow.domain.usecase.contact.DeleteContactUseCase
-import com.example.emergencynow.domain.usecase.contact.GetContactsUseCase
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
 import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
 import com.example.emergencynow.ui.components.inputs.PrimaryTextField
@@ -56,45 +53,17 @@ import com.example.emergencynow.ui.feature.contacts.ContactCard
 import com.example.emergencynow.ui.feature.contacts.Contact
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
-import com.example.emergencynow.ui.util.AuthSession
-import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun EmergencyContactsScreen(
     onBack: () -> Unit,
     onFinish: () -> Unit,
+    viewModel: EmergencyContactsViewModel = koinViewModel()
 ) {
-    var contacts by remember { mutableStateOf(listOf(Contact("", ""))) }
-    val scope = rememberCoroutineScope()
-    val getContactsUseCase: GetContactsUseCase = koinInject()
-    val createContactUseCase: CreateContactUseCase = koinInject()
-    val deleteContactUseCase: DeleteContactUseCase = koinInject()
-    var isLoading by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(Unit) {
-        isLoading = true
-        val accessToken = AuthSession.accessToken
-        if (accessToken.isNullOrEmpty()) {
-            error = "Missing session. Log in again."
-            isLoading = false
-        } else {
-            try {
-                val remoteContacts = getContactsUseCase().getOrDefault(emptyList())
-                contacts = if (remoteContacts.isEmpty()) {
-                    listOf(Contact("", "", ""))
-                } else {
-                    remoteContacts.map { Contact(it.name, it.phoneNumber, it.email ?: "", it.id) }
-                }
-            } catch (e: Exception) {
-                error = "Failed to load contacts: ${e.localizedMessage ?: e::class.simpleName}"
-            } finally {
-                isLoading = false
-            }
-        }
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
@@ -129,10 +98,10 @@ fun EmergencyContactsScreen(
             
             Spacer(Modifier.height(16.dp))
             
-            if (error != null) {
+            if (uiState.error != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = error ?: "",
+                    text = uiState.error ?: "",
                     color = MaterialTheme.colorScheme.error,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(horizontal = 20.dp)
@@ -141,7 +110,7 @@ fun EmergencyContactsScreen(
             
             Spacer(Modifier.height(24.dp))
             
-            if (isLoading) {
+            if (uiState.isLoading) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -157,28 +126,15 @@ fun EmergencyContactsScreen(
                         .padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    itemsIndexed(contacts) { index, contact ->
+                    itemsIndexed(uiState.contacts) { index, contact ->
                         ContactCard(
                             index = index,
                             contact = contact,
                             onChange = { updated ->
-                                contacts = contacts.toMutableList().also { it[index] = updated }
+                                viewModel.updateContact(index, updated)
                             },
                             onRemove = {
-                                val accessToken = AuthSession.accessToken
-                                val toRemove = contacts[index]
-                                if (!toRemove.id.isNullOrEmpty() && !accessToken.isNullOrEmpty()) {
-                                    scope.launch {
-                                        try {
-                                            deleteContactUseCase(toRemove.id!!).getOrThrow()
-                                            contacts = contacts.toMutableList().also { it.removeAt(index) }
-                                        } catch (e: Exception) {
-                                            error = "Failed to remove contact."
-                                        }
-                                    }
-                                } else {
-                                    contacts = contacts.toMutableList().also { it.removeAt(index) }
-                                }
+                                viewModel.removeContact(index)
                             }
                         )
                     }
@@ -186,9 +142,9 @@ fun EmergencyContactsScreen(
                 
                 Spacer(Modifier.height(16.dp))
                 
-                val canAddMore = contacts.size < 5
+                val canAddMore = uiState.contacts.size < 5
                 OutlinedButton(
-                    onClick = { if (canAddMore) contacts = contacts + Contact("", "", "") },
+                    onClick = { viewModel.addContact() },
                     enabled = canAddMore,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -213,38 +169,9 @@ fun EmergencyContactsScreen(
                 
                 Button(
                     onClick = {
-                        if (isSaving) return@Button
-                        val accessToken = AuthSession.accessToken
-                        if (accessToken.isNullOrEmpty()) {
-                            error = "Missing session. Log in again."
-                            return@Button
-                        }
-                        val validContacts = contacts.filter { it.name.isNotBlank() && it.phone.isNotBlank() }
-                        if (validContacts.isEmpty()) {
-                            error = "Add at least one contact."
-                            return@Button
-                        }
-                        val newContacts = validContacts.filter { it.id == null }
-                        scope.launch {
-                            isSaving = true
-                            error = null
-                            try {
-                                newContacts.forEach { contact ->
-                                    createContactUseCase(
-                                        name = contact.name,
-                                        phoneNumber = contact.phone,
-                                        email = contact.email.ifBlank { null }
-                                    ).getOrThrow()
-                                }
-                                onFinish()
-                            } catch (e: Exception) {
-                                error = "Failed to save contacts."
-                            } finally {
-                                isSaving = false
-                            }
-                        }
+                        viewModel.saveContacts(onFinish)
                     },
-                    enabled = contacts.any { it.name.isNotBlank() && it.phone.isNotBlank() } && !isSaving,
+                    enabled = uiState.contacts.any { it.name.isNotBlank() && it.phone.isNotBlank() } && !uiState.isSaving,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
@@ -262,7 +189,7 @@ fun EmergencyContactsScreen(
                     ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    if (isSaving) {
+                    if (uiState.isSaving) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = Color.White
@@ -276,7 +203,7 @@ fun EmergencyContactsScreen(
                     }
                 }
                 
-                if (isSaving) {
+                if (uiState.isSaving) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -291,7 +218,7 @@ fun EmergencyContactsScreen(
             }
         }
         
-        if (isSaving) {
+        if (uiState.isSaving) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

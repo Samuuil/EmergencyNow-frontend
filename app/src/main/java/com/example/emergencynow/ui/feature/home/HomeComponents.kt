@@ -41,7 +41,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +51,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.emergencynow.domain.model.entity.Profile
-import com.example.emergencynow.domain.usecase.profile.GetProfileByEgnUseCase
+import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
+import androidx.compose.runtime.collectAsState
+import org.koin.androidx.compose.koinViewModel
 import com.example.emergencynow.ui.components.cards.InfoRow
 import com.example.emergencynow.ui.components.cards.ProfileInfoCard
 import com.example.emergencynow.ui.theme.BrandBlueDark
@@ -326,36 +327,13 @@ fun HospitalSelectionDialog(
 @Composable
 fun PatientProfileDialog(
     egn: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    viewModel: PatientProfileViewModel = koinViewModel()
 ) {
-    val getProfileByEgnUseCase: GetProfileByEgnUseCase = get()
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var profile by remember { mutableStateOf<Profile?>(null) }
-    val coroutineScope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(egn) {
-        isLoading = true
-        error = null
-        profile = null
-        coroutineScope.launch {
-            try {
-                val result = getProfileByEgnUseCase(egn)
-                result.fold(
-                    onSuccess = { loadedProfile ->
-                        profile = loadedProfile
-                        isLoading = false
-                    },
-                    onFailure = { e ->
-                        error = e.message ?: "Failed to load patient profile"
-                        isLoading = false
-                    }
-                )
-            } catch (e: Exception) {
-                error = e.message ?: "An unexpected error occurred"
-                isLoading = false
-            }
-        }
+        viewModel.loadPatientProfile(egn)
     }
 
     Dialog(
@@ -399,7 +377,7 @@ fun PatientProfileDialog(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 when {
-                    isLoading -> {
+                    uiState.isLoading -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -407,7 +385,7 @@ fun PatientProfileDialog(
                             CircularProgressIndicator(color = BrandBlueDark)
                         }
                     }
-                    error != null -> {
+                    uiState.error != null -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -421,21 +399,21 @@ fun PatientProfileDialog(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = error ?: "Unknown error",
+                                    text = uiState.error ?: "Unknown error",
                                     fontSize = 16.sp,
                                     color = BrandBlueDark.copy(alpha = 0.7f)
                                 )
                             }
                         }
                     }
-                    profile != null -> {
+                    uiState.profile != null -> {
                         Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            val loadedProfile = profile!!
+                            val loadedProfile = uiState.profile!!
                             
                             Text(
                                 text = "EGN: $egn",

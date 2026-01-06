@@ -24,6 +24,8 @@ import com.example.emergencynow.ui.feature.home.HomeViewModel
 import com.example.emergencynow.ui.feature.ambulance.AmbulanceSelectionViewModel
 import com.example.emergencynow.ui.feature.history.HistoryViewModel
 import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
+import com.example.emergencynow.ui.feature.contacts.EmergencyContactsViewModel
+import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
@@ -166,4 +168,16 @@ val appModule = module {
     viewModel { PersonalInformationViewModel(get(), get(), get()) }
     viewModel { HistoryViewModel(get()) }
     viewModel { PatientProfileViewModel(get()) }
+    viewModel {
+        EmergencyContactsViewModel(
+            getContactsUseCase = get(),
+            createContactUseCase = get(),
+            deleteContactUseCase = get()
+        )
+    }
+    viewModel {
+        ChooseVerificationMethodViewModel(
+            requestVerificationCodeUseCase = get()
+        )
+    }
 }

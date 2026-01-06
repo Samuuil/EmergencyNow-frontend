@@ -49,25 +49,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.domain.model.request.LoginMethod
-import com.example.emergencynow.domain.usecase.auth.RequestVerificationCodeUseCase
 import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
 import com.example.emergencynow.ui.theme.BrandBlueMid
 import com.example.emergencynow.ui.theme.BrandBlueDark
-import com.example.emergencynow.ui.util.AuthSession
-import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import androidx.compose.runtime.collectAsState
+import org.koin.androidx.compose.koinViewModel
 
-    @Composable
+@Composable
 fun ChooseVerificationMethodScreen(
     onBack: () -> Unit,
     onPhone: () -> Unit,
     onEmail: () -> Unit,
+    viewModel: ChooseVerificationMethodViewModel = koinViewModel()
 ) {
-    val scope = rememberCoroutineScope()
-    val requestVerificationCodeUseCase: RequestVerificationCodeUseCase = koinInject()
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -87,7 +82,7 @@ fun ChooseVerificationMethodScreen(
             ) {
                 IconButton(
                     onClick = onBack,
-                    enabled = !isLoading,
+                    enabled = !uiState.isLoading,
                     modifier = Modifier.padding(start = 0.dp)
                 ) {
                     Icon(
@@ -137,26 +132,9 @@ fun ChooseVerificationMethodScreen(
                     subtitle = "••• ••• ••89",
                     isSelected = true,
                     onClick = {
-                        val currentEgn = AuthSession.egn
-                        if (currentEgn.isNullOrEmpty() || isLoading) {
-                            error = "Missing EGN. Go back and enter it again."
-                            return@VerificationMethodCard
-                        }
-                        scope.launch {
-                            isLoading = true
-                            error = null
-                            try {
-                                AuthSession.lastMethod = LoginMethod.SMS
-                                requestVerificationCodeUseCase(egn = currentEgn, method = "sms").getOrThrow()
-                                onPhone()
-                            } catch (e: Exception) {
-                                error = "Failed to send verification code."
-                            } finally {
-                                isLoading = false
-                            }
-                        }
+                        viewModel.requestVerificationCode("sms", onPhone)
                     },
-                    enabled = !isLoading
+                    enabled = !uiState.isLoading
                 )
                 
                 Spacer(Modifier.height(20.dp))
@@ -166,32 +144,15 @@ fun ChooseVerificationMethodScreen(
                     subtitle = "j•••@email.com",
                     isSelected = false,
                     onClick = {
-                        val currentEgn = AuthSession.egn
-                        if (currentEgn.isNullOrEmpty() || isLoading) {
-                            error = "Missing EGN. Go back and enter it again."
-                            return@VerificationMethodCard
-                        }
-                        scope.launch {
-                            isLoading = true
-                            error = null
-                            try {
-                                AuthSession.lastMethod = LoginMethod.EMAIL
-                                requestVerificationCodeUseCase(egn = currentEgn, method = "email").getOrThrow()
-                                onEmail()
-                            } catch (e: Exception) {
-                                error = "Failed to send verification code."
-                            } finally {
-                                isLoading = false
-                            }
-                        }
+                        viewModel.requestVerificationCode("email", onEmail)
                     },
-                    enabled = !isLoading
+                    enabled = !uiState.isLoading
                 )
                 
-                if (error != null) {
+                if (uiState.error != null) {
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = error ?: "",
+                        text = uiState.error ?: "",
                         color = MaterialTheme.colorScheme.error,
                         fontSize = 14.sp
                     )
@@ -247,7 +208,7 @@ fun ChooseVerificationMethodScreen(
             }
         }
 
-        if (isLoading) {
+        if (uiState.isLoading) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
