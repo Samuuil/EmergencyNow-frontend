@@ -22,6 +22,7 @@ import com.example.emergencynow.domain.usecase.auth.RefreshTokenUseCase
 import com.example.emergencynow.data.util.JwtHelper
 import com.example.emergencynow.ui.constants.Routes
 import org.koin.core.context.GlobalContext
+import com.example.emergencynow.ui.components.NotificationHost
 import com.example.emergencynow.ui.theme.EmergencyNowTheme
 import com.example.emergencynow.ui.navigation.AppNavGraph
 import kotlinx.coroutines.launch
@@ -59,9 +60,13 @@ class MainActivity : ComponentActivity() {
                 }
 
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val destination = startDestination
-                    if (destination != null) {
-                        AppNavGraph(navController, startDestination = destination)
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+                        val destination = startDestination
+                        if (destination != null) {
+                            AppNavGraph(navController, startDestination = destination)
+                        }
+                        
+                        NotificationHost()
                     }
                 }
             }

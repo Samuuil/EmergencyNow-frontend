@@ -4,6 +4,7 @@ package com.example.emergencynow.ui.feature.auth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -56,6 +57,7 @@ fun EnterVerificationCodeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp)
+                .navigationBarsPadding()
         ) {
             Spacer(Modifier.height(48.dp))
 
@@ -213,15 +215,7 @@ fun EnterVerificationCodeScreen(
                 )
             }
 
-            if (state.error != null) {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = state.error ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    fontSize = 14.sp,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            }
+
             
             Spacer(Modifier.weight(1f))
             Spacer(Modifier.height(32.dp))

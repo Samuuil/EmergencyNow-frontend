@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -70,7 +71,9 @@ fun ChooseVerificationMethodScreen(
         ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
         
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .navigationBarsPadding()
         ) {
             Spacer(Modifier.height(48.dp))
             
@@ -149,14 +152,7 @@ fun ChooseVerificationMethodScreen(
                     enabled = !uiState.isLoading
                 )
                 
-                if (uiState.error != null) {
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = uiState.error ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 14.sp
-                    )
-                }
+
                 
                 Spacer(Modifier.weight(1f))
             }

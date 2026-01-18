@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,18 +65,7 @@ fun EnterEgnScreen(
         }
     }
 
-    if (state.error != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onAction(EnterEgnAction.OnErrorDismissed) },
-            title = { Text("Error") },
-            text = { Text(state.error ?: "") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.onAction(EnterEgnAction.OnErrorDismissed) }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
+
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -86,6 +76,7 @@ fun EnterEgnScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp)
+                .navigationBarsPadding()
         ) {
             Spacer(Modifier.height(48.dp))
             Row(

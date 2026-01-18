@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class ChooseVerificationMethodUiState(
-    val isLoading: Boolean = false,
-    val error: String? = null
+    val isLoading: Boolean = false
 )
 
 class ChooseVerificationMethodViewModel(
-    private val requestVerificationCodeUseCase: RequestVerificationCodeUseCase
+    private val requestVerificationCodeUseCase: RequestVerificationCodeUseCase,
+    private val notificationManager: com.example.emergencynow.ui.util.NotificationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChooseVerificationMethodUiState())
@@ -28,13 +28,12 @@ class ChooseVerificationMethodViewModel(
             try {
                 val currentEgn = AuthSession.egn
                 if (currentEgn.isNullOrEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        error = "Missing EGN. Go back and enter it again."
-                    )
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    notificationManager.showError("Missing EGN. Go back and enter it again.")
                     return@launch
                 }
 
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+                _uiState.value = _uiState.value.copy(isLoading = true)
                 
                 AuthSession.lastMethod = if (method == "sms") LoginMethod.SMS else LoginMethod.EMAIL
                 requestVerificationCodeUseCase(egn = currentEgn, method = method).getOrThrow()
@@ -43,17 +42,13 @@ class ChooseVerificationMethodViewModel(
                 onSuccess()
             } catch (e: Exception) {
                 Log.e("ChooseVerificationMethodViewModel", "Failed to send verification code", e)
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Failed to send verification code."
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                notificationManager.showError("Failed to send verification code.")
             }
         }
     }
 
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
+
 }
 
 

@@ -26,6 +26,7 @@ import com.example.emergencynow.ui.feature.history.HistoryViewModel
 import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsViewModel
 import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodViewModel
+import com.example.emergencynow.ui.util.NotificationManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit
 val appModule = module {
 
     single { SessionManager(androidContext()) }
+    single { NotificationManager() }
 
     single {
         HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
@@ -140,8 +142,8 @@ val appModule = module {
 
     factory { GetUserRoleUseCase(lazy { get<UserRepository>() }) }
 
-    viewModel { EnterEgnViewModel() }
-    viewModel { VerifyCodeViewModel(get(), get(), get(), get(), androidContext()) }
+    viewModel { EnterEgnViewModel(get()) }
+    viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get(), androidContext()) }
     viewModel { 
         HomeViewModel(
             getUserRoleUseCase = get(),
@@ -177,7 +179,8 @@ val appModule = module {
     }
     viewModel {
         ChooseVerificationMethodViewModel(
-            requestVerificationCodeUseCase = get()
+            requestVerificationCodeUseCase = get(),
+            notificationManager = get()
         )
     }
 }
