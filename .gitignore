@@ -18,3 +18,4 @@ local.properties
 /Example
 /StateArchive
 *.log
+*.md
