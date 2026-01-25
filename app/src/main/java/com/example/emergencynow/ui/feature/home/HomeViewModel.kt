@@ -17,6 +17,7 @@ import com.example.emergencynow.domain.repository.UserRepository
 import com.example.emergencynow.domain.model.response.CallResponse
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.CallOffer
+import com.example.emergencynow.ui.util.DriverNotificationHelper
 import com.example.emergencynow.ui.util.DriverSocketManager
 import com.example.emergencynow.ui.util.UserSocketManager
 import com.example.emergencynow.data.service.AmbulanceService
@@ -78,7 +79,8 @@ class HomeViewModel(
     private val getHospitalRouteUseCase: GetHospitalRouteUseCase,
     private val ambulanceService: AmbulanceService,
     private val callRepository: CallRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val driverNotificationHelper: DriverNotificationHelper
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -204,6 +206,7 @@ class HomeViewModel(
             
             DriverSocketManager.onCallOffer = { offer ->
                 Log.d("HomeViewModel", "Call offer received: ${offer.callId}")
+                driverNotificationHelper.showCallOfferNotification(offer)
                 _uiState.value = _uiState.value.copy(
                     incomingCallOffer = offer,
                     emergencyLocation = LatLng(offer.latitude, offer.longitude)

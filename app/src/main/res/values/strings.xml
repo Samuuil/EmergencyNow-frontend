@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">EmergencyNow</string>
+    <string name="driver_call_channel_name">Incoming Call Offers</string>
+    <string name="driver_call_channel_description">Alerts when a new emergency call offer is assigned to you.</string>
+    <string name="driver_call_notification_title">New Call Offer</string>
+    <string name="driver_call_notification_message">%1$s</string>
+    <string name="driver_call_notification_details_distance">%1$d m away</string>
+    <string name="driver_call_notification_details_duration_minutes">ETA %1$d min</string>
 </resources>

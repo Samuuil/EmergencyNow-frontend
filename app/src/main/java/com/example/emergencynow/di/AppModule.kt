@@ -26,6 +26,7 @@ import com.example.emergencynow.ui.feature.history.HistoryViewModel
 import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsViewModel
 import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodViewModel
+import com.example.emergencynow.ui.util.DriverNotificationHelper
 import com.example.emergencynow.ui.util.NotificationManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -41,6 +42,7 @@ val appModule = module {
 
     single { SessionManager(androidContext()) }
     single { NotificationManager() }
+    single { DriverNotificationHelper(androidContext()) }
 
     single {
         HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
@@ -157,7 +159,8 @@ val appModule = module {
             getHospitalRouteUseCase = get(),
             ambulanceService = get(),
             callRepository = get(),
-            userRepository = get()
+            userRepository = get(),
+            driverNotificationHelper = get()
         )
     }
     viewModel {
