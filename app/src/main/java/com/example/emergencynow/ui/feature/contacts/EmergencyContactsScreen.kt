@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -167,50 +168,57 @@ fun EmergencyContactsScreen(
                 
                 Spacer(Modifier.height(16.dp))
                 
-                Button(
-                    onClick = {
-                        viewModel.saveContacts(onFinish)
-                    },
-                    enabled = uiState.contacts.any { it.name.isNotBlank() && it.phone.isNotBlank() } && !uiState.isSaving,
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .height(68.dp)
-                        .shadow(
-                            elevation = 20.dp,
-                            shape = RoundedCornerShape(16.dp),
-                            spotColor = BrandBlueDark.copy(alpha = 0.2f)
-                        ),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = BrandBlueDark,
-                        contentColor = Color.White,
-                        disabledContainerColor = Color(0xFFE5E7EB),
-                        disabledContentColor = Color(0xFF6B7280)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp)
                 ) {
-                    if (uiState.isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = Color.White
-                        )
-                    } else {
-                        Text(
-                            text = "Finish Setup",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                
-                if (uiState.isSaving) {
-                    Box(
+                    Button(
+                        onClick = {
+                            viewModel.saveContacts(onFinish)
+                        },
+                        enabled = uiState.contacts.any { it.name.isNotBlank() && it.phone.isNotBlank() } && !uiState.isSaving,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(horizontal = 20.dp)
+                            .height(68.dp)
+                            .shadow(
+                                elevation = 20.dp,
+                                shape = RoundedCornerShape(16.dp),
+                                spotColor = BrandBlueDark.copy(alpha = 0.2f)
+                            ),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BrandBlueDark,
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFFE5E7EB),
+                            disabledContentColor = Color(0xFF6B7280)
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                text = "Finish Setup",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    
+                    if (uiState.isSaving) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        }
                     }
                 }
                 

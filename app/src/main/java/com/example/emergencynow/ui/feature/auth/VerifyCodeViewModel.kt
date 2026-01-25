@@ -18,6 +18,7 @@ class VerifyCodeViewModel(
     private val requestVerificationCodeUseCase: RequestVerificationCodeUseCase,
     private val sessionManager: SessionManager,
     private val getContactsUseCase: GetContactsUseCase,
+    private val notificationManager: com.example.emergencynow.ui.util.NotificationManager,
     private val context: Context
 ) : ViewModel() {
     
@@ -31,7 +32,7 @@ class VerifyCodeViewModel(
     fun onAction(action: VerifyCodeAction) {
         when (action) {
             is VerifyCodeAction.OnCodeChanged -> {
-                _state.update { it.copy(code = action.code, error = null) }
+                _state.update { it.copy(code = action.code) }
             }
             
             is VerifyCodeAction.OnVerifyClicked -> {
@@ -42,9 +43,7 @@ class VerifyCodeViewModel(
                 resendCode()
             }
             
-            is VerifyCodeAction.OnErrorDismissed -> {
-                _state.update { it.copy(error = null) }
-            }
+
         }
     }
     
@@ -53,17 +52,17 @@ class VerifyCodeViewModel(
         val code = _state.value.code
         
         if (egn.isEmpty()) {
-            _state.update { it.copy(error = "Missing EGN. Please go back.") }
+            notificationManager.showError("Missing EGN. Please go back.")
             return
         }
         
         if (code.length != 6 || !code.all { it.isDigit() }) {
-            _state.update { it.copy(error = "Code must be exactly 6 digits") }
+            notificationManager.showError("Code must be exactly 6 digits")
             return
         }
         
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
             
             verifyCodeUseCase(egn = egn, code = code).fold(
                 onSuccess = { token ->
@@ -91,12 +90,8 @@ class VerifyCodeViewModel(
                     }
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Invalid or expired verification code"
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false) }
+                    notificationManager.showError(error.message ?: "Invalid or expired verification code")
                 }
             )
         }
@@ -106,12 +101,12 @@ class VerifyCodeViewModel(
         val egn = _state.value.egn
         
         if (egn.isEmpty()) {
-            _state.update { it.copy(error = "Missing EGN. Please go back.") }
+            notificationManager.showError("Missing EGN. Please go back.")
             return
         }
         
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
             
             requestVerificationCodeUseCase(egn = egn, method = "sms").fold(
                 onSuccess = { _ ->
@@ -123,12 +118,8 @@ class VerifyCodeViewModel(
                     }
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to resend code"
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false) }
+                    notificationManager.showError(error.message ?: "Failed to resend code")
                 }
             )
         }
