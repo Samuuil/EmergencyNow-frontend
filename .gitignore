@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+/app/src/main/res/values/google_maps_api.xml
+/Backend
+/Example
+/StateArchive
+*.log
+*.md

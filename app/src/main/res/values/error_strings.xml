@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Auth errors -->
+    <string name="error_invalid_credentials">Invalid email or password</string>
+    <string name="error_invalid_verification_code">Invalid verification code</string>
+    <string name="error_verification_code_expired">Verification code has expired</string>
+    <string name="error_verification_code_not_found">Verification code not found</string>
+    <string name="error_user_not_in_archive">User not found in system</string>
+    <string name="error_invalid_refresh_token">Session expired. Please login again</string>
+    <string name="error_refresh_token_expired">Session expired. Please login again</string>
+    <string name="error_token_generation_failed">Failed to generate authentication tokens</string>
+    <string name="error_unauthorized_access">Authentication required</string>
+    <string name="error_email_send_failed">Failed to send verification email</string>
+    <string name="error_sms_send_failed">Failed to send verification SMS</string>
+    <string name="error_verification_code_generation_failed">Failed to generate verification code</string>
+    <string name="error_logout_failed">Failed to logout</string>
+    <string name="error_invalid_login_method">Invalid login method</string>
+
+    <!-- Ambulance errors -->
+    <string name="error_ambulance_not_found">Ambulance not found</string>
+    <string name="error_ambulance_already_exists">Ambulance with this license plate already exists</string>
+    <string name="error_invalid_license_plate">Invalid license plate format</string>
+    <string name="error_driver_not_found">Driver not found</string>
+    <string name="error_driver_already_assigned">Driver is already assigned to another ambulance</string>
+    <string name="error_ambulance_not_available">Ambulance is not available</string>
+    <string name="error_no_available_ambulances">No ambulances available at the moment</string>
+    <string name="error_location_update_failed">Failed to update location</string>
+    <string name="error_invalid_location">Invalid location coordinates</string>
+    <string name="error_ambulance_creation_failed">Failed to create ambulance</string>
+    <string name="error_ambulance_update_failed">Failed to update ambulance</string>
+    <string name="error_ambulance_delete_failed">Failed to delete ambulance</string>
+    <string name="error_driver_assignment_failed">Failed to assign driver to ambulance</string>
+    <string name="error_driver_removal_failed">Failed to remove driver from ambulance</string>
+    <string name="error_distance_calculation_failed">Failed to calculate distance</string>
+
+    <!-- Contact errors -->
+    <string name="error_contact_not_found">Contact not found</string>
+    <string name="error_max_contacts_reached">Maximum number of contacts reached (5 max)</string>
+    <string name="error_contact_creation_failed">Failed to create contact</string>
+    <string name="error_contact_update_failed">Failed to update contact</string>
+    <string name="error_contact_delete_failed">Failed to delete contact</string>
+    <string name="error_unauthorized_contact_access">You don\'t have permission to access this contact</string>
+
+    <!-- Profile errors -->
+    <string name="error_profile_not_found">Profile not found</string>
+    <string name="error_profile_already_exists">Profile already exists for this user</string>
+    <string name="error_profile_creation_failed">Failed to create profile</string>
+    <string name="error_profile_update_failed">Failed to update profile</string>
+    <string name="error_profile_delete_failed">Failed to delete profile</string>
+    <string name="error_invalid_profile_data">Invalid profile data</string>
+    <string name="error_user_not_found">User not found</string>
+
+    <!-- User errors -->
+    <string name="error_user_already_exists">User already exists</string>
+    <string name="error_user_creation_failed">Failed to create user</string>
+    <string name="error_user_update_failed">Failed to update user</string>
+    <string name="error_user_delete_failed">Failed to delete user</string>
+    <string name="error_invalid_user_id">Invalid user ID format</string>
+    <string name="error_refresh_token_update_failed">Failed to update session</string>
+    <string name="error_state_archive_not_found">State archive record not found</string>
+
+    <!-- State Archive errors -->
+    <string name="error_state_archive_already_exists">State archive record already exists</string>
+    <string name="error_state_archive_creation_failed">Failed to create state archive record</string>
+    <string name="error_state_archive_update_failed">Failed to update state archive record</string>
+    <string name="error_state_archive_delete_failed">Failed to delete state archive record</string>
+    <string name="error_invalid_egn">Invalid EGN format</string>
+    <string name="error_invalid_email">Invalid email address</string>
+    <string name="error_invalid_phone_number">Invalid phone number</string>
+    <string name="error_egn_already_exists">EGN already exists in the system</string>
+
+    <!-- Hospital errors -->
+    <string name="error_hospital_not_found">Hospital not found</string>
+    <string name="error_hospital_already_exists">Hospital already exists</string>
+    <string name="error_hospital_creation_failed">Failed to create hospital</string>
+    <string name="error_hospital_update_failed">Failed to update hospital</string>
+    <string name="error_hospital_delete_failed">Failed to delete hospital</string>
+    <string name="error_no_hospitals_found">No hospitals found nearby</string>
+    <string name="error_google_places_sync_failed">Failed to sync hospitals from Google Places</string>
+    <string name="error_invalid_hospital_data">Invalid hospital data</string>
+
+    <!-- Call errors -->
+    <string name="error_call_not_found">Emergency call not found</string>
+    <string name="error_call_creation_failed">Failed to create emergency call</string>
+    <string name="error_call_update_failed">Failed to update emergency call</string>
+    <string name="error_call_delete_failed">Failed to delete emergency call</string>
+    <string name="error_invalid_call_status">Invalid call status</string>
+    <string name="error_call_already_completed">Call is already completed</string>
+    <string name="error_call_already_cancelled">Call is already cancelled</string>
+    <string name="error_no_ambulance_assigned">No ambulance assigned to this call</string>
+    <string name="error_ambulance_dispatch_failed">Failed to dispatch ambulance</string>
+    <string name="error_hospital_not_selected">No hospital selected for this call</string>
+    <string name="error_hospital_selection_failed">Failed to select hospital</string>
+    <string name="error_route_calculation_failed">Failed to calculate route</string>
+    <string name="error_contact_notification_failed">Failed to notify emergency contacts</string>
+    <string name="error_driver_response_failed">Failed to process driver response</string>
+    <string name="error_no_available_drivers">No available drivers found</string>
+    <string name="error_invalid_user">Invalid user</string>
+
+    <!-- Contact additional errors -->
+    <string name="error_invalid_contact_data">Invalid contact data</string>
+
+    <!-- Generic errors -->
+    <string name="error_database">Database operation failed</string>
+    <string name="error_default">An error occurred. Please try again</string>
+    <string name="error_network">Network connection error</string>
+</resources>
