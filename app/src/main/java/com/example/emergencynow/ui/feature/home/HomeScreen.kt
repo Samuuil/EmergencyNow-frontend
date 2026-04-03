@@ -473,7 +473,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
-                            .padding(bottom = 190.dp)
+                            .padding(bottom = 260.dp)
                             .fillMaxWidth()
                             .height(56.dp)
                             .shadow(
@@ -499,7 +499,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
-                            .padding(bottom = 190.dp)
+                            .padding(bottom = 260.dp)
                             .fillMaxWidth()
                             .height(56.dp)
                             .shadow(

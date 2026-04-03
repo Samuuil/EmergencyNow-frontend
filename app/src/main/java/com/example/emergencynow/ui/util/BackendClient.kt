@@ -1,5 +1,6 @@
 package com.example.emergencynow.ui.util
 
+import com.example.emergencynow.BuildConfig
 import com.example.emergencynow.domain.model.request.*
 import com.example.emergencynow.domain.model.response.*
 import okhttp3.OkHttpClient
@@ -8,6 +9,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
+import java.util.concurrent.TimeUnit
 
 interface BackendApi {
     @POST("auth/initiate-login")
@@ -112,7 +114,15 @@ object BackendClient {
     )
 
     private val httpClient: OkHttpClient = OkHttpClient.Builder()
-        .addInterceptor(FallbackHostInterceptor())
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .apply {
+            // Only use fallback interceptor in debug builds
+            if (BuildConfig.DEBUG) {
+                addInterceptor(FallbackHostInterceptor())
+            }
+        }
         .addInterceptor(logging)
         .build()
 
