@@ -1,9 +1,11 @@
 package com.example.emergencynow.ui.util
 
+import com.example.emergencynow.BuildConfig
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
 object NetworkConfig {
-    private const val PRIMARY_BASE = "https://emergencynow.samuil.me"
+    // Use BuildConfig.BASE_URL from local.properties
+    private val PRIMARY_BASE = BuildConfig.BASE_URL.removeSuffix("/")
     private const val FALLBACK_BASE = "http://127.0.0.1:3000"
 
     @Volatile
