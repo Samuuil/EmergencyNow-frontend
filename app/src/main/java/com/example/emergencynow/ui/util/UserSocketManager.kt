@@ -14,7 +14,8 @@ data class CallDispatched(
     val ambulanceLongitude: Double,
     val polyline: String,
     val distance: Int,
-    val duration: Int
+    val duration: Int,
+    val steps: List<String> = emptyList()
 )
 
 data class AmbulanceLocationUpdate(
@@ -23,7 +24,8 @@ data class AmbulanceLocationUpdate(
     val longitude: Double,
     val polyline: String?,
     val distance: Int?,
-    val duration: Int?
+    val duration: Int?,
+    val steps: List<String> = emptyList()
 )
 
 data class CallStatusUpdate(
@@ -124,6 +126,22 @@ object UserSocketManager {
                     val ambulanceLocation = data.getJSONObject("ambulanceLocation")
                     val route = data.getJSONObject("route")
                     
+                    // Parse steps
+                    val steps = mutableListOf<String>()
+                    val stepsArray = route.optJSONArray("steps")
+                    if (stepsArray != null) {
+                        for (i in 0 until stepsArray.length()) {
+                            val item = stepsArray.get(i)
+                            when (item) {
+                                is String -> steps.add(item)
+                                is JSONObject -> {
+                                    val instruction = item.optString("instruction", "")
+                                    if (instruction.isNotEmpty()) steps.add(instruction)
+                                }
+                            }
+                        }
+                    }
+                    
                     val dispatched = CallDispatched(
                         callId = data.getString("callId"),
                         ambulanceId = data.getString("ambulanceId"),
@@ -131,7 +149,8 @@ object UserSocketManager {
                         ambulanceLongitude = ambulanceLocation.getDouble("longitude"),
                         polyline = route.getString("polyline"),
                         distance = route.getInt("distance"),
-                        duration = route.getInt("duration")
+                        duration = route.getInt("duration"),
+                        steps = steps
                     )
                     Log.d(TAG, "Parsed call.dispatched: callId=${dispatched.callId}")
                     
@@ -160,13 +179,30 @@ object UserSocketManager {
                     val ambulanceLocation = data.getJSONObject("ambulanceLocation")
                     val route = data.optJSONObject("route")
                     
+                    // Parse steps
+                    val steps = mutableListOf<String>()
+                    val stepsArray = route?.optJSONArray("steps")
+                    if (stepsArray != null) {
+                        for (i in 0 until stepsArray.length()) {
+                            val item = stepsArray.get(i)
+                            when (item) {
+                                is String -> steps.add(item)
+                                is JSONObject -> {
+                                    val instruction = item.optString("instruction", "")
+                                    if (instruction.isNotEmpty()) steps.add(instruction)
+                                }
+                            }
+                        }
+                    }
+                    
                     val update = AmbulanceLocationUpdate(
                         callId = data.getString("callId"),
                         latitude = ambulanceLocation.getDouble("latitude"),
                         longitude = ambulanceLocation.getDouble("longitude"),
                         polyline = route?.optString("polyline"),
                         distance = route?.optInt("distance"),
-                        duration = route?.optInt("duration")
+                        duration = route?.optInt("duration"),
+                        steps = steps
                     )
                     Log.d(TAG, "Parsed ambulance.location: callId=${update.callId}, lat=${update.latitude}, lng=${update.longitude}")
                     

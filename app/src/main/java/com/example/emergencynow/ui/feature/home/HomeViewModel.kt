@@ -406,15 +406,20 @@ class HomeViewModel(
                 val hospital = _uiState.value.availableHospitals.find { it.id == hospitalId }
                 if (hospital != null) {
                     Log.d("HomeViewModel", "Found hospital: ${hospital.name} at ${hospital.latitude}, ${hospital.longitude}")
+                    val newHospitalLocation = LatLng(hospital.latitude, hospital.longitude)
+                    Log.d("HomeViewModel", "Setting hospitalLocation to: $newHospitalLocation")
                     _uiState.value = _uiState.value.copy(
                         selectedHospitalName = hospital.name,
-                        hospitalLocation = LatLng(hospital.latitude, hospital.longitude),
+                        hospitalLocation = newHospitalLocation,
                         showHospitalSelection = false,
                         callStatus = CallStatus.NAVIGATING_TO_HOSPITAL,
                         activeRoutePolyline = emptyList(),
                         activeRouteDistance = 0,
                         activeRouteDuration = 0
                     )
+                    Log.d("HomeViewModel", "State updated - hospitalLocation is now: ${_uiState.value.hospitalLocation}")
+                    Log.d("HomeViewModel", "State updated - selectedHospitalName is now: ${_uiState.value.selectedHospitalName}")
+                    Log.d("HomeViewModel", "State updated - callStatus is now: ${_uiState.value.callStatus}")
 
                     Log.d("HomeViewModel", "════════════════════════════════════════")
                     Log.d("HomeViewModel", "FETCHING HOSPITAL ROUTE NOW...")
@@ -590,6 +595,7 @@ class HomeViewModel(
                     activeRoutePolyline = decodePolyline(dispatched.polyline),
                     activeRouteDistance = dispatched.distance,
                     activeRouteDuration = dispatched.duration,
+                    activeRouteSteps = dispatched.steps,
                     userCallStatus = "dispatched"
                 )
                 
@@ -606,7 +612,8 @@ class HomeViewModel(
                     ambulanceLocation = LatLng(update.latitude, update.longitude),
                     activeRoutePolyline = update.polyline?.let { decodePolyline(it) } ?: _uiState.value.activeRoutePolyline,
                     activeRouteDistance = update.distance ?: _uiState.value.activeRouteDistance,
-                    activeRouteDuration = update.duration ?: _uiState.value.activeRouteDuration
+                    activeRouteDuration = update.duration ?: _uiState.value.activeRouteDuration,
+                    activeRouteSteps = if (update.steps.isNotEmpty()) update.steps else _uiState.value.activeRouteSteps
                 )
             }
             

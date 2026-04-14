@@ -169,7 +169,7 @@ val appModule = module {
             assignAmbulanceDriverUseCase = get()
         )
     }
-    viewModel { EmergencyCallViewModel(get(), get()) }
+    viewModel { EmergencyCallViewModel(get()) }
     viewModel { PersonalInformationViewModel(get(), get(), get()) }
     viewModel { HistoryViewModel(get()) }
     viewModel { PatientProfileViewModel(get()) }

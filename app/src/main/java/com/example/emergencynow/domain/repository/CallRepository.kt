@@ -7,8 +7,7 @@ interface CallRepository {
     suspend fun createCall(
         description: String,
         latitude: Double,
-        longitude: Double,
-        userEgn: String
+        longitude: Double
     ): Result<Call>
     
     suspend fun getCallTracking(callId: String): Result<Call>

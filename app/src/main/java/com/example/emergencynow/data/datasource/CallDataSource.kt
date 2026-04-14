@@ -8,8 +8,7 @@ interface CallDataSource {
     suspend fun createCall(
         description: String,
         latitude: Double,
-        longitude: Double,
-        userEgn: String
+        longitude: Double
     ): CallResponse
     
     suspend fun getCallTracking(callId: String): CallTrackingResponse
