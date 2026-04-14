@@ -141,12 +141,16 @@ fun HomeScreen(
     LaunchedEffect(uiState.hospitalRoutePolyline) {
         val points = uiState.hospitalRoutePolyline
         if (points.isNotEmpty()) {
+            Log.d("HomeScreen", "Animating camera to show hospital route with ${points.size} points")
+            Log.d("HomeScreen", "Hospital location: ${uiState.hospitalLocation}")
+            Log.d("HomeScreen", "User location: ${uiState.userLocation}")
             val builder = LatLngBounds.Builder()
             points.forEach { builder.include(it) }
             uiState.userLocation?.let { builder.include(it) }
             uiState.hospitalLocation?.let { builder.include(it) }
             val bounds = builder.build()
             cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100))
+            Log.d("HomeScreen", "Camera animation completed")
         }
     }
 
@@ -221,6 +225,8 @@ fun HomeScreen(
             }
 
             if (uiState.hospitalLocation != null) {
+                Log.d("HomeScreen", "Rendering hospital marker at: ${uiState.hospitalLocation}")
+                Log.d("HomeScreen", "Hospital name: ${uiState.selectedHospitalName}")
                 Marker(
                     state = MarkerState(position = uiState.hospitalLocation!!),
                     title = uiState.selectedHospitalName ?: "Hospital",
@@ -237,6 +243,8 @@ fun HomeScreen(
             }
 
             if (uiState.hospitalRoutePolyline.isNotEmpty()) {
+                Log.d("HomeScreen", "Rendering hospital route polyline with ${uiState.hospitalRoutePolyline.size} points")
+                Log.d("HomeScreen", "Call status: ${uiState.callStatus}")
                 Polyline(
                     points = uiState.hospitalRoutePolyline,
                     color = Color(0xFF3B82F6),
@@ -473,7 +481,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
-                            .padding(bottom = 260.dp)
+                            .padding(bottom = 240.dp)
                             .fillMaxWidth()
                             .height(56.dp)
                             .shadow(
@@ -499,7 +507,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
-                            .padding(bottom = 260.dp)
+                            .padding(bottom = 240.dp)
                             .fillMaxWidth()
                             .height(56.dp)
                             .shadow(

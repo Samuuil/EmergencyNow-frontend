@@ -18,7 +18,22 @@ class GetCallTrackingUseCase(private val repository: Lazy<CallRepository>) {
                     com.example.emergencynow.domain.model.response.RouteDto(
                         polyline = polyline,
                         distance = call.estimatedDistance ?: 0,
-                        duration = call.estimatedDuration ?: 0
+                        duration = call.estimatedDuration ?: 0,
+                        steps = call.routeSteps?.map { step ->
+                            com.example.emergencynow.domain.model.response.RouteStepDto(
+                                distance = step.distance,
+                                duration = step.duration,
+                                instruction = step.instruction,
+                                startLocation = com.example.emergencynow.domain.model.response.LocationDto(
+                                    lat = step.startLocation.lat,
+                                    lng = step.startLocation.lng
+                                ),
+                                endLocation = com.example.emergencynow.domain.model.response.LocationDto(
+                                    lat = step.endLocation.lat,
+                                    lng = step.endLocation.lng
+                                )
+                            )
+                        }
                     )
                 }
             )

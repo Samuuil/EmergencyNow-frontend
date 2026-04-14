@@ -33,5 +33,33 @@ data class RouteDto(
     val distance: Int,
     
     @SerializedName("duration")
-    val duration: Int
+    val duration: Int,
+    
+    @SerializedName("steps")
+    val steps: List<RouteStepDto>? = null
+)
+
+data class RouteStepDto(
+    @SerializedName("distance")
+    val distance: Int,
+    
+    @SerializedName("duration")
+    val duration: Int,
+    
+    @SerializedName("instruction")
+    val instruction: String,
+    
+    @SerializedName("startLocation")
+    val startLocation: LocationDto,
+    
+    @SerializedName("endLocation")
+    val endLocation: LocationDto
+)
+
+data class LocationDto(
+    @SerializedName("lat")
+    val lat: Double,
+    
+    @SerializedName("lng")
+    val lng: Double
 )

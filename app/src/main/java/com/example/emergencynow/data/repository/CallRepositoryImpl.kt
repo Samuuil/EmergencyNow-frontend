@@ -14,10 +14,9 @@ class CallRepositoryImpl(
     override suspend fun createCall(
         description: String,
         latitude: Double,
-        longitude: Double,
-        userEgn: String
+        longitude: Double
     ): Result<Call> = safeApiCall {
-        val response = callDataSource.createCall(description, latitude, longitude, userEgn)
+        val response = callDataSource.createCall(description, latitude, longitude)
         mapResponseToCall(response)
     }
     
@@ -32,7 +31,21 @@ class CallRepositoryImpl(
             routePolyline = response.route?.polyline,
             estimatedDistance = response.route?.distance,
             estimatedDuration = response.route?.duration,
-            routeSteps = null,
+            routeSteps = response.route?.steps?.map { step ->
+                com.example.emergencynow.domain.model.entity.RouteStep(
+                    distance = step.distance,
+                    duration = step.duration,
+                    instruction = step.instruction,
+                    startLocation = com.example.emergencynow.domain.model.entity.Location(
+                        lat = step.startLocation.lat,
+                        lng = step.startLocation.lng
+                    ),
+                    endLocation = com.example.emergencynow.domain.model.entity.Location(
+                        lat = step.endLocation.lat,
+                        lng = step.endLocation.lng
+                    )
+                )
+            },
             ambulanceCurrentLatitude = response.driverLatitude,
             ambulanceCurrentLongitude = response.driverLongitude,
             dispatchedAt = null,
