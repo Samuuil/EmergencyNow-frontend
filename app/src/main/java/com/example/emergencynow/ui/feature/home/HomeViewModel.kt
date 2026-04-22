@@ -16,6 +16,7 @@ import com.example.emergencynow.domain.repository.CallRepository
 import com.example.emergencynow.domain.repository.UserRepository
 import com.example.emergencynow.domain.model.response.CallResponse
 import com.example.emergencynow.ui.util.AuthSession
+import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.CallOffer
 import com.example.emergencynow.ui.util.DriverNotificationHelper
 import com.example.emergencynow.ui.util.DriverSocketManager
@@ -80,7 +81,8 @@ class HomeViewModel(
     private val ambulanceService: AmbulanceService,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
-    private val driverNotificationHelper: DriverNotificationHelper
+    private val driverNotificationHelper: DriverNotificationHelper,
+    private val authStorage: AuthStorage,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -95,7 +97,7 @@ class HomeViewModel(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 
-                val accessToken = AuthSession.accessToken
+                val accessToken = authStorage.accessToken
                 val userId = AuthSession.userId
                 
                 if (!accessToken.isNullOrEmpty() && !userId.isNullOrEmpty()) {
@@ -147,7 +149,7 @@ class HomeViewModel(
         Log.d("HomeViewModel", "Current isSocketConnected: ${_uiState.value.isSocketConnected}")
         Log.d("HomeViewModel", "════════════════════════════════════════")
         
-        val accessToken = AuthSession.accessToken
+        val accessToken = authStorage.accessToken
         val ambulanceId = _uiState.value.assignedAmbulanceId
         
         if (!accessToken.isNullOrEmpty() && ambulanceId != null) {
@@ -194,7 +196,7 @@ class HomeViewModel(
     }
 
     private fun connectToWebSocket(ambulanceId: String) {
-        val accessToken = AuthSession.accessToken
+        val accessToken = authStorage.accessToken
         if (!accessToken.isNullOrEmpty()) {
             Log.d("HomeViewModel", "════════════════════════════════════════")
             Log.d("HomeViewModel", "Setting up driver socket connection...")
@@ -574,7 +576,7 @@ class HomeViewModel(
     }
 
     private fun connectUserToWebSocket() {
-        val accessToken = AuthSession.accessToken
+        val accessToken = authStorage.accessToken
         if (!accessToken.isNullOrEmpty()) {
             Log.d("HomeViewModel", "Connecting user to WebSocket for live tracking")
             

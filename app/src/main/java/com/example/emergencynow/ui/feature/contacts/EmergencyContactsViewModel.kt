@@ -37,8 +37,7 @@ class EmergencyContactsViewModel(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 
-                val accessToken = AuthSession.accessToken
-                if (accessToken.isNullOrEmpty()) {
+                if (AuthSession.userId.isNullOrEmpty()) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "Missing session. Log in again."
@@ -85,10 +84,9 @@ class EmergencyContactsViewModel(
     fun removeContact(index: Int) {
         viewModelScope.launch {
             try {
-                val accessToken = AuthSession.accessToken
                 val toRemove = _uiState.value.contacts[index]
-                
-                if (!toRemove.id.isNullOrEmpty() && !accessToken.isNullOrEmpty()) {
+
+                if (!toRemove.id.isNullOrEmpty() && !AuthSession.userId.isNullOrEmpty()) {
                     deleteContactUseCase(toRemove.id!!).getOrThrow()
                 }
                 
@@ -107,8 +105,7 @@ class EmergencyContactsViewModel(
     fun saveContacts(onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                val accessToken = AuthSession.accessToken
-                if (accessToken.isNullOrEmpty()) {
+                if (AuthSession.userId.isNullOrEmpty()) {
                     _uiState.value = _uiState.value.copy(
                         error = "Missing session. Log in again."
                     )

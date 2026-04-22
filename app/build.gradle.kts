@@ -90,8 +90,6 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:3.5.6")
     implementation("io.insert-koin:koin-compose:1.1.5")
 
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

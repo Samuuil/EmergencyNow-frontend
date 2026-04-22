@@ -13,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.example.emergencynow.ui.util.AuthSession
@@ -25,7 +24,6 @@ import org.koin.core.context.GlobalContext
 import com.example.emergencynow.ui.components.NotificationHost
 import com.example.emergencynow.ui.theme.EmergencyNowTheme
 import com.example.emergencynow.ui.navigation.AppNavGraph
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,24 +32,22 @@ class MainActivity : ComponentActivity() {
         setContent {
             EmergencyNowTheme {
                 val navController = rememberNavController()
-                val context = LocalContext.current
                 var startDestination by remember { mutableStateOf<String?>(null) }
 
                 LaunchedEffect(Unit) {
-                    val tokens = AuthStorage.loadTokens(context)
-                    val refreshToken = tokens.refreshToken
+                    val authStorage = GlobalContext.get().get<AuthStorage>()
+                    val refreshToken = authStorage.refreshToken
                     if (refreshToken != null) {
                         try {
                             val refreshTokenUseCase = GlobalContext.get().get<RefreshTokenUseCase>()
                             val token = refreshTokenUseCase(refreshToken).getOrThrow()
-                            AuthSession.accessToken = token.accessToken
-                            AuthSession.refreshToken = token.refreshToken
+                            authStorage.accessToken = token.accessToken
+                            authStorage.refreshToken = token.refreshToken
                             val payload = JwtHelper.parseJwt(token.accessToken)
                             AuthSession.userId = payload?.sub
-                            AuthStorage.saveTokens(context, token.accessToken, token.refreshToken)
                             startDestination = Routes.HOME
                         } catch (e: Exception) {
-                            AuthStorage.clearTokens(context)
+                            authStorage.clear()
                             startDestination = Routes.WELCOME
                         }
                     } else {

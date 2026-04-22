@@ -5,9 +5,9 @@ import com.example.emergencynow.data.datasource.*
 import com.example.emergencynow.data.datasource.impl.*
 import com.example.emergencynow.data.repository.*
 import com.example.emergencynow.data.service.*
-import com.example.emergencynow.data.session.SessionManager
 import com.example.emergencynow.data.session.TokenAuthenticator
 import com.example.emergencynow.data.session.TokenInterceptor
+import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.domain.repository.*
 import com.example.emergencynow.domain.usecase.ambulance.*
 import com.example.emergencynow.domain.usecase.auth.*
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
 
 val appModule = module {
 
-    single { SessionManager(androidContext()) }
+    single { AuthStorage(androidContext()) }
     single { NotificationManager() }
     single { DriverNotificationHelper(androidContext()) }
 
@@ -69,8 +69,8 @@ val appModule = module {
         get<Retrofit>(qualifier = named("auth_refresh")).create(AuthService::class.java)
     }
 
-    single { TokenInterceptor(androidContext()) }
-    single { TokenAuthenticator(get<AuthService>(qualifier = named("auth_refresh")), androidContext()) }
+    single { TokenInterceptor(get()) }
+    single { TokenAuthenticator(get<AuthService>(qualifier = named("auth_refresh")), get()) }
 
     single<OkHttpClient> {
         OkHttpClient.Builder()
@@ -145,8 +145,8 @@ val appModule = module {
     factory { GetUserRoleUseCase(lazy { get<UserRepository>() }) }
 
     viewModel { EnterEgnViewModel(get()) }
-    viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get(), androidContext()) }
-    viewModel { 
+    viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get()) }
+    viewModel {
         HomeViewModel(
             getUserRoleUseCase = get(),
             getAmbulanceByDriverUseCase = get(),
@@ -160,7 +160,8 @@ val appModule = module {
             ambulanceService = get(),
             callRepository = get(),
             userRepository = get(),
-            driverNotificationHelper = get()
+            driverNotificationHelper = get(),
+            authStorage = get()
         )
     }
     viewModel {

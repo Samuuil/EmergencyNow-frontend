@@ -21,37 +21,20 @@ fun parseJwt(token: String): JwtPayload? {
 
 object AuthSession {
     var egn: String? = null
-    var accessToken: String? = null
-    var refreshToken: String? = null
     var lastMethod: LoginMethod? = null
     var userId: String? = null
 }
 
-object AuthStorage {
-    private const val PREFS_NAME = "auth_prefs"
-    private const val KEY_ACCESS = "access_token"
-    private const val KEY_REFRESH = "refresh_token"
+class AuthStorage(context: Context) {
+    private val prefs = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
 
-    data class Tokens(val accessToken: String?, val refreshToken: String?)
+    var accessToken: String?
+        get() = prefs.getString("access_token", null)
+        set(v) = prefs.edit().putString("access_token", v).apply()
 
-    fun loadTokens(context: Context): Tokens {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return Tokens(
-            accessToken = prefs.getString(KEY_ACCESS, null),
-            refreshToken = prefs.getString(KEY_REFRESH, null)
-        )
-    }
+    var refreshToken: String?
+        get() = prefs.getString("refresh_token", null)
+        set(v) = prefs.edit().putString("refresh_token", v).apply()
 
-    fun saveTokens(context: Context, accessToken: String, refreshToken: String) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString(KEY_ACCESS, accessToken)
-            .putString(KEY_REFRESH, refreshToken)
-            .apply()
-    }
-
-    fun clearTokens(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().clear().apply()
-    }
+    fun clear() = prefs.edit().clear().apply()
 }
