@@ -14,6 +14,7 @@ import com.example.emergencynow.ui.feature.auth.WelcomeScreen
 import com.example.emergencynow.ui.feature.auth.EnterEgnScreen
 import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodScreen
 import com.example.emergencynow.ui.feature.auth.EnterVerificationCodeScreen
+import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
 import com.example.emergencynow.ui.feature.home.HomeScreen
 import com.example.emergencynow.ui.feature.home.CallTrackingScreen
 import com.example.emergencynow.ui.feature.ambulance.AmbulanceSelectionScreen
@@ -39,20 +40,21 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
             val parentEntry = remember(navController.currentBackStackEntry) {
                 navController.getBackStackEntry(Routes.HOME)
             }
-            val viewModel: com.example.emergencynow.ui.feature.home.HomeViewModel = 
+            val homeViewModel: com.example.emergencynow.ui.feature.home.HomeViewModel =
                 org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
-            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val callTrackingViewModel: CallTrackingViewModel =
+                org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
+            val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+            val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
 
-            androidx.compose.runtime.LaunchedEffect(uiState.activeCallId, uiState.isDriver, uiState.isLoading) {
-                android.util.Log.d("AppNavGraph", "HOME LaunchedEffect - isDriver: ${uiState.isDriver}, activeCallId: ${uiState.activeCallId}, isLoading: ${uiState.isLoading}")
-                if (!uiState.isLoading && !uiState.isDriver && uiState.activeCallId != null) {
-                    android.util.Log.d("AppNavGraph", "User has active call - navigating to CALL_TRACKING")
+            androidx.compose.runtime.LaunchedEffect(trackingState.activeCallId, homeState.isDriver, homeState.isLoading) {
+                if (!homeState.isLoading && !homeState.isDriver && trackingState.activeCallId != null) {
                     navController.navigate(Routes.CALL_TRACKING) {
                         launchSingleTop = true
                     }
                 }
             }
-            
+
             HomeScreen(
                 onMakeEmergencyCall = { navController.navigate(Routes.EMERGENCY_CALL) },
                 onOpenProfile = { navController.navigate(Routes.PROFILE_HOME) },
@@ -60,7 +62,8 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
                 onNavigateToHistory = { navController.navigate(Routes.HISTORY) },
                 onNavigateToContacts = { navController.navigate(Routes.EMERGENCY_CONTACTS) },
                 onPatientLookup = { navController.navigate(Routes.PATIENT_LOOKUP) },
-                viewModel = viewModel
+                viewModel = homeViewModel,
+                callTrackingViewModel = callTrackingViewModel,
             )
         }
         composable(Routes.ENTER_EGN) {
@@ -127,13 +130,13 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
             val parentEntry = remember(navController.currentBackStackEntry) {
                 navController.getBackStackEntry(Routes.HOME)
             }
-            val homeViewModel: com.example.emergencynow.ui.feature.home.HomeViewModel = 
+            val callTrackingViewModel: CallTrackingViewModel =
                 org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
-            
+
             EmergencyCallScreen(
                 onBack = { navController.popBackStack() },
                 onCallCreated = { callId ->
-                    homeViewModel.setActiveCallId(callId)
+                    callTrackingViewModel.setActiveCallId(callId)
                     navController.navigate(Routes.CALL_TRACKING) {
                         popUpTo(Routes.HOME) { inclusive = false }
                     }
@@ -144,14 +147,15 @@ fun AppNavGraph(navController: NavHostController, startDestination: String = Rou
             val parentEntry = remember(navController.currentBackStackEntry) {
                 navController.getBackStackEntry(Routes.HOME)
             }
-            val homeViewModel: com.example.emergencynow.ui.feature.home.HomeViewModel = 
+            val homeViewModel: com.example.emergencynow.ui.feature.home.HomeViewModel =
                 org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
-            
+            val callTrackingViewModel: CallTrackingViewModel =
+                org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
+
             CallTrackingScreen(
-                onBackToHome = {
-                    navController.popBackStack(Routes.HOME, inclusive = false)
-                },
-                viewModel = homeViewModel
+                onBackToHome = { navController.popBackStack(Routes.HOME, inclusive = false) },
+                homeViewModel = homeViewModel,
+                callTrackingViewModel = callTrackingViewModel,
             )
         }
         composable(Routes.PROFILE_HOME) {

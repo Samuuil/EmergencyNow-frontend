@@ -11,4 +11,6 @@ interface AmbulanceDataSource {
         ambulanceId: String,
         driverId: String?
     ): AmbulanceDto
+
+    suspend fun markAmbulanceAvailable(ambulanceId: String): AmbulanceDto
 }

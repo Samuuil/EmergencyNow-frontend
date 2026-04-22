@@ -25,7 +25,6 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
@@ -40,31 +39,18 @@ import com.example.emergencynow.R
 @Composable
 fun CallTrackingScreen(
     onBackToHome: () -> Unit,
-    viewModel: HomeViewModel = koinViewModel()
+    homeViewModel: HomeViewModel = koinViewModel(),
+    callTrackingViewModel: CallTrackingViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val cameraPositionState = rememberCameraPositionState()
 
-    LaunchedEffect(uiState.activeCallId, uiState.userCallStatus, uiState.isSocketConnected) {
-        android.util.Log.d("CallTrackingScreen", "=== CALL TRACKING STATE ===")
-        android.util.Log.d("CallTrackingScreen", "activeCallId: ${uiState.activeCallId}")
-        android.util.Log.d("CallTrackingScreen", "userCallStatus: ${uiState.userCallStatus}")
-        android.util.Log.d("CallTrackingScreen", "isSocketConnected: ${uiState.isSocketConnected}")
-        android.util.Log.d("CallTrackingScreen", "isDriver: ${uiState.isDriver}")
-        android.util.Log.d("CallTrackingScreen", "ambulanceLocation: ${uiState.ambulanceLocation}")
-        android.util.Log.d("CallTrackingScreen", "===========================")
-    }
-
     LaunchedEffect(Unit) {
-        android.util.Log.d("CallTrackingScreen", "CallTrackingScreen launched")
-        android.util.Log.d("CallTrackingScreen", "Ensuring user WebSocket is connected for tracking")
-        if (!uiState.isDriver && !uiState.isSocketConnected) {
-            android.util.Log.d("CallTrackingScreen", "WebSocket not connected, calling loadUserData()")
-            viewModel.loadUserData()
-        } else {
-            android.util.Log.d("CallTrackingScreen", "WebSocket already connected or user is driver")
+        if (!trackingState.isSocketConnected) {
+            callTrackingViewModel.connectSocket()
         }
     }
 
@@ -73,9 +59,8 @@ fun CallTrackingScreen(
             override fun onLocationResult(locationResult: LocationResult) {
                 val location = locationResult.lastLocation ?: return
                 val latLng = LatLng(location.latitude, location.longitude)
-                viewModel.updateUserLocation(latLng)
-
-                if (uiState.userLocation == null) {
+                homeViewModel.updateUserLocation(latLng)
+                if (homeState.userLocation == null) {
                     cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
                 }
             }
@@ -94,12 +79,7 @@ fun CallTrackingScreen(
                 ).apply {
                     setMinUpdateIntervalMillis(1000L)
                 }.build()
-                
-                fusedLocationClient.requestLocationUpdates(
-                    locationRequest,
-                    locationCallback,
-                    null
-                )
+                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
             }
         }
     )
@@ -114,34 +94,30 @@ fun CallTrackingScreen(
     }
 
     DisposableEffect(Unit) {
-        onDispose {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
-        }
+        onDispose { fusedLocationClient.removeLocationUpdates(locationCallback) }
     }
 
-    LaunchedEffect(uiState.activeRoutePolyline, uiState.ambulanceLocation, uiState.userCallStatus) {
-        if (uiState.userCallStatus != "pending" && uiState.activeRoutePolyline.isNotEmpty()) {
+    LaunchedEffect(trackingState.activeRoutePolyline, trackingState.ambulanceLocation, trackingState.userCallStatus) {
+        if (trackingState.userCallStatus != "pending" && trackingState.activeRoutePolyline.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
-            uiState.activeRoutePolyline.forEach { builder.include(it) }
-            uiState.userLocation?.let { builder.include(it) }
-            uiState.ambulanceLocation?.let { builder.include(it) }
+            trackingState.activeRoutePolyline.forEach { builder.include(it) }
+            homeState.userLocation?.let { builder.include(it) }
+            trackingState.ambulanceLocation?.let { builder.include(it) }
             val bounds = builder.build()
             cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100))
         } else {
-            uiState.userLocation?.let { userLocation ->
+            homeState.userLocation?.let { userLocation ->
                 cameraPositionState.position = CameraPosition.fromLatLngZoom(userLocation, 15f)
             }
         }
     }
 
-    LaunchedEffect(uiState.activeCallId, uiState.userCallStatus) {
-        android.util.Log.d("CallTrackingScreen", "Status check - activeCallId: ${uiState.activeCallId}, userCallStatus: ${uiState.userCallStatus}")
-
-        if (uiState.activeCallId == null) {
-            android.util.Log.d("CallTrackingScreen", "No active call - redirecting to home")
+    LaunchedEffect(trackingState.activeCallId, trackingState.userCallStatus) {
+        if (trackingState.activeCallId == null) {
             onBackToHome()
-        } else if (uiState.userCallStatus == "arrived" || uiState.userCallStatus == "completed" || uiState.userCallStatus == "cancelled") {
-            android.util.Log.d("CallTrackingScreen", "Call status is ${uiState.userCallStatus} - redirecting to home")
+        } else if (trackingState.userCallStatus == "arrived" ||
+            trackingState.userCallStatus == "completed" ||
+            trackingState.userCallStatus == "cancelled") {
             onBackToHome()
         }
     }
@@ -149,16 +125,11 @@ fun CallTrackingScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
-                    Text(
-                        "Emergency Call Tracking",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                title = { Text("Emergency Call Tracking", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            viewModel.clearCallState()
+                            callTrackingViewModel.clearCallState()
                             onBackToHome()
                         }
                     ) {
@@ -177,7 +148,7 @@ fun CallTrackingScreen(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState
             ) {
-                uiState.userLocation?.let { location ->
+                homeState.userLocation?.let { location ->
                     Marker(
                         state = MarkerState(position = location),
                         title = "Your Location",
@@ -185,17 +156,17 @@ fun CallTrackingScreen(
                     )
                 }
 
-                if (uiState.userCallStatus != "pending" && uiState.ambulanceLocation != null) {
+                if (trackingState.userCallStatus != "pending" && trackingState.ambulanceLocation != null) {
                     Marker(
-                        state = MarkerState(position = uiState.ambulanceLocation!!),
+                        state = MarkerState(position = trackingState.ambulanceLocation!!),
                         title = "Ambulance",
                         icon = createAmbulanceMarker(context, R.drawable.ambulance)
                     )
                 }
 
-                if (uiState.userCallStatus != "pending" && uiState.activeRoutePolyline.isNotEmpty()) {
+                if (trackingState.userCallStatus != "pending" && trackingState.activeRoutePolyline.isNotEmpty()) {
                     Polyline(
-                        points = uiState.activeRoutePolyline,
+                        points = trackingState.activeRoutePolyline,
                         color = Color.Blue,
                         width = 10f
                     )
@@ -212,7 +183,7 @@ fun CallTrackingScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    when (uiState.userCallStatus) {
+                    when (trackingState.userCallStatus) {
                         "pending" -> {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(48.dp),
@@ -250,11 +221,10 @@ fun CallTrackingScreen(
                                     fontSize = 18.sp
                                 )
                             }
-                            
-                            if (uiState.activeRouteDistance > 0) {
+                            if (trackingState.activeRouteDistance > 0) {
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                                 Text(
-                                    "Estimated arrival: ${uiState.activeRouteDuration / 60} min (${uiState.activeRouteDistance}m)",
+                                    "Estimated arrival: ${trackingState.activeRouteDuration / 60} min (${trackingState.activeRouteDistance}m)",
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium

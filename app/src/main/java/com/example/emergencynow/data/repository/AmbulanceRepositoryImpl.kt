@@ -62,4 +62,9 @@ class AmbulanceRepositoryImpl(
             updatedAt = Date()
         )
     }
+
+    override suspend fun markAmbulanceAvailable(ambulanceId: String): Result<Unit> = safeApiCall {
+        ambulanceDataSource.markAmbulanceAvailable(ambulanceId)
+        Unit
+    }
 }

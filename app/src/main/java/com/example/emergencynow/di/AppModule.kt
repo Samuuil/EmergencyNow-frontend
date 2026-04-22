@@ -10,8 +10,10 @@ import com.example.emergencynow.data.session.TokenInterceptor
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.domain.repository.*
 import com.example.emergencynow.domain.usecase.ambulance.*
+import com.example.emergencynow.domain.usecase.ambulance.MarkAmbulanceAvailableUseCase
 import com.example.emergencynow.domain.usecase.auth.*
 import com.example.emergencynow.domain.usecase.call.*
+import com.example.emergencynow.domain.usecase.call.GetCallByIdUseCase
 import com.example.emergencynow.domain.usecase.contact.*
 import com.example.emergencynow.domain.usecase.hospital.*
 import com.example.emergencynow.domain.usecase.profile.*
@@ -26,6 +28,8 @@ import com.example.emergencynow.ui.feature.history.HistoryViewModel
 import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsViewModel
 import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodViewModel
+import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
+import com.example.emergencynow.ui.feature.home.DriverViewModel
 import com.example.emergencynow.ui.util.DriverNotificationHelper
 import com.example.emergencynow.ui.util.NotificationManager
 import okhttp3.OkHttpClient
@@ -129,6 +133,7 @@ val appModule = module {
     factory { DeleteContactUseCase(lazy { get<ContactRepository>() }) }
 
     factory { CreateCallUseCase(lazy { get<CallRepository>() }) }
+    factory { GetCallByIdUseCase(lazy { get<CallRepository>() }) }
     factory { GetCallTrackingUseCase(lazy { get<CallRepository>() }) }
     factory { UpdateCallStatusUseCase(lazy { get<CallRepository>() }) }
     factory { GetUserCallsUseCase(lazy { get<CallRepository>() }) }
@@ -137,6 +142,7 @@ val appModule = module {
     factory { GetAmbulanceByDriverUseCase(lazy { get<AmbulanceRepository>() }) }
     factory { AssignAmbulanceDriverUseCase(lazy { get<AmbulanceRepository>() }) }
     factory { UnassignAmbulanceDriverUseCase(lazy { get<AmbulanceRepository>() }) }
+    factory { MarkAmbulanceAvailableUseCase(lazy { get<AmbulanceRepository>() }) }
 
     factory { GetHospitalsForCallUseCase(lazy { get<HospitalRepository>() }) }
     factory { SelectHospitalUseCase(lazy { get<HospitalRepository>() }) }
@@ -146,24 +152,22 @@ val appModule = module {
 
     viewModel { EnterEgnViewModel(get()) }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get()) }
     viewModel {
-        HomeViewModel(
-            getUserRoleUseCase = get(),
+        DriverViewModel(
             getAmbulanceByDriverUseCase = get(),
-            getAvailableAmbulancesUseCase = get(),
-            assignAmbulanceDriverUseCase = get(),
             unassignAmbulanceDriverUseCase = get(),
             updateCallStatusUseCase = get(),
             getHospitalsForCallUseCase = get(),
             selectHospitalUseCase = get(),
             getHospitalRouteUseCase = get(),
-            ambulanceService = get(),
-            callRepository = get(),
-            userRepository = get(),
+            getCallByIdUseCase = get(),
+            markAmbulanceAvailableUseCase = get(),
             driverNotificationHelper = get(),
             authStorage = get()
         )
     }
+    viewModel { CallTrackingViewModel(authStorage = get()) }
     viewModel {
         AmbulanceSelectionViewModel(
             getAvailableAmbulancesUseCase = get(),
