@@ -53,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.example.emergencynow.domain.model.request.CreateCallRequest
 import com.example.emergencynow.domain.usecase.call.CreateCallUseCase
+import com.example.emergencynow.ui.util.AuthSession
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.draw.shadow
@@ -106,7 +107,7 @@ class EmergencyCallViewModel(
                     latitude = state.latitude,
                     longitude = state.longitude
                 )
-                val result = createCallUseCase(request)
+                val result = createCallUseCase(request, AuthSession.userId ?: "")
                 result.fold(
                     onSuccess = { call ->
                         _uiState.value = _uiState.value.copy(
