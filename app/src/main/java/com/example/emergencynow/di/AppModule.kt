@@ -121,37 +121,37 @@ val appModule = module {
     single<HospitalRepository> { HospitalRepositoryImpl(get()) }
     single<UserRepository> { UserRepositoryImpl(get()) }
 
-    factory { RequestVerificationCodeUseCase(lazy { get<AuthRepository>() }) }
-    factory { VerifyCodeUseCase(lazy { get<AuthRepository>() }) }
-    factory { RefreshTokenUseCase(lazy { get<AuthRepository>() }) }
-    factory { GetUserOnboardingStateUseCase(lazy { get<ContactRepository>() }) }
+    factory { RequestVerificationCodeUseCase(get()) }
+    factory { VerifyCodeUseCase(get()) }
+    factory { RefreshTokenUseCase(get()) }
+    factory { GetUserOnboardingStateUseCase(get()) }
 
-    factory { CreateProfileUseCase(lazy { get<ProfileRepository>() }) }
-    factory { UpdateProfileUseCase(lazy { get<ProfileRepository>() }) }
-    factory { GetProfileUseCase(lazy { get<ProfileRepository>() }) }
-    factory { GetProfileByEgnUseCase(lazy { get<ProfileRepository>() }) }
+    factory { CreateProfileUseCase(get()) }
+    factory { UpdateProfileUseCase(get()) }
+    factory { GetProfileUseCase(get()) }
+    factory { GetProfileByEgnUseCase(get()) }
 
-    factory { GetContactsUseCase(lazy { get<ContactRepository>() }) }
-    factory { CreateContactUseCase(lazy { get<ContactRepository>() }) }
-    factory { DeleteContactUseCase(lazy { get<ContactRepository>() }) }
+    factory { GetContactsUseCase(get()) }
+    factory { CreateContactUseCase(get()) }
+    factory { DeleteContactUseCase(get()) }
 
-    factory { CreateCallUseCase(lazy { get<CallRepository>() }) }
-    factory { GetCallByIdUseCase(lazy { get<CallRepository>() }) }
-    factory { GetCallTrackingUseCase(lazy { get<CallRepository>() }) }
-    factory { UpdateCallStatusUseCase(lazy { get<CallRepository>() }) }
-    factory { GetUserCallsUseCase(lazy { get<CallRepository>() }) }
+    factory { CreateCallUseCase(get()) }
+    factory { GetCallByIdUseCase(get()) }
+    factory { GetCallTrackingUseCase(get()) }
+    factory { UpdateCallStatusUseCase(get()) }
+    factory { GetUserCallsUseCase(get()) }
 
-    factory { GetAvailableAmbulancesUseCase(lazy { get<AmbulanceRepository>() }) }
-    factory { GetAmbulanceByDriverUseCase(lazy { get<AmbulanceRepository>() }) }
-    factory { AssignAmbulanceDriverUseCase(lazy { get<AmbulanceRepository>() }) }
-    factory { UnassignAmbulanceDriverUseCase(lazy { get<AmbulanceRepository>() }) }
-    factory { MarkAmbulanceAvailableUseCase(lazy { get<AmbulanceRepository>() }) }
+    factory { GetAvailableAmbulancesUseCase(get()) }
+    factory { GetAmbulanceByDriverUseCase(get()) }
+    factory { AssignAmbulanceDriverUseCase(get()) }
+    factory { UnassignAmbulanceDriverUseCase(get()) }
+    factory { MarkAmbulanceAvailableUseCase(get()) }
 
-    factory { GetHospitalsForCallUseCase(lazy { get<HospitalRepository>() }) }
-    factory { SelectHospitalUseCase(lazy { get<HospitalRepository>() }) }
-    factory { GetHospitalRouteUseCase(lazy { get<HospitalRepository>() }) }
+    factory { GetHospitalsForCallUseCase(get()) }
+    factory { SelectHospitalUseCase(get()) }
+    factory { GetHospitalRouteUseCase(get()) }
 
-    factory { GetUserRoleUseCase(lazy { get<UserRepository>() }) }
+    factory { GetUserRoleUseCase(get()) }
 
     viewModel { EnterEgnViewModel() }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get()) }

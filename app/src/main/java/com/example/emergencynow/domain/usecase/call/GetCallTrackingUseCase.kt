@@ -3,9 +3,9 @@ package com.example.emergencynow.domain.usecase.call
 import com.example.emergencynow.domain.model.response.CallTrackingResponse
 import com.example.emergencynow.domain.repository.CallRepository
 
-class GetCallTrackingUseCase(private val repository: Lazy<CallRepository>) {
+class GetCallTrackingUseCase(private val repository: CallRepository) {
     suspend operator fun invoke(callId: String): Result<CallTrackingResponse> {
-        val result = repository.value.getCallTracking(callId)
+        val result = repository.getCallTracking(callId)
         return result.map { call ->
             CallTrackingResponse(
                 callId = call.id,

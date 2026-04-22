@@ -4,9 +4,9 @@ import com.example.emergencynow.domain.model.request.CreateCallRequest
 import com.example.emergencynow.domain.model.response.CallDto
 import com.example.emergencynow.domain.repository.CallRepository
 
-class CreateCallUseCase(private val repository: Lazy<CallRepository>) {
+class CreateCallUseCase(private val repository: CallRepository) {
     suspend operator fun invoke(request: CreateCallRequest, userId: String): Result<CallDto> {
-        val result = repository.value.createCall(
+        val result = repository.createCall(
             description = request.description,
             latitude = request.latitude,
             longitude = request.longitude

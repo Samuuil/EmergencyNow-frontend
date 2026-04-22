@@ -3,9 +3,9 @@ package com.example.emergencynow.domain.usecase.ambulance
 import com.example.emergencynow.domain.model.response.AmbulanceDto
 import com.example.emergencynow.domain.repository.AmbulanceRepository
 
-class GetAvailableAmbulancesUseCase(private val repository: Lazy<AmbulanceRepository>) {
+class GetAvailableAmbulancesUseCase(private val repository: AmbulanceRepository) {
     suspend operator fun invoke(): Result<List<AmbulanceDto>> {
-        val result = repository.value.getAvailableAmbulances()
+        val result = repository.getAvailableAmbulances()
         return result.map { ambulances ->
             ambulances.map {
                 AmbulanceDto(

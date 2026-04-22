@@ -4,9 +4,9 @@ import com.example.emergencynow.domain.model.entity.Token
 import com.example.emergencynow.domain.repository.AuthRepository
 
 class RefreshTokenUseCase(
-    private val authRepository: Lazy<AuthRepository>
+    private val authRepository: AuthRepository
 ) {
     suspend operator fun invoke(refreshToken: String): Result<Token> {
-        return authRepository.value.refreshToken(refreshToken)
+        return authRepository.refreshToken(refreshToken)
     }
 }

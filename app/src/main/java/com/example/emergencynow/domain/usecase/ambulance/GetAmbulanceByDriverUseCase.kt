@@ -4,9 +4,9 @@ import com.example.emergencynow.domain.model.response.AmbulanceDto
 import com.example.emergencynow.domain.model.entity.Ambulance
 import com.example.emergencynow.domain.repository.AmbulanceRepository
 
-class GetAmbulanceByDriverUseCase(private val repository: Lazy<AmbulanceRepository>) {
+class GetAmbulanceByDriverUseCase(private val repository: AmbulanceRepository) {
     suspend operator fun invoke(driverId: String): Result<AmbulanceDto?> {
-        val result = repository.value.getAmbulanceByDriver(driverId)
+        val result = repository.getAmbulanceByDriver(driverId)
         return result.map { ambulance ->
             ambulance?.let {
                 AmbulanceDto(
@@ -23,6 +23,6 @@ class GetAmbulanceByDriverUseCase(private val repository: Lazy<AmbulanceReposito
     }
     
     suspend fun getAmbulance(driverId: String): Result<Ambulance?> {
-        return repository.value.getAmbulanceByDriver(driverId)
+        return repository.getAmbulanceByDriver(driverId)
     }
 }
