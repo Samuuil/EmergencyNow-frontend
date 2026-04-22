@@ -50,8 +50,8 @@ import androidx.compose.ui.unit.sp
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
 import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
 import com.example.emergencynow.ui.components.inputs.PrimaryTextField
+import com.example.emergencynow.domain.model.entity.Contact
 import com.example.emergencynow.ui.feature.contacts.ContactCard
-import com.example.emergencynow.ui.feature.contacts.Contact
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
 import androidx.compose.runtime.collectAsState
@@ -178,7 +178,7 @@ fun EmergencyContactsScreen(
                         onClick = {
                             viewModel.saveContacts(onFinish)
                         },
-                        enabled = uiState.contacts.any { it.name.isNotBlank() && it.phone.isNotBlank() } && !uiState.isSaving,
+                        enabled = uiState.contacts.any { it.name.isNotBlank() && it.phoneNumber.isNotBlank() } && !uiState.isSaving,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)

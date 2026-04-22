@@ -22,11 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.emergencynow.domain.model.entity.Contact
 import com.example.emergencynow.ui.components.inputs.PrimaryTextField
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
-
-data class Contact(var name: String, var phone: String, var email: String = "", var id: String? = null)
 
 @Composable
 fun ContactCard(
@@ -74,23 +73,23 @@ fun ContactCard(
                 keyboardType = KeyboardType.Text,
                 textColor = BrandBlueDark
             )
-            
+
             Spacer(Modifier.height(16.dp))
-            
+
             PrimaryTextField(
-                value = contact.phone,
-                onValueChange = { onChange(contact.copy(phone = it)) },
+                value = contact.phoneNumber,
+                onValueChange = { onChange(contact.copy(phoneNumber = it)) },
                 label = "Phone Number",
                 placeholder = "Phone Number",
                 keyboardType = KeyboardType.Phone,
                 textColor = BrandBlueDark
             )
-            
+
             Spacer(Modifier.height(16.dp))
-            
+
             PrimaryTextField(
-                value = contact.email,
-                onValueChange = { onChange(contact.copy(email = it)) },
+                value = contact.email ?: "",
+                onValueChange = { onChange(contact.copy(email = it.ifBlank { null })) },
                 label = "Email (Optional)",
                 placeholder = "Email",
                 keyboardType = KeyboardType.Email,

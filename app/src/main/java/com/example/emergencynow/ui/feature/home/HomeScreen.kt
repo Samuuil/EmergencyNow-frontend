@@ -33,18 +33,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import com.example.emergencynow.ui.theme.BrandBlueDark
@@ -79,7 +73,6 @@ fun HomeScreen(
     val homeState by viewModel.uiState.collectAsStateWithLifecycle()
     val driverState by driverViewModel.uiState.collectAsStateWithLifecycle()
     val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var showPatientProfile by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState()
@@ -102,40 +95,12 @@ fun HomeScreen(
         }
     }
 
-    val locationCallback = remember {
-        object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                val location = locationResult.lastLocation ?: return
-                val latLng = LatLng(location.latitude, location.longitude)
-                viewModel.updateUserLocation(latLng)
-                driverViewModel.updateDriverLocation(latLng)
-
-                if (homeState.userLocation == null) {
-                    cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
-                }
-            }
-        }
-    }
-
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = { permissions ->
             val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                     permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-            if (granted) {
-                val locationRequest = LocationRequest.Builder(
-                    Priority.PRIORITY_HIGH_ACCURACY,
-                    2000L
-                ).apply {
-                    setMinUpdateIntervalMillis(1000L)
-                }.build()
-                
-                fusedLocationClient.requestLocationUpdates(
-                    locationRequest,
-                    locationCallback,
-                    null
-                )
-            }
+            if (granted) viewModel.startLocationUpdates()
         }
     )
 
@@ -148,9 +113,11 @@ fun HomeScreen(
         )
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
+    LaunchedEffect(homeState.userLocation) {
+        val location = homeState.userLocation ?: return@LaunchedEffect
+        driverViewModel.updateDriverLocation(location)
+        if (cameraPositionState.position.target == com.google.android.gms.maps.model.LatLng(0.0, 0.0)) {
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(location, 15f)
         }
     }
 
@@ -177,22 +144,6 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(driverState.activeCallId, homeState.userLocation) {
-        if (homeState.isDriver && driverState.activeCallId != null && homeState.userLocation != null) {
-            while (driverState.activeCallId != null) {
-                val location = homeState.userLocation
-                val callId = driverState.activeCallId
-                if (location != null && callId != null) {
-                    driverViewModel.sendLocationUpdate(
-                        callId = callId,
-                        latitude = location.latitude,
-                        longitude = location.longitude
-                    )
-                }
-                delay(2000)
-            }
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(

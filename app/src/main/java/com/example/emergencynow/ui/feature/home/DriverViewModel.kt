@@ -93,10 +93,8 @@ class DriverViewModel(
 
     fun updateDriverLocation(location: LatLng) {
         _uiState.value = _uiState.value.copy(driverLocation = location)
-    }
-
-    fun sendLocationUpdate(callId: String, latitude: Double, longitude: Double) {
-        driverSocket.sendLocationUpdate(callId, latitude, longitude)
+        val callId = _uiState.value.activeCallId ?: return
+        driverSocket.sendLocationUpdate(callId, location.latitude, location.longitude)
     }
 
     fun retryConnection() {

@@ -19,11 +19,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -45,56 +40,11 @@ fun CallTrackingScreen(
     val context = LocalContext.current
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val cameraPositionState = rememberCameraPositionState()
 
     LaunchedEffect(Unit) {
-        if (!trackingState.isSocketConnected) {
-            callTrackingViewModel.connectSocket()
-        }
-    }
-
-    val locationCallback = remember {
-        object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                val location = locationResult.lastLocation ?: return
-                val latLng = LatLng(location.latitude, location.longitude)
-                homeViewModel.updateUserLocation(latLng)
-                if (homeState.userLocation == null) {
-                    cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
-                }
-            }
-        }
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
-        onResult = { permissions ->
-            val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                    permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-            if (granted) {
-                val locationRequest = LocationRequest.Builder(
-                    Priority.PRIORITY_HIGH_ACCURACY,
-                    2000L
-                ).apply {
-                    setMinUpdateIntervalMillis(1000L)
-                }.build()
-                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
-            }
-        }
-    )
-
-    LaunchedEffect(Unit) {
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { fusedLocationClient.removeLocationUpdates(locationCallback) }
+        if (!trackingState.isSocketConnected) callTrackingViewModel.connectSocket()
+        homeViewModel.startLocationUpdates()
     }
 
     LaunchedEffect(trackingState.activeRoutePolyline, trackingState.ambulanceLocation, trackingState.userCallStatus) {

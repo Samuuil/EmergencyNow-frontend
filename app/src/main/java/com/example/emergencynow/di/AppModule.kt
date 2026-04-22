@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit
 val appModule = module {
 
     single { AuthStorage(androidContext()) }
+    single { com.example.emergencynow.data.repository.LocationRepository(androidContext()) }
     single { NotificationManager() }
     single { DriverNotificationHelper(androidContext()) }
 
@@ -154,7 +155,7 @@ val appModule = module {
 
     viewModel { EnterEgnViewModel() }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get()) }
-    viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get()) }
+    viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get(), locationRepository = get()) }
     viewModel {
         DriverViewModel(
             getAmbulanceByDriverUseCase = get(),

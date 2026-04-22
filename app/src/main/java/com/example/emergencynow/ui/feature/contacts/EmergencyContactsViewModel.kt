@@ -3,6 +3,7 @@ package com.example.emergencynow.ui.feature.contacts
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.emergencynow.domain.model.entity.Contact
 import com.example.emergencynow.domain.usecase.contact.CreateContactUseCase
 import com.example.emergencynow.domain.usecase.contact.DeleteContactUseCase
 import com.example.emergencynow.domain.usecase.contact.GetContactsUseCase
@@ -12,11 +13,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+private val emptyContact = Contact(id = "", name = "", phoneNumber = "", email = null)
+
 data class EmergencyContactsUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val error: String? = null,
-    val contacts: List<Contact> = listOf(Contact("", ""))
+    val contacts: List<Contact> = listOf(emptyContact)
 )
 
 class EmergencyContactsViewModel(
@@ -46,11 +49,7 @@ class EmergencyContactsViewModel(
                 }
 
                 val remoteContacts = getContactsUseCase().getOrDefault(emptyList())
-                val contacts = if (remoteContacts.isEmpty()) {
-                    listOf(Contact("", "", ""))
-                } else {
-                    remoteContacts.map { Contact(it.name, it.phoneNumber, it.email ?: "", it.id) }
-                }
+                val contacts = if (remoteContacts.isEmpty()) listOf(emptyContact) else remoteContacts
                 
                 _uiState.value = _uiState.value.copy(
                     contacts = contacts,
@@ -76,7 +75,7 @@ class EmergencyContactsViewModel(
         val currentContacts = _uiState.value.contacts
         if (currentContacts.size < 5) {
             _uiState.value = _uiState.value.copy(
-                contacts = currentContacts + Contact("", "", "")
+                contacts = currentContacts + emptyContact
             )
         }
     }
@@ -86,8 +85,8 @@ class EmergencyContactsViewModel(
             try {
                 val toRemove = _uiState.value.contacts[index]
 
-                if (!toRemove.id.isNullOrEmpty() && !AuthSession.userId.isNullOrEmpty()) {
-                    deleteContactUseCase(toRemove.id!!).getOrThrow()
+                if (toRemove.id.isNotEmpty() && !AuthSession.userId.isNullOrEmpty()) {
+                    deleteContactUseCase(toRemove.id).getOrThrow()
                 }
                 
                 val updatedContacts = _uiState.value.contacts.toMutableList()
@@ -112,8 +111,8 @@ class EmergencyContactsViewModel(
                     return@launch
                 }
 
-                val validContacts = _uiState.value.contacts.filter { 
-                    it.name.isNotBlank() && it.phone.isNotBlank() 
+                val validContacts = _uiState.value.contacts.filter {
+                    it.name.isNotBlank() && it.phoneNumber.isNotBlank()
                 }
                 
                 if (validContacts.isEmpty()) {
@@ -125,12 +124,12 @@ class EmergencyContactsViewModel(
 
                 _uiState.value = _uiState.value.copy(isSaving = true, error = null)
                 
-                val newContacts = validContacts.filter { it.id == null }
+                val newContacts = validContacts.filter { it.id.isEmpty() }
                 newContacts.forEach { contact ->
                     createContactUseCase(
                         name = contact.name,
-                        phoneNumber = contact.phone,
-                        email = contact.email.ifBlank { null }
+                        phoneNumber = contact.phoneNumber,
+                        email = contact.email?.ifBlank { null }
                     ).getOrThrow()
                 }
                 

@@ -3,13 +3,16 @@ package com.example.emergencynow.ui.feature.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.emergencynow.data.repository.LocationRepository
 import com.example.emergencynow.domain.usecase.user.GetUserRoleUseCase
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.AuthStorage
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
@@ -23,10 +26,22 @@ data class HomeUiState(
 class HomeViewModel(
     private val getUserRoleUseCase: GetUserRoleUseCase,
     private val authStorage: AuthStorage,
+    private val locationRepository: LocationRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private var locationJob: Job? = null
+
+    fun startLocationUpdates() {
+        if (locationJob?.isActive == true) return
+        locationJob = viewModelScope.launch {
+            locationRepository.locationUpdates().collect { latLng ->
+                _uiState.update { it.copy(userLocation = latLng) }
+            }
+        }
+    }
 
     init {
         loadUserData()
