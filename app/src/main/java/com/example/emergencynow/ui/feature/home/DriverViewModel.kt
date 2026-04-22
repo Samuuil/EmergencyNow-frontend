@@ -15,7 +15,6 @@ import com.example.emergencynow.domain.usecase.hospital.SelectHospitalUseCase
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.CallOffer
 import com.example.emergencynow.ui.util.DriverNotificationHelper
-import com.example.emergencynow.ui.util.DriverSocketManager
 import com.example.emergencynow.ui.util.NetworkConfig
 import com.example.emergencynow.ui.util.PolylineDecoder
 import com.google.android.gms.maps.model.LatLng
@@ -65,6 +64,8 @@ class DriverViewModel(
     private val authStorage: AuthStorage,
 ) : ViewModel() {
 
+    private val driverSocket = DriverSocketManager()
+
     private val _uiState = MutableStateFlow(DriverUiState())
     val uiState: StateFlow<DriverUiState> = _uiState.asStateFlow()
 
@@ -94,12 +95,16 @@ class DriverViewModel(
         _uiState.value = _uiState.value.copy(driverLocation = location)
     }
 
+    fun sendLocationUpdate(callId: String, latitude: Double, longitude: Double) {
+        driverSocket.sendLocationUpdate(callId, latitude, longitude)
+    }
+
     fun retryConnection() {
         Log.d("DriverViewModel", "Retry connection requested")
         val accessToken = authStorage.accessToken
         val ambulanceId = _uiState.value.assignedAmbulanceId
         if (!accessToken.isNullOrEmpty() && ambulanceId != null) {
-            DriverSocketManager.disconnect()
+            driverSocket.disconnect()
             viewModelScope.launch {
                 delay(500)
                 connectToWebSocket(ambulanceId)
@@ -118,7 +123,7 @@ class DriverViewModel(
         val accessToken = authStorage.accessToken ?: return
         Log.d("DriverViewModel", "Connecting driver socket - ambulanceId: $ambulanceId, base: ${NetworkConfig.currentBase()}")
 
-        DriverSocketManager.onCallOffer = { offer ->
+        driverSocket.onCallOffer = { offer ->
             Log.d("DriverViewModel", "Call offer received: ${offer.callId}")
             driverNotificationHelper.showCallOfferNotification(offer)
             _uiState.value = _uiState.value.copy(
@@ -127,7 +132,7 @@ class DriverViewModel(
             )
         }
 
-        DriverSocketManager.onConnectionChange = { connected ->
+        driverSocket.onConnectionChange = { connected ->
             Log.d("DriverViewModel", "Socket connection changed: $connected")
             _uiState.value = _uiState.value.copy(
                 isSocketConnected = connected,
@@ -135,7 +140,7 @@ class DriverViewModel(
             )
         }
 
-        DriverSocketManager.onCallRoute = { route ->
+        driverSocket.onCallRoute = { route ->
             Log.d("DriverViewModel", "Call route received: ${route.callId}")
             _uiState.value = _uiState.value.copy(
                 activeCallId = route.callId,
@@ -147,7 +152,7 @@ class DriverViewModel(
             fetchPatientEgn(route.callId)
         }
 
-        DriverSocketManager.onRouteUpdate = { route ->
+        driverSocket.onRouteUpdate = { route ->
             _uiState.value = _uiState.value.copy(
                 activeRoutePolyline = PolylineDecoder.decode(route.polyline),
                 activeRouteDistance = route.distance,
@@ -156,15 +161,15 @@ class DriverViewModel(
             )
         }
 
-        if (DriverSocketManager.isConnected()) DriverSocketManager.disconnect()
+        if (driverSocket.isConnected()) driverSocket.disconnect()
 
-        DriverSocketManager.connect(accessToken)
+        driverSocket.connect(accessToken)
 
         viewModelScope.launch {
             while (true) {
                 delay(5000)
                 if (_uiState.value.assignedAmbulanceId != null) {
-                    val actual = DriverSocketManager.isConnected()
+                    val actual = driverSocket.isConnected()
                     if (actual != _uiState.value.isSocketConnected) {
                         _uiState.value = _uiState.value.copy(isSocketConnected = actual)
                     }
@@ -174,13 +179,13 @@ class DriverViewModel(
     }
 
     fun acceptCall(callId: String) {
-        DriverSocketManager.acceptCall(callId)
+        driverSocket.acceptCall(callId)
         _uiState.value = _uiState.value.copy(incomingCallOffer = null, activeCallId = callId)
         fetchPatientEgn(callId)
     }
 
     fun declineCall(callId: String) {
-        DriverSocketManager.declineCall(callId)
+        driverSocket.declineCall(callId)
         _uiState.value = _uiState.value.copy(incomingCallOffer = null)
     }
 
@@ -320,7 +325,7 @@ class DriverViewModel(
         viewModelScope.launch {
             try {
                 markAmbulanceAvailableUseCase(ambulanceId)
-                DriverSocketManager.completeCall(callId)
+                driverSocket.completeCall(callId)
             } catch (e: Exception) {
                 Log.e("DriverViewModel", "Failed to complete call", e)
             } finally {
@@ -343,7 +348,7 @@ class DriverViewModel(
                 val ambulanceId = _uiState.value.assignedAmbulanceId ?: return@launch
                 if (_uiState.value.activeCallId != null) return@launch
                 unassignAmbulanceDriverUseCase(ambulanceId).getOrThrow()
-                DriverSocketManager.disconnect()
+                driverSocket.disconnect()
                 _uiState.value = _uiState.value.copy(
                     assignedAmbulanceId = null,
                     assignedAmbulancePlate = null,
@@ -358,6 +363,6 @@ class DriverViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        DriverSocketManager.disconnect()
+        driverSocket.disconnect()
     }
 }

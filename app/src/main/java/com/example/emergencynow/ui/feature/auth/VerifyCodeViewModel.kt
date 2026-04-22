@@ -2,10 +2,11 @@ package com.example.emergencynow.ui.feature.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.emergencynow.domain.usecase.auth.GetUserOnboardingStateUseCase
+import com.example.emergencynow.domain.usecase.auth.OnboardingState
 import com.example.emergencynow.domain.usecase.auth.RequestVerificationCodeUseCase
 import com.example.emergencynow.domain.usecase.auth.VerifyCodeUseCase
 import com.example.emergencynow.ui.util.parseJwt
-import com.example.emergencynow.domain.usecase.contact.GetContactsUseCase
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.AuthStorage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,7 @@ class VerifyCodeViewModel(
     private val verifyCodeUseCase: VerifyCodeUseCase,
     private val requestVerificationCodeUseCase: RequestVerificationCodeUseCase,
     private val authStorage: AuthStorage,
-    private val getContactsUseCase: GetContactsUseCase,
+    private val getOnboardingStateUseCase: GetUserOnboardingStateUseCase,
     private val notificationManager: com.example.emergencynow.ui.util.NotificationManager,
 ) : ViewModel() {
 
@@ -115,6 +116,6 @@ class VerifyCodeViewModel(
     }
 
     private suspend fun checkIfReturningUser(): Boolean {
-        return getContactsUseCase().getOrNull()?.isNotEmpty() == true
+        return getOnboardingStateUseCase().getOrNull() is OnboardingState.ReturningUser
     }
 }

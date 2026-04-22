@@ -12,6 +12,7 @@ import com.example.emergencynow.domain.repository.*
 import com.example.emergencynow.domain.usecase.ambulance.*
 import com.example.emergencynow.domain.usecase.ambulance.MarkAmbulanceAvailableUseCase
 import com.example.emergencynow.domain.usecase.auth.*
+import com.example.emergencynow.domain.usecase.auth.GetUserOnboardingStateUseCase
 import com.example.emergencynow.domain.usecase.call.*
 import com.example.emergencynow.domain.usecase.call.GetCallByIdUseCase
 import com.example.emergencynow.domain.usecase.contact.*
@@ -122,6 +123,7 @@ val appModule = module {
     factory { RequestVerificationCodeUseCase(lazy { get<AuthRepository>() }) }
     factory { VerifyCodeUseCase(lazy { get<AuthRepository>() }) }
     factory { RefreshTokenUseCase(lazy { get<AuthRepository>() }) }
+    factory { GetUserOnboardingStateUseCase(lazy { get<ContactRepository>() }) }
 
     factory { CreateProfileUseCase(lazy { get<ProfileRepository>() }) }
     factory { UpdateProfileUseCase(lazy { get<ProfileRepository>() }) }

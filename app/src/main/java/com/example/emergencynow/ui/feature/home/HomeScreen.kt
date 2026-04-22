@@ -183,7 +183,7 @@ fun HomeScreen(
                 val location = homeState.userLocation
                 val callId = driverState.activeCallId
                 if (location != null && callId != null) {
-                    com.example.emergencynow.ui.util.DriverSocketManager.sendLocationUpdate(
+                    driverViewModel.sendLocationUpdate(
                         callId = callId,
                         latitude = location.latitude,
                         longitude = location.longitude

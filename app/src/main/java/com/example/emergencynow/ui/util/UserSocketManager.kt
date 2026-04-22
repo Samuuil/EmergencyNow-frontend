@@ -33,7 +33,7 @@ data class CallStatusUpdate(
     val status: String
 )
 
-object UserSocketManager {
+class UserSocketManager {
     private const val TAG = "UserSocketManager"
     private const val NAMESPACE = "/users"
 

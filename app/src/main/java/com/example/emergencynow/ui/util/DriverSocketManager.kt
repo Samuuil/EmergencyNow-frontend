@@ -25,7 +25,7 @@ data class CallRoute(
     val steps: List<String>
 )
 
-object DriverSocketManager {
+class DriverSocketManager {
     private const val TAG = "DriverSocketManager"
     private const val NAMESPACE = "/drivers"
     private const val CONNECTION_TIMEOUT_MS = 10000L

@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.PolylineDecoder
-import com.example.emergencynow.ui.util.UserSocketManager
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +24,8 @@ class CallTrackingViewModel(
     private val authStorage: AuthStorage,
 ) : ViewModel() {
 
+    private val userSocket = UserSocketManager()
+
     private val _uiState = MutableStateFlow(CallTrackingUiState())
     val uiState: StateFlow<CallTrackingUiState> = _uiState.asStateFlow()
 
@@ -38,7 +39,7 @@ class CallTrackingViewModel(
         val accessToken = authStorage.accessToken ?: return
         Log.d("CallTrackingViewModel", "Connecting user WebSocket")
 
-        UserSocketManager.onCallDispatched = { dispatched ->
+        userSocket.onCallDispatched = { dispatched ->
             _uiState.value = _uiState.value.copy(
                 activeCallId = dispatched.callId,
                 ambulanceLocation = LatLng(dispatched.ambulanceLatitude, dispatched.ambulanceLongitude),
@@ -50,7 +51,7 @@ class CallTrackingViewModel(
             )
         }
 
-        UserSocketManager.onAmbulanceLocation = { update ->
+        userSocket.onAmbulanceLocation = { update ->
             _uiState.value = _uiState.value.copy(
                 ambulanceLocation = LatLng(update.latitude, update.longitude),
                 activeRoutePolyline = update.polyline?.let { PolylineDecoder.decode(it) }
@@ -61,7 +62,7 @@ class CallTrackingViewModel(
             )
         }
 
-        UserSocketManager.onCallStatus = { statusUpdate ->
+        userSocket.onCallStatus = { statusUpdate ->
             val normalized = statusUpdate.status.lowercase().replace("_", "")
             _uiState.value = _uiState.value.copy(userCallStatus = normalized)
             when (normalized) {
@@ -82,11 +83,11 @@ class CallTrackingViewModel(
             }
         }
 
-        UserSocketManager.onConnectionChange = { connected ->
+        userSocket.onConnectionChange = { connected ->
             _uiState.value = _uiState.value.copy(isSocketConnected = connected)
         }
 
-        UserSocketManager.connect(accessToken)
+        userSocket.connect(accessToken)
     }
 
     fun clearCallState() {
@@ -104,6 +105,6 @@ class CallTrackingViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        UserSocketManager.disconnect()
+        userSocket.disconnect()
     }
 }
