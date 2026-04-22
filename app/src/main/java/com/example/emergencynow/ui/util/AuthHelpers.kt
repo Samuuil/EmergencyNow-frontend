@@ -20,9 +20,9 @@ fun parseJwt(token: String): JwtPayload? {
 }
 
 object AuthSession {
-    var egn: String? = null
-    var lastMethod: LoginMethod? = null
-    var userId: String? = null
+    @Volatile var egn: String? = null
+    @Volatile var lastMethod: LoginMethod? = null
+    @Volatile var userId: String? = null
 }
 
 class AuthStorage(context: Context) {
