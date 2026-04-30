@@ -1,18 +1,18 @@
 package com.example.emergencynow.ui.constants
 
-object Routes {
-    const val WELCOME = "welcome"
-    const val HOME = "home"
-    const val ENTER_EGN = "enter_egn"
-    const val CHOOSE_VERIFICATION = "choose_verification"
-    const val ENTER_VERIFICATION_CODE = "enter_verification_code"
-    const val PERSONAL_INFO = "personal_info"
-    const val EMERGENCY_CONTACTS = "emergency_contacts"
-    const val EMERGENCY_CALL = "emergency_call"
-    const val PROFILE_HOME = "profile_home"
-    const val CALL_TRACKING = "call_tracking"
-    const val AMBULANCE_SELECTION = "ambulance_selection"
-    const val HISTORY = "history"
-    const val PATIENT_LOOKUP = "patient_lookup"
-    const val PATIENT_PROFILE = "patient_profile"
-}
+import kotlinx.serialization.Serializable
+
+@Serializable object WelcomeRoute
+@Serializable object HomeRoute
+@Serializable object EnterEgnRoute
+@Serializable data class ChooseVerificationRoute(val egn: String)
+@Serializable data class EnterVerificationCodeRoute(val egn: String)
+@Serializable object PersonalInfoRoute
+@Serializable object EmergencyContactsRoute
+@Serializable object EmergencyCallRoute
+@Serializable object ProfileHomeRoute
+@Serializable object CallTrackingRoute
+@Serializable object AmbulanceSelectionRoute
+@Serializable object HistoryRoute
+@Serializable object PatientLookupRoute
+@Serializable data class PatientProfileRoute(val egn: String)

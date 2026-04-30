@@ -1,192 +1,171 @@
 package com.example.emergencynow.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
-import com.example.emergencynow.ui.constants.Routes
-import com.example.emergencynow.ui.feature.auth.WelcomeScreen
-import com.example.emergencynow.ui.feature.auth.EnterEgnScreen
-import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodScreen
-import com.example.emergencynow.ui.feature.auth.EnterVerificationCodeScreen
-import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
-import com.example.emergencynow.ui.feature.home.HomeScreen
-import com.example.emergencynow.ui.feature.home.CallTrackingScreen
+import androidx.navigation.toRoute
+import com.example.emergencynow.ui.constants.AmbulanceSelectionRoute
+import com.example.emergencynow.ui.constants.CallTrackingRoute
+import com.example.emergencynow.ui.constants.ChooseVerificationRoute
+import com.example.emergencynow.ui.constants.EmergencyCallRoute
+import com.example.emergencynow.ui.constants.EmergencyContactsRoute
+import com.example.emergencynow.ui.constants.EnterEgnRoute
+import com.example.emergencynow.ui.constants.EnterVerificationCodeRoute
+import com.example.emergencynow.ui.constants.HistoryRoute
+import com.example.emergencynow.ui.constants.HomeRoute
+import com.example.emergencynow.ui.constants.PatientLookupRoute
+import com.example.emergencynow.ui.constants.PatientProfileRoute
+import com.example.emergencynow.ui.constants.PersonalInfoRoute
+import com.example.emergencynow.ui.constants.ProfileHomeRoute
+import com.example.emergencynow.ui.constants.WelcomeRoute
 import com.example.emergencynow.ui.feature.ambulance.AmbulanceSelectionScreen
+import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodScreen
+import com.example.emergencynow.ui.feature.auth.EnterEgnScreen
+import com.example.emergencynow.ui.feature.auth.EnterVerificationCodeScreen
+import com.example.emergencynow.ui.feature.auth.WelcomeScreen
 import com.example.emergencynow.ui.feature.call.EmergencyCallScreen
-import com.example.emergencynow.ui.feature.profile.PersonalInformationScreen
-import com.example.emergencynow.ui.feature.profile.ProfileHomeScreen
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsScreen
-import com.example.emergencynow.ui.feature.history.HistoryScreen
 import com.example.emergencynow.ui.feature.doctor.PatientLookupScreen
 import com.example.emergencynow.ui.feature.doctor.PatientProfileScreen
+import com.example.emergencynow.ui.feature.history.HistoryScreen
+import com.example.emergencynow.ui.feature.home.CallTrackingScreen
+import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
+import com.example.emergencynow.ui.feature.home.HomeScreen
+import com.example.emergencynow.ui.feature.home.HomeViewModel
+import com.example.emergencynow.ui.feature.profile.PersonalInformationScreen
+import com.example.emergencynow.ui.feature.profile.ProfileHomeScreen
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun AppNavGraph(navController: NavHostController, startDestination: String = Routes.WELCOME) {
+fun AppNavGraph(navController: NavHostController, startDestination: Any = WelcomeRoute) {
     NavHost(navController = navController, startDestination = startDestination) {
-        composable(Routes.WELCOME) {
+        composable<WelcomeRoute> {
             WelcomeScreen(
-                onRegisterEgn = { navController.navigate(Routes.ENTER_EGN) },
-                onLogin = { navController.navigate(Routes.ENTER_EGN) }
+                onRegisterEgn = { navController.navigate(EnterEgnRoute) },
+                onLogin = { navController.navigate(EnterEgnRoute) }
             )
         }
-        composable(Routes.HOME) {
+        composable<HomeRoute> {
             val parentEntry = remember(navController.currentBackStackEntry) {
-                navController.getBackStackEntry(Routes.HOME)
+                navController.getBackStackEntry<HomeRoute>()
             }
-            val homeViewModel: com.example.emergencynow.ui.feature.home.HomeViewModel =
-                org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
-            val callTrackingViewModel: CallTrackingViewModel =
-                org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
+            val homeViewModel: HomeViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+            val callTrackingViewModel: CallTrackingViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
             val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
             val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
 
-            androidx.compose.runtime.LaunchedEffect(trackingState.activeCallId, homeState.isDriver, homeState.isLoading) {
+            LaunchedEffect(trackingState.activeCallId, homeState.isDriver, homeState.isLoading) {
                 if (!homeState.isLoading && !homeState.isDriver && trackingState.activeCallId != null) {
-                    navController.navigate(Routes.CALL_TRACKING) {
-                        launchSingleTop = true
-                    }
+                    navController.navigate(CallTrackingRoute) { launchSingleTop = true }
                 }
             }
 
             HomeScreen(
-                onMakeEmergencyCall = { navController.navigate(Routes.EMERGENCY_CALL) },
-                onOpenProfile = { navController.navigate(Routes.PROFILE_HOME) },
-                onSelectAmbulance = { navController.navigate(Routes.AMBULANCE_SELECTION) },
-                onNavigateToHistory = { navController.navigate(Routes.HISTORY) },
-                onNavigateToContacts = { navController.navigate(Routes.EMERGENCY_CONTACTS) },
-                onPatientLookup = { navController.navigate(Routes.PATIENT_LOOKUP) },
+                onMakeEmergencyCall = { navController.navigate(EmergencyCallRoute) },
+                onOpenProfile = { navController.navigate(ProfileHomeRoute) },
+                onSelectAmbulance = { navController.navigate(AmbulanceSelectionRoute) },
+                onNavigateToHistory = { navController.navigate(HistoryRoute) },
+                onNavigateToContacts = { navController.navigate(EmergencyContactsRoute) },
+                onPatientLookup = { navController.navigate(PatientLookupRoute) },
                 viewModel = homeViewModel,
                 callTrackingViewModel = callTrackingViewModel,
             )
         }
-        composable(Routes.ENTER_EGN) {
+        composable<EnterEgnRoute> {
             EnterEgnScreen(
                 onBack = { navController.popBackStack() },
-                onContinue = { egn ->
-                    navController.navigate("${Routes.CHOOSE_VERIFICATION}/$egn")
-                }
+                onContinue = { egn -> navController.navigate(ChooseVerificationRoute(egn)) }
             )
         }
-        composable(
-            route = "${Routes.CHOOSE_VERIFICATION}/{egn}",
-            arguments = listOf(
-                navArgument("egn") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val egn = backStackEntry.arguments?.getString("egn") ?: ""
+        composable<ChooseVerificationRoute> { backStack ->
+            val args = backStack.toRoute<ChooseVerificationRoute>()
             ChooseVerificationMethodScreen(
                 onBack = { navController.popBackStack() },
-                onPhone = { navController.navigate("${Routes.ENTER_VERIFICATION_CODE}/$egn") },
-                onEmail = { navController.navigate("${Routes.ENTER_VERIFICATION_CODE}/$egn") }
+                onPhone = { navController.navigate(EnterVerificationCodeRoute(args.egn)) },
+                onEmail = { navController.navigate(EnterVerificationCodeRoute(args.egn)) }
             )
         }
-        composable(
-            route = "${Routes.ENTER_VERIFICATION_CODE}/{egn}",
-            arguments = listOf(
-                navArgument("egn") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val egn = backStackEntry.arguments?.getString("egn") ?: ""
+        composable<EnterVerificationCodeRoute> { backStack ->
+            val args = backStack.toRoute<EnterVerificationCodeRoute>()
             EnterVerificationCodeScreen(
-                egn = egn,
+                egn = args.egn,
                 onBack = { navController.popBackStack() },
                 onVerified = { isReturningUser ->
-                    if (isReturningUser) {
-                        navController.navigate(Routes.HOME)
-                    } else {
-                        navController.navigate(Routes.PERSONAL_INFO)
-                    }
+                    if (isReturningUser) navController.navigate(HomeRoute)
+                    else navController.navigate(PersonalInfoRoute)
                 }
             )
         }
-        composable(Routes.PERSONAL_INFO) {
+        composable<PersonalInfoRoute> {
             PersonalInformationScreen(
                 onBack = { navController.popBackStack() },
-                onContinue = { navController.navigate(Routes.EMERGENCY_CONTACTS) }
+                onContinue = { navController.navigate(EmergencyContactsRoute) }
             )
         }
-        composable(Routes.EMERGENCY_CONTACTS) {
+        composable<EmergencyContactsRoute> {
             EmergencyContactsScreen(
                 onBack = { navController.popBackStack() },
-                onFinish = { navController.navigate(Routes.HOME) }
+                onFinish = { navController.navigate(HomeRoute) }
             )
         }
-        composable(Routes.AMBULANCE_SELECTION) {
+        composable<AmbulanceSelectionRoute> {
             AmbulanceSelectionScreen(
                 onBack = { navController.popBackStack() },
-                onAmbulanceSelected = {
-                    navController.popBackStack()
-                }
+                onAmbulanceSelected = { navController.popBackStack() }
             )
         }
-        composable(Routes.EMERGENCY_CALL) {
+        composable<EmergencyCallRoute> {
             val parentEntry = remember(navController.currentBackStackEntry) {
-                navController.getBackStackEntry(Routes.HOME)
+                navController.getBackStackEntry<HomeRoute>()
             }
-            val callTrackingViewModel: CallTrackingViewModel =
-                org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
-
+            val callTrackingViewModel: CallTrackingViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
             EmergencyCallScreen(
                 onBack = { navController.popBackStack() },
                 onCallCreated = { callId ->
                     callTrackingViewModel.setActiveCallId(callId)
-                    navController.navigate(Routes.CALL_TRACKING) {
-                        popUpTo(Routes.HOME) { inclusive = false }
+                    navController.navigate(CallTrackingRoute) {
+                        popUpTo<HomeRoute> { inclusive = false }
                     }
                 }
             )
         }
-        composable(Routes.CALL_TRACKING) {
+        composable<CallTrackingRoute> {
             val parentEntry = remember(navController.currentBackStackEntry) {
-                navController.getBackStackEntry(Routes.HOME)
+                navController.getBackStackEntry<HomeRoute>()
             }
-            val homeViewModel: com.example.emergencynow.ui.feature.home.HomeViewModel =
-                org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
-            val callTrackingViewModel: CallTrackingViewModel =
-                org.koin.androidx.compose.koinViewModel(viewModelStoreOwner = parentEntry)
-
+            val homeViewModel: HomeViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+            val callTrackingViewModel: CallTrackingViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
             CallTrackingScreen(
-                onBackToHome = { navController.popBackStack(Routes.HOME, inclusive = false) },
+                onBackToHome = { navController.popBackStack<HomeRoute>(inclusive = false) },
                 homeViewModel = homeViewModel,
                 callTrackingViewModel = callTrackingViewModel,
             )
         }
-        composable(Routes.PROFILE_HOME) {
+        composable<ProfileHomeRoute> {
             ProfileHomeScreen(
                 onBack = { navController.popBackStack() },
-                onPersonalInfo = { navController.navigate(Routes.PERSONAL_INFO) },
-                onEmergencyContacts = { navController.navigate(Routes.EMERGENCY_CONTACTS) }
+                onPersonalInfo = { navController.navigate(PersonalInfoRoute) },
+                onEmergencyContacts = { navController.navigate(EmergencyContactsRoute) }
             )
         }
-        composable(Routes.HISTORY) {
-            HistoryScreen(
-                onBack = { navController.popBackStack() }
-            )
+        composable<HistoryRoute> {
+            HistoryScreen(onBack = { navController.popBackStack() })
         }
-        composable(Routes.PATIENT_LOOKUP) {
+        composable<PatientLookupRoute> {
             PatientLookupScreen(
                 onBack = { navController.popBackStack() },
-                onLookup = { egn ->
-                    navController.navigate("${Routes.PATIENT_PROFILE}/$egn")
-                }
+                onLookup = { egn -> navController.navigate(PatientProfileRoute(egn)) }
             )
         }
-        composable(
-            route = "${Routes.PATIENT_PROFILE}/{egn}",
-            arguments = listOf(
-                navArgument("egn") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val egn = backStackEntry.arguments?.getString("egn") ?: ""
+        composable<PatientProfileRoute> { backStack ->
+            val args = backStack.toRoute<PatientProfileRoute>()
             PatientProfileScreen(
-                egn = egn,
+                egn = args.egn,
                 onBack = { navController.popBackStack() }
             )
         }

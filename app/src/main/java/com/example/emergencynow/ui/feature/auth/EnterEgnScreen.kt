@@ -43,7 +43,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.ui.components.decorations.EnterEgnBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.BrandBlueMid
 import com.example.emergencynow.ui.util.AuthSession
@@ -70,7 +71,7 @@ fun EnterEgnScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        EnterEgnBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.ENTER_EGN, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier

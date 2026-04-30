@@ -50,7 +50,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.theme.BrandBlueMid
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import androidx.compose.runtime.collectAsState
@@ -68,7 +69,7 @@ fun ChooseVerificationMethodScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.CHOOSE_VERIFICATION, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier

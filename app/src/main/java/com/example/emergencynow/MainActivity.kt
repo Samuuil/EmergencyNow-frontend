@@ -18,8 +18,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.domain.usecase.auth.RefreshTokenUseCase
-import com.example.emergencynow.data.util.JwtHelper
-import com.example.emergencynow.ui.constants.Routes
+import com.example.emergencynow.ui.util.parseJwt
+import com.example.emergencynow.ui.constants.HomeRoute
+import com.example.emergencynow.ui.constants.WelcomeRoute
 import org.koin.core.context.GlobalContext
 import com.example.emergencynow.ui.components.NotificationHost
 import com.example.emergencynow.ui.theme.EmergencyNowTheme
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             EmergencyNowTheme {
                 val navController = rememberNavController()
-                var startDestination by remember { mutableStateOf<String?>(null) }
+                var startDestination by remember { mutableStateOf<Any?>(null) }
 
                 LaunchedEffect(Unit) {
                     val authStorage = GlobalContext.get().get<AuthStorage>()
@@ -43,15 +44,15 @@ class MainActivity : ComponentActivity() {
                             val token = refreshTokenUseCase(refreshToken).getOrThrow()
                             authStorage.accessToken = token.accessToken
                             authStorage.refreshToken = token.refreshToken
-                            val payload = JwtHelper.parseJwt(token.accessToken)
+                            val payload = parseJwt(token.accessToken)
                             AuthSession.userId = payload?.sub
-                            startDestination = Routes.HOME
+                            startDestination = HomeRoute
                         } catch (e: Exception) {
                             authStorage.clear()
-                            startDestination = Routes.WELCOME
+                            startDestination = WelcomeRoute
                         }
                     } else {
-                        startDestination = Routes.WELCOME
+                        startDestination = WelcomeRoute
                     }
                 }
 

@@ -48,7 +48,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
-import com.example.emergencynow.ui.components.decorations.EnterEgnBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.components.inputs.GenderSelector
 import com.example.emergencynow.ui.feature.profile.BloodTypeSelector
 import com.example.emergencynow.ui.feature.profile.DateInputField
@@ -69,7 +70,7 @@ fun PersonalInformationScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        EnterEgnBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.ENTER_EGN, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()

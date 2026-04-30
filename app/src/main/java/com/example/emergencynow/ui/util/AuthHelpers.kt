@@ -9,7 +9,7 @@ import com.google.gson.Gson
 fun parseJwt(token: String): JwtPayload? {
     return try {
         val parts = token.split(".")
-        if (parts.size < 2) return null
+        if (parts.size != 3) return null
         val payloadPart = parts[1]
         val decodedBytes = Base64.decode(payloadPart, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
         val json = String(decodedBytes, Charsets.UTF_8)

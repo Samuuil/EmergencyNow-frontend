@@ -52,7 +52,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.draw.shadow
-import com.example.emergencynow.ui.components.decorations.WelcomeScreenBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
 import com.example.emergencynow.ui.theme.EmergencyRed
@@ -100,7 +101,7 @@ fun EmergencyCallScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        WelcomeScreenBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.WELCOME, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()

@@ -23,7 +23,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.ui.components.decorations.VerifyNumberBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.BrandBlueMid
 import com.example.emergencynow.ui.theme.PrimaryDarkBlue
@@ -51,7 +52,7 @@ fun EnterVerificationCodeScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        VerifyNumberBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.VERIFY_NUMBER, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier

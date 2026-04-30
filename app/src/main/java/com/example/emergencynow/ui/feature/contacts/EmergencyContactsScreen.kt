@@ -48,7 +48,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.emergencynow.ui.components.buttons.PrimaryButton
-import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.components.inputs.PrimaryTextField
 import com.example.emergencynow.domain.model.entity.Contact
 import com.example.emergencynow.ui.feature.contacts.ContactCard
@@ -67,7 +68,7 @@ fun EmergencyContactsScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.CHOOSE_VERIFICATION, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()
