@@ -18,7 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -41,10 +44,18 @@ fun CallTrackingScreen(
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
     val cameraPositionState = rememberCameraPositionState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(Unit) {
-        if (!trackingState.isSocketConnected) callTrackingViewModel.connectSocket()
-        homeViewModel.startLocationUpdates()
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            callTrackingViewModel.connectSocket()
+            homeViewModel.startLocationUpdates()
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                callTrackingViewModel.disconnectSocket()
+            }
+        }
     }
 
     LaunchedEffect(trackingState.activeRoutePolyline, trackingState.ambulanceLocation, trackingState.userCallStatus) {

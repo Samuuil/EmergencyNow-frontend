@@ -34,8 +34,10 @@ data class CallStatusUpdate(
 )
 
 class UserSocketManager {
-    private const val TAG = "UserSocketManager"
-    private const val NAMESPACE = "/users"
+    companion object {
+        private const val TAG = "UserSocketManager"
+        private const val NAMESPACE = "/users"
+    }
 
     private var socket: Socket? = null
     private var isConnected = false
@@ -52,15 +54,9 @@ class UserSocketManager {
         Log.d(TAG, "Callbacks set: onCallDispatched=${onCallDispatched != null}, onAmbulanceLocation=${onAmbulanceLocation != null}, onCallStatus=${onCallStatus != null}")
         Log.d(TAG, "========================================")
 
-        if (socket != null && isConnected) {
-            Log.d(TAG, "Socket already connected - callbacks will be invoked when events arrive")
-            Log.d(TAG, "Socket connected: ${socket?.connected()}, Socket ID: ${socket?.id()}")
-            onConnectionChange?.invoke(true)
-            return
-        }
-
+        // Always clean up existing socket to avoid stale connections
         if (socket != null) {
-            Log.d(TAG, "Cleaning up existing disconnected socket...")
+            Log.d(TAG, "Cleaning up existing socket before reconnecting...")
             socket?.off()
             socket?.disconnect()
             socket = null
@@ -257,14 +253,10 @@ class UserSocketManager {
     }
 
     fun disconnect() {
-        socket?.disconnect()
         socket?.off()
+        socket?.disconnect()
         socket = null
         isConnected = false
-        onCallDispatched = null
-        onAmbulanceLocation = null
-        onCallStatus = null
-        onConnectionChange = null
         Log.d(TAG, "Disconnected and cleaned up socket")
     }
 

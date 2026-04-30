@@ -47,6 +47,7 @@ import com.example.emergencynow.ui.theme.CurvePaleBlue
 import com.example.emergencynow.ui.util.createAmbulanceMarker
 import com.example.emergencynow.ui.util.createHospitalMarker
 import com.example.emergencynow.ui.util.createUserLocationMarker
+import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.feature.home.BottomNavItem
 import com.example.emergencynow.ui.feature.home.HospitalSelectionDialog
 import com.example.emergencynow.ui.feature.home.IncomingCallDialog
@@ -78,19 +79,25 @@ fun HomeScreen(
     val cameraPositionState = rememberCameraPositionState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            driverViewModel.refresh()
-        }
-    }
-
-    LaunchedEffect(homeState.isLoading, homeState.isDriver) {
-        if (!homeState.isLoading) {
+    LaunchedEffect(lifecycleOwner, homeState.isLoading, homeState.isDriver) {
+        if (homeState.isLoading) return@LaunchedEffect
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            // Reconnect on every foreground transition
             if (homeState.isDriver) {
-                val userId = com.example.emergencynow.ui.util.AuthSession.userId ?: return@LaunchedEffect
-                driverViewModel.loadData(userId)
+                val userId = com.example.emergencynow.ui.util.AuthSession.userId
+                if (userId != null) driverViewModel.loadData(userId)
             } else {
                 callTrackingViewModel.connectSocket()
+            }
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                // Disconnect when app goes to background
+                if (homeState.isDriver) {
+                    driverViewModel.disconnectSocket()
+                } else {
+                    callTrackingViewModel.disconnectSocket()
+                }
             }
         }
     }

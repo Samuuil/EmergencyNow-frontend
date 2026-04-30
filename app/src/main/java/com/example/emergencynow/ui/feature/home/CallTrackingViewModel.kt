@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.PolylineDecoder
+import com.example.emergencynow.ui.util.UserSocketManager
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -102,6 +103,11 @@ class CallTrackingViewModel(
     }
 
     fun hasActiveCall(): Boolean = _uiState.value.activeCallId != null
+
+    fun disconnectSocket() {
+        userSocket.disconnect()
+        _uiState.value = _uiState.value.copy(isSocketConnected = false)
+    }
 
     override fun onCleared() {
         super.onCleared()

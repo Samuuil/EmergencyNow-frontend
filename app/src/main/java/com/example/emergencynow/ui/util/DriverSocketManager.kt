@@ -26,9 +26,11 @@ data class CallRoute(
 )
 
 class DriverSocketManager {
-    private const val TAG = "DriverSocketManager"
-    private const val NAMESPACE = "/drivers"
-    private const val CONNECTION_TIMEOUT_MS = 10000L
+    companion object {
+        private const val TAG = "DriverSocketManager"
+        private const val NAMESPACE = "/drivers"
+        private const val CONNECTION_TIMEOUT_MS = 10000L
+    }
 
     private var socket: Socket? = null
     private var isConnected = false
@@ -48,17 +50,12 @@ class DriverSocketManager {
         Log.d(TAG, "Current socket state: ${socket?.connected()}")
         Log.d(TAG, "isConnected flag: $isConnected")
         Log.d(TAG, "════════════════════════════════════════")
-        
-        if (socket != null && socket?.connected() == true && isConnected) {
-            Log.d(TAG, "Already connected - socket ID: ${socket?.id()}")
-            onConnectionChange?.invoke(true)
-            return
-        }
 
+        // Always clean up existing socket to avoid stale connections
         if (socket != null) {
-            Log.d(TAG, "Cleaning up existing disconnected socket...")
-            socket?.disconnect()
+            Log.d(TAG, "Cleaning up existing socket before reconnecting...")
             socket?.off()
+            socket?.disconnect()
             socket = null
             isConnected = false
         }

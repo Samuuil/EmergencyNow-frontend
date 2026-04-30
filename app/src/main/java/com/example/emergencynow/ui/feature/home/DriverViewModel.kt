@@ -12,12 +12,15 @@ import com.example.emergencynow.domain.usecase.call.UpdateCallStatusUseCase
 import com.example.emergencynow.domain.usecase.hospital.GetHospitalRouteUseCase
 import com.example.emergencynow.domain.usecase.hospital.GetHospitalsForCallUseCase
 import com.example.emergencynow.domain.usecase.hospital.SelectHospitalUseCase
+import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.CallOffer
 import com.example.emergencynow.ui.util.DriverNotificationHelper
+import com.example.emergencynow.ui.util.DriverSocketManager
 import com.example.emergencynow.ui.util.NetworkConfig
 import com.example.emergencynow.ui.util.PolylineDecoder
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +68,7 @@ class DriverViewModel(
 ) : ViewModel() {
 
     private val driverSocket = DriverSocketManager()
+    private var socketPollingJob: Job? = null
 
     private val _uiState = MutableStateFlow(DriverUiState())
     val uiState: StateFlow<DriverUiState> = _uiState.asStateFlow()
@@ -159,11 +163,10 @@ class DriverViewModel(
             )
         }
 
-        if (driverSocket.isConnected()) driverSocket.disconnect()
-
         driverSocket.connect(accessToken)
 
-        viewModelScope.launch {
+        socketPollingJob?.cancel()
+        socketPollingJob = viewModelScope.launch {
             while (true) {
                 delay(5000)
                 if (_uiState.value.assignedAmbulanceId != null) {
@@ -212,6 +215,7 @@ class DriverViewModel(
                     CallStatus.EN_ROUTE -> "en_route"
                     CallStatus.ARRIVED -> "arrived"
                     CallStatus.NAVIGATING_TO_HOSPITAL -> "navigating_to_hospital"
+                    else -> return@launch
                 }
                 updateCallStatusUseCase(callId, statusString)
                 _uiState.value = _uiState.value.copy(callStatus = status)
@@ -359,8 +363,17 @@ class DriverViewModel(
         }
     }
 
+    fun disconnectSocket() {
+        Log.d("DriverViewModel", "Disconnecting socket (lifecycle pause/stop)")
+        socketPollingJob?.cancel()
+        socketPollingJob = null
+        driverSocket.disconnect()
+        _uiState.value = _uiState.value.copy(isSocketConnected = false)
+    }
+
     override fun onCleared() {
         super.onCleared()
+        socketPollingJob?.cancel()
         driverSocket.disconnect()
     }
 }
