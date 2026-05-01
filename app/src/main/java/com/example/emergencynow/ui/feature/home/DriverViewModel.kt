@@ -3,7 +3,7 @@ package com.example.emergencynow.ui.feature.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.emergencynow.domain.model.response.HospitalDto
+import com.example.emergencynow.domain.model.entity.NearbyHospital
 import com.example.emergencynow.domain.usecase.ambulance.GetAmbulanceByDriverUseCase
 import com.example.emergencynow.domain.usecase.ambulance.MarkAmbulanceAvailableUseCase
 import com.example.emergencynow.domain.usecase.ambulance.UnassignAmbulanceDriverUseCase
@@ -42,7 +42,7 @@ data class DriverUiState(
     val activeRouteSteps: List<String> = emptyList(),
     val callStatus: CallStatus = CallStatus.EN_ROUTE,
     val showHospitalSelection: Boolean = false,
-    val availableHospitals: List<HospitalDto> = emptyList(),
+    val availableHospitals: List<NearbyHospital> = emptyList(),
     val isLoadingHospitals: Boolean = false,
     val isSelectingHospital: Boolean = false,
     val selectedHospitalName: String? = null,

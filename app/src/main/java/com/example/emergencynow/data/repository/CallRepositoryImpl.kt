@@ -3,6 +3,7 @@ package com.example.emergencynow.data.repository
 import com.example.emergencynow.data.datasource.CallDataSource
 import com.example.emergencynow.data.extensions.safeApiCall
 import com.example.emergencynow.domain.model.entity.Call
+import com.example.emergencynow.domain.model.entity.CallDetail
 import com.example.emergencynow.domain.model.response.CallResponse
 import com.example.emergencynow.domain.model.mapper.toDomain
 import com.example.emergencynow.domain.repository.CallRepository
@@ -79,8 +80,15 @@ class CallRepositoryImpl(
         }
     }
     
-    override suspend fun getCallById(callId: String): Result<CallResponse> = safeApiCall {
-        callDataSource.getCallById(callId)
+    override suspend fun getCallById(callId: String): Result<CallDetail> = safeApiCall {
+        val response = callDataSource.getCallById(callId)
+        CallDetail(
+            id = response.id,
+            status = parseCallStatus(response.status),
+            userEgn = response.userEgn,
+            ambulanceId = response.ambulanceId,
+            hospitalId = response.hospitalId
+        )
     }
     
     private fun mapResponseToCall(response: com.example.emergencynow.domain.model.response.CallResponse): Call {
