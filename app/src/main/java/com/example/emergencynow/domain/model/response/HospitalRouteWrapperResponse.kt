@@ -1,32 +1,23 @@
 package com.example.emergencynow.domain.model.response
 
-import com.google.gson.annotations.SerializedName
-data class HospitalRouteWrapperResponse(
-    @SerializedName("hospital")
-    val hospital: HospitalSummaryResponse?,
+import kotlinx.serialization.Serializable
 
-    @SerializedName("route")
+@Serializable
+data class HospitalRouteWrapperResponse(
+    val hospital: HospitalSummaryResponse?,
     val route: HospitalRouteInnerResponse?
 )
 
+@Serializable
 data class HospitalSummaryResponse(
-    @SerializedName("id")
     val id: String?,
-
-    @SerializedName("name")
     val name: String?
 )
 
+@Serializable
 data class HospitalRouteInnerResponse(
-    @SerializedName("polyline")
     val polyline: String?,
-
-    @SerializedName("distance")
     val distance: Int?,
-
-    @SerializedName("duration")
     val duration: Int?,
-
-    @SerializedName("steps")
     val steps: List<RouteStepResponse>? = null
 )

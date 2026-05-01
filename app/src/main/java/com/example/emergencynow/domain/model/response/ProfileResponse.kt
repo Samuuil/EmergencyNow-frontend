@@ -1,5 +1,8 @@
 package com.example.emergencynow.domain.model.response
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class ProfileResponse(
     val id: String? = null,
     val egn: String? = null,

@@ -2,6 +2,7 @@ package com.example.emergencynow.domain.model.response
 
 import kotlinx.serialization.Serializable
 
+@Serializable
 data class InitiateLoginResponse(
     val message: String
 )
@@ -12,8 +13,9 @@ data class TokenResponse(
     val refreshToken: String
 )
 
+@Serializable
 data class JwtPayload(
-    val sub: String?,
-    val role: String?,
-    val egn: String?,
+    val sub: String? = null,
+    val role: String? = null,
+    val egn: String? = null,
 )

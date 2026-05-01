@@ -4,7 +4,9 @@ import android.content.Context
 import android.util.Base64
 import com.example.emergencynow.domain.model.request.LoginMethod
 import com.example.emergencynow.domain.model.response.JwtPayload
-import com.google.gson.Gson
+import kotlinx.serialization.json.Json
+
+private val jwtJson = Json { ignoreUnknownKeys = true }
 
 fun parseJwt(token: String): JwtPayload? {
     return try {
@@ -13,7 +15,7 @@ fun parseJwt(token: String): JwtPayload? {
         val payloadPart = parts[1]
         val decodedBytes = Base64.decode(payloadPart, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
         val json = String(decodedBytes, Charsets.UTF_8)
-        Gson().fromJson(json, JwtPayload::class.java)
+        jwtJson.decodeFromString<JwtPayload>(json)
     } catch (e: Exception) {
         null
     }

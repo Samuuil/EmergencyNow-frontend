@@ -1,25 +1,30 @@
 package com.example.emergencynow.domain.model.request
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class LoginMethod {
-    @SerializedName("email")
+    @SerialName("email")
     EMAIL,
 
-    @SerializedName("sms")
+    @SerialName("sms")
     SMS
 }
 
+@Serializable
 data class InitiateLoginRequest(
     val egn: String,
     val method: LoginMethod
 )
 
+@Serializable
 data class VerifyCodeRequest(
     val egn: String,
     val code: String
 )
 
+@Serializable
 data class RefreshTokenRequest(
     val refreshToken: String
 )

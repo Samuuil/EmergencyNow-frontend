@@ -1,9 +1,8 @@
 package com.example.emergencynow.domain.model.response
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class UserEgnResponse(
-    @SerializedName("egn")
     val egn: String
 )
-
