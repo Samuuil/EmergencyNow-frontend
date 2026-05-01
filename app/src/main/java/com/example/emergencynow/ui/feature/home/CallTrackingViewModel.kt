@@ -2,6 +2,7 @@ package com.example.emergencynow.ui.feature.home
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.PolylineDecoder
 import com.example.emergencynow.ui.util.UserSocketManager
@@ -17,7 +18,7 @@ data class CallTrackingUiState(
     val activeRouteDistance: Int = 0,
     val activeRouteDuration: Int = 0,
     val activeRouteSteps: List<String> = emptyList(),
-    val userCallStatus: String? = null,
+    val userCallStatus: CallStatus? = null,
     val isSocketConnected: Boolean = false,
 )
 
@@ -31,7 +32,7 @@ class CallTrackingViewModel(
     val uiState: StateFlow<CallTrackingUiState> = _uiState.asStateFlow()
 
     fun setActiveCallId(callId: String) {
-        _uiState.value = _uiState.value.copy(activeCallId = callId, userCallStatus = "pending")
+        _uiState.value = _uiState.value.copy(activeCallId = callId, userCallStatus = CallStatus.PENDING)
         if (!_uiState.value.isSocketConnected) connectSocket()
     }
 
@@ -48,7 +49,7 @@ class CallTrackingViewModel(
                 activeRouteDistance = dispatched.distance,
                 activeRouteDuration = dispatched.duration,
                 activeRouteSteps = dispatched.steps,
-                userCallStatus = "dispatched"
+                userCallStatus = CallStatus.DISPATCHED
             )
         }
 
@@ -64,16 +65,16 @@ class CallTrackingViewModel(
         }
 
         userSocket.onCallStatus = { statusUpdate ->
-            val normalized = statusUpdate.status.lowercase().replace("_", "")
-            _uiState.value = _uiState.value.copy(userCallStatus = normalized)
-            when (normalized) {
-                "arrived" -> _uiState.value = _uiState.value.copy(
+            val status = CallStatus.fromWire(statusUpdate.status)
+            _uiState.value = _uiState.value.copy(userCallStatus = status)
+            when (status) {
+                CallStatus.ARRIVED -> _uiState.value = _uiState.value.copy(
                     ambulanceLocation = null,
                     activeRoutePolyline = emptyList(),
                     activeRouteDistance = 0,
                     activeRouteDuration = 0
                 )
-                "completed", "cancelled" -> _uiState.value = _uiState.value.copy(
+                CallStatus.COMPLETED, CallStatus.CANCELLED -> _uiState.value = _uiState.value.copy(
                     activeCallId = null,
                     ambulanceLocation = null,
                     activeRoutePolyline = emptyList(),
@@ -81,6 +82,7 @@ class CallTrackingViewModel(
                     activeRouteDuration = 0,
                     userCallStatus = null
                 )
+                else -> {}
             }
         }
 

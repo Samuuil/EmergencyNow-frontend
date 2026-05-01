@@ -182,7 +182,7 @@ fun HomeScreen(
             }
 
             if (!homeState.isDriver && trackingState.ambulanceLocation != null &&
-                trackingState.userCallStatus != "pending" && trackingState.userCallStatus != "arrived") {
+                trackingState.userCallStatus != CallStatus.PENDING && trackingState.userCallStatus != CallStatus.ARRIVED) {
                 Marker(
                     state = MarkerState(position = trackingState.ambulanceLocation!!),
                     title = "Ambulance",
@@ -391,7 +391,7 @@ fun HomeScreen(
                         }
                     }
                 }
-        } else if (trackingState.activeCallId != null && trackingState.userCallStatus != "arrived") {
+        } else if (trackingState.activeCallId != null && trackingState.userCallStatus != CallStatus.ARRIVED) {
             Card(
                 modifier = Modifier
                     .align(Alignment.TopCenter)

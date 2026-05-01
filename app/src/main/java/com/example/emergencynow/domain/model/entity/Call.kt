@@ -26,14 +26,19 @@ data class Call(
     val hospitalRouteSteps: List<RouteStep>?
 )
 
-enum class CallStatus {
-    PENDING,
-    DISPATCHED,
-    EN_ROUTE,
-    ARRIVED,
-    NAVIGATING_TO_HOSPITAL,
-    COMPLETED,
-    CANCELLED
+enum class CallStatus(val wire: String) {
+    PENDING("PENDING"),
+    DISPATCHED("DISPATCHED"),
+    EN_ROUTE("EN_ROUTE"),
+    ARRIVED("ARRIVED"),
+    NAVIGATING_TO_HOSPITAL("NAVIGATING_TO_HOSPITAL"),
+    COMPLETED("COMPLETED"),
+    CANCELLED("CANCELLED");
+
+    companion object {
+        fun fromWire(s: String): CallStatus =
+            entries.firstOrNull { it.wire == s.uppercase() } ?: PENDING
+    }
 }
 
 data class RouteStep(

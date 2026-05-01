@@ -4,6 +4,7 @@ import com.example.emergencynow.data.datasource.CallDataSource
 import com.example.emergencynow.data.extensions.safeApiCall
 import com.example.emergencynow.domain.model.entity.Call
 import com.example.emergencynow.domain.model.entity.CallDetail
+import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.domain.model.response.CallResponse
 import com.example.emergencynow.domain.model.mapper.toDomain
 import com.example.emergencynow.domain.repository.CallRepository
@@ -28,7 +29,7 @@ class CallRepositoryImpl(
             description = "",
             latitude = 0.0,
             longitude = 0.0,
-            status = parseCallStatus(response.status),
+            status = CallStatus.fromWire(response.status),
             routePolyline = response.route?.polyline,
             estimatedDistance = response.route?.distance,
             estimatedDuration = response.route?.duration,
@@ -64,9 +65,9 @@ class CallRepositoryImpl(
     
     override suspend fun updateCallStatus(
         callId: String,
-        status: String
+        status: CallStatus
     ): Result<Call> = safeApiCall {
-        val response = callDataSource.updateCallStatus(callId, status)
+        val response = callDataSource.updateCallStatus(callId, status.wire)
         mapResponseToCall(response)
     }
     
@@ -84,7 +85,7 @@ class CallRepositoryImpl(
         val response = callDataSource.getCallById(callId)
         CallDetail(
             id = response.id,
-            status = parseCallStatus(response.status),
+            status = CallStatus.fromWire(response.status),
             userEgn = response.userEgn,
             ambulanceId = response.ambulanceId,
             hospitalId = response.hospitalId
@@ -97,7 +98,7 @@ class CallRepositoryImpl(
             description = response.description,
             latitude = response.latitude,
             longitude = response.longitude,
-            status = parseCallStatus(response.status),
+            status = CallStatus.fromWire(response.status),
             routePolyline = null,
             estimatedDistance = null,
             estimatedDuration = null,
@@ -128,16 +129,4 @@ class CallRepositoryImpl(
         }
     }
     
-    private fun parseCallStatus(status: String): com.example.emergencynow.domain.model.entity.CallStatus {
-        return when (status.uppercase()) {
-            "PENDING" -> com.example.emergencynow.domain.model.entity.CallStatus.PENDING
-            "DISPATCHED" -> com.example.emergencynow.domain.model.entity.CallStatus.DISPATCHED
-            "EN_ROUTE" -> com.example.emergencynow.domain.model.entity.CallStatus.EN_ROUTE
-            "ARRIVED" -> com.example.emergencynow.domain.model.entity.CallStatus.ARRIVED
-            "NAVIGATING_TO_HOSPITAL" -> com.example.emergencynow.domain.model.entity.CallStatus.NAVIGATING_TO_HOSPITAL
-            "COMPLETED" -> com.example.emergencynow.domain.model.entity.CallStatus.COMPLETED
-            "CANCELLED" -> com.example.emergencynow.domain.model.entity.CallStatus.CANCELLED
-            else -> com.example.emergencynow.domain.model.entity.CallStatus.PENDING
-        }
-    }
 }

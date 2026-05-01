@@ -2,6 +2,7 @@ package com.example.emergencynow.domain.repository
 
 import com.example.emergencynow.domain.model.entity.Call
 import com.example.emergencynow.domain.model.entity.CallDetail
+import com.example.emergencynow.domain.model.entity.CallStatus
 
 interface CallRepository {
     suspend fun createCall(
@@ -14,7 +15,7 @@ interface CallRepository {
 
     suspend fun updateCallStatus(
         callId: String,
-        status: String
+        status: CallStatus
     ): Result<Call>
 
     suspend fun getMyCalls(

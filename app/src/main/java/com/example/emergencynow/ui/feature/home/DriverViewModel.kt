@@ -208,16 +208,11 @@ class DriverViewModel(
     }
 
     fun updateCallStatus(status: CallStatus) {
+        if (status !in setOf(CallStatus.EN_ROUTE, CallStatus.ARRIVED, CallStatus.NAVIGATING_TO_HOSPITAL)) return
         viewModelScope.launch {
             try {
                 val callId = _uiState.value.activeCallId ?: return@launch
-                val statusString = when (status) {
-                    CallStatus.EN_ROUTE -> "en_route"
-                    CallStatus.ARRIVED -> "arrived"
-                    CallStatus.NAVIGATING_TO_HOSPITAL -> "navigating_to_hospital"
-                    else -> return@launch
-                }
-                updateCallStatusUseCase(callId, statusString)
+                updateCallStatusUseCase(callId, status)
                 _uiState.value = _uiState.value.copy(callStatus = status)
                 if (status == CallStatus.ARRIVED) {
                     _uiState.value = _uiState.value.copy(

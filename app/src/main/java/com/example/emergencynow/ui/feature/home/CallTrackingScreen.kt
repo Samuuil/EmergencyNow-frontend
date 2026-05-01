@@ -31,6 +31,7 @@ import org.koin.androidx.compose.koinViewModel
 import com.example.emergencynow.ui.util.createAmbulanceMarker
 import com.example.emergencynow.ui.util.createUserLocationMarker
 import com.example.emergencynow.R
+import com.example.emergencynow.domain.model.entity.CallStatus
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +60,7 @@ fun CallTrackingScreen(
     }
 
     LaunchedEffect(trackingState.activeRoutePolyline, trackingState.ambulanceLocation, trackingState.userCallStatus) {
-        if (trackingState.userCallStatus != "pending" && trackingState.activeRoutePolyline.isNotEmpty()) {
+        if (trackingState.userCallStatus != CallStatus.PENDING && trackingState.activeRoutePolyline.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
             trackingState.activeRoutePolyline.forEach { builder.include(it) }
             homeState.userLocation?.let { builder.include(it) }
@@ -76,9 +77,9 @@ fun CallTrackingScreen(
     LaunchedEffect(trackingState.activeCallId, trackingState.userCallStatus) {
         if (trackingState.activeCallId == null) {
             onBackToHome()
-        } else if (trackingState.userCallStatus == "arrived" ||
-            trackingState.userCallStatus == "completed" ||
-            trackingState.userCallStatus == "cancelled") {
+        } else if (trackingState.userCallStatus == CallStatus.ARRIVED ||
+            trackingState.userCallStatus == CallStatus.COMPLETED ||
+            trackingState.userCallStatus == CallStatus.CANCELLED) {
             onBackToHome()
         }
     }
@@ -117,7 +118,7 @@ fun CallTrackingScreen(
                     )
                 }
 
-                if (trackingState.userCallStatus != "pending" && trackingState.ambulanceLocation != null) {
+                if (trackingState.userCallStatus != CallStatus.PENDING && trackingState.ambulanceLocation != null) {
                     Marker(
                         state = MarkerState(position = trackingState.ambulanceLocation!!),
                         title = "Ambulance",
@@ -125,7 +126,7 @@ fun CallTrackingScreen(
                     )
                 }
 
-                if (trackingState.userCallStatus != "pending" && trackingState.activeRoutePolyline.isNotEmpty()) {
+                if (trackingState.userCallStatus != CallStatus.PENDING && trackingState.activeRoutePolyline.isNotEmpty()) {
                     Polyline(
                         points = trackingState.activeRoutePolyline,
                         color = Color.Blue,
@@ -145,7 +146,7 @@ fun CallTrackingScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     when (trackingState.userCallStatus) {
-                        "pending" -> {
+                        CallStatus.PENDING -> {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(48.dp),
                                 color = MaterialTheme.colorScheme.primary
@@ -164,7 +165,7 @@ fun CallTrackingScreen(
                                 textAlign = TextAlign.Center
                             )
                         }
-                        "dispatched", "en_route" -> {
+                        CallStatus.DISPATCHED, CallStatus.EN_ROUTE -> {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
