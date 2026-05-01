@@ -32,6 +32,7 @@ import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodViewMode
 import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
 import com.example.emergencynow.ui.feature.home.DriverViewModel
 import com.example.emergencynow.ui.util.DriverNotificationHelper
+import com.example.emergencynow.ui.AppViewModel
 import com.example.emergencynow.ui.util.NotificationManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -153,6 +154,7 @@ val appModule = module {
 
     factory { GetUserRoleUseCase(get()) }
 
+    viewModel { AppViewModel(get(), get()) }
     viewModel { EnterEgnViewModel() }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get()) }
     viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get(), locationRepository = get()) }
