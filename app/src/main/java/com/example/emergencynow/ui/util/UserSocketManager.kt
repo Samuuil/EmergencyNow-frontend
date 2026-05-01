@@ -5,7 +5,7 @@ import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
 import java.net.URI
-import com.example.emergencynow.ui.util.NetworkConfig
+import com.example.emergencynow.BuildConfig
 
 data class CallDispatched(
     val callId: String,
@@ -72,7 +72,7 @@ class UserSocketManager {
                 reconnectionDelay = 1000
             }
 
-            val base = NetworkConfig.currentBase()
+            val base = BuildConfig.BASE_URL.removeSuffix("/")
             Log.d(TAG, "Creating socket for ${base}$NAMESPACE")
             socket = IO.socket(URI.create("${base}$NAMESPACE"), options)
 
@@ -93,16 +93,6 @@ class UserSocketManager {
                 Log.e(TAG, "Connection error: $error (${error?.javaClass?.simpleName})")
                 isConnected = false
                 onConnectionChange?.invoke(false)
-                if (NetworkConfig.isPrimary()) {
-                    try {
-                        Log.w(TAG, "Retrying with fallback base: ${NetworkConfig.fallbackBaseUrl()}")
-                        NetworkConfig.switchToFallback()
-                        disconnect()
-                        connect(accessToken)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Fallback retry failed: ${e.message}")
-                    }
-                }
             }
 
             socket?.on("call.dispatched") { args ->

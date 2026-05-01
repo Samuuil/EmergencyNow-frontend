@@ -17,7 +17,7 @@ import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.CallOffer
 import com.example.emergencynow.ui.util.DriverNotificationHelper
 import com.example.emergencynow.ui.util.DriverSocketManager
-import com.example.emergencynow.ui.util.NetworkConfig
+import com.example.emergencynow.BuildConfig
 import com.example.emergencynow.ui.util.PolylineDecoder
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
@@ -121,7 +121,7 @@ class DriverViewModel(
 
     private fun connectToWebSocket(ambulanceId: String) {
         val accessToken = authStorage.accessToken ?: return
-        Log.d("DriverViewModel", "Connecting driver socket - ambulanceId: $ambulanceId, base: ${NetworkConfig.currentBase()}")
+        Log.d("DriverViewModel", "Connecting driver socket - ambulanceId: $ambulanceId, base: ${BuildConfig.BASE_URL}")
 
         driverSocket.onCallOffer = { offer ->
             Log.d("DriverViewModel", "Call offer received: ${offer.callId}")

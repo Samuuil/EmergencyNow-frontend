@@ -5,7 +5,7 @@ import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
 import java.net.URI
-import com.example.emergencynow.ui.util.NetworkConfig
+import com.example.emergencynow.BuildConfig
 
 data class CallOffer(
     val callId: String,
@@ -78,7 +78,7 @@ class DriverSocketManager {
                 forceNew = true
             }
 
-            val base = NetworkConfig.currentBase()
+            val base = BuildConfig.BASE_URL.removeSuffix("/")
             val uri = "${base}$NAMESPACE"
             Log.d(TAG, "Connecting to: $uri")
             socket = IO.socket(URI.create(uri), options)
@@ -119,9 +119,9 @@ class DriverSocketManager {
                 Log.e(TAG, "════════════════════════════════════════")
                 Log.e(TAG, "WEBSOCKET CONNECTION FAILED")
                 Log.e(TAG, "Error: $errorMessage")
-                Log.e(TAG, "Base URL: ${NetworkConfig.currentBase()}")
+                Log.e(TAG, "Base URL: $base")
                 Log.e(TAG, "Namespace: $NAMESPACE")
-                Log.e(TAG, "Full URI: ${NetworkConfig.currentBase()}$NAMESPACE")
+                Log.e(TAG, "Full URI: $base$NAMESPACE")
                 Log.e(TAG, "Token present: ${!accessToken.isNullOrEmpty()}")
                 Log.e(TAG, "Token length: ${accessToken.length}")
                 Log.e(TAG, "════════════════════════════════════════")
@@ -129,17 +129,6 @@ class DriverSocketManager {
                 connectionTimeoutHandler?.removeCallbacksAndMessages(null)
                 isConnected = false
                 onConnectionChange?.invoke(false)
-                
-                if (NetworkConfig.isPrimary()) {
-                    try {
-                        Log.w(TAG, "Retrying with fallback base: ${NetworkConfig.fallbackBaseUrl()}")
-                        NetworkConfig.switchToFallback()
-                        disconnect()
-                        connect(accessToken)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Fallback retry failed: ${e.message}")
-                    }
-                }
             }
 
             socket?.on("call.offer") { args ->
