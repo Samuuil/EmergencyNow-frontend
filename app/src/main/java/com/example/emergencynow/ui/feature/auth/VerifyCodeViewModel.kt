@@ -98,7 +98,8 @@ class VerifyCodeViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
-            requestVerificationCodeUseCase(egn = egn, method = "sms").fold(
+            val method = AuthSession.lastMethod?.name?.lowercase() ?: "sms"
+            requestVerificationCodeUseCase(egn = egn, method = method).fold(
                 onSuccess = { _ ->
                     _state.update {
                         it.copy(
