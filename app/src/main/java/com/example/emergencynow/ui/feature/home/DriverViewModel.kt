@@ -20,7 +20,6 @@ import com.example.emergencynow.ui.util.DriverSocketManager
 import com.example.emergencynow.ui.util.NetworkConfig
 import com.example.emergencynow.ui.util.PolylineDecoder
 import com.google.android.gms.maps.model.LatLng
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,7 +67,6 @@ class DriverViewModel(
 ) : ViewModel() {
 
     private val driverSocket = DriverSocketManager()
-    private var socketPollingJob: Job? = null
 
     private val _uiState = MutableStateFlow(DriverUiState())
     val uiState: StateFlow<DriverUiState> = _uiState.asStateFlow()
@@ -164,19 +162,6 @@ class DriverViewModel(
         }
 
         driverSocket.connect(accessToken)
-
-        socketPollingJob?.cancel()
-        socketPollingJob = viewModelScope.launch {
-            while (true) {
-                delay(5000)
-                if (_uiState.value.assignedAmbulanceId != null) {
-                    val actual = driverSocket.isConnected()
-                    if (actual != _uiState.value.isSocketConnected) {
-                        _uiState.value = _uiState.value.copy(isSocketConnected = actual)
-                    }
-                }
-            }
-        }
     }
 
     fun acceptCall(callId: String) {
@@ -360,15 +345,12 @@ class DriverViewModel(
 
     fun disconnectSocket() {
         Log.d("DriverViewModel", "Disconnecting socket (lifecycle pause/stop)")
-        socketPollingJob?.cancel()
-        socketPollingJob = null
         driverSocket.disconnect()
         _uiState.value = _uiState.value.copy(isSocketConnected = false)
     }
 
     override fun onCleared() {
         super.onCleared()
-        socketPollingJob?.cancel()
         driverSocket.disconnect()
     }
 }
