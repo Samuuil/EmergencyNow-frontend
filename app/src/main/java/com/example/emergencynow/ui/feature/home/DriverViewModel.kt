@@ -15,6 +15,7 @@ import com.example.emergencynow.domain.usecase.hospital.SelectHospitalUseCase
 import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.CallOffer
+import com.example.emergencynow.ui.util.parseJwt
 import com.example.emergencynow.ui.util.DriverNotificationHelper
 import com.example.emergencynow.ui.util.DriverSocketManager
 import com.example.emergencynow.BuildConfig
@@ -76,7 +77,7 @@ class DriverViewModel(
     }
 
     fun refresh() {
-        val userId = com.example.emergencynow.ui.util.AuthSession.userId ?: return
+        val userId = authStorage.accessToken?.let { parseJwt(it)?.sub } ?: return
         viewModelScope.launch { loadAmbulanceData(userId) }
     }
 

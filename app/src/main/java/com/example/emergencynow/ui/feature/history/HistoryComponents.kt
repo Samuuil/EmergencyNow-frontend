@@ -24,7 +24,9 @@ import com.example.emergencynow.domain.model.entity.Call
 import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
@@ -103,9 +105,11 @@ fun CallStatusChip(status: CallStatus) {
     }
 }
 
-fun formatDate(date: java.util.Date): String {
-    val format = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-    return format.format(date)
-}
+private val dateFormatter = DateTimeFormatter
+    .ofPattern("MMM dd, yyyy HH:mm", Locale.getDefault())
+    .withZone(ZoneId.systemDefault())
+
+fun formatDate(instant: Instant?): String =
+    if (instant != null) dateFormatter.format(instant) else ""
 
 

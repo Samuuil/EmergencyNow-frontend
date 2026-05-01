@@ -8,11 +8,12 @@ import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.domain.model.response.CallResponse
 import com.example.emergencynow.domain.model.mapper.toDomain
 import com.example.emergencynow.domain.repository.CallRepository
+import java.time.Instant
 
 class CallRepositoryImpl(
     private val callDataSource: CallDataSource
 ) : CallRepository {
-    
+
     override suspend fun createCall(
         description: String,
         latitude: Double,
@@ -21,7 +22,7 @@ class CallRepositoryImpl(
         val response = callDataSource.createCall(description, latitude, longitude)
         mapResponseToCall(response)
     }
-    
+
     override suspend fun getCallTracking(callId: String): Result<Call> = safeApiCall {
         val response = callDataSource.getCallTracking(callId)
         Call(
@@ -53,7 +54,7 @@ class CallRepositoryImpl(
             dispatchedAt = null,
             arrivedAt = null,
             completedAt = null,
-            createdAt = java.util.Date(),
+            createdAt = null,
             selectedHospitalId = null,
             selectedHospitalName = null,
             hospitalRoutePolyline = null,
@@ -62,7 +63,7 @@ class CallRepositoryImpl(
             hospitalRouteSteps = null
         )
     }
-    
+
     override suspend fun updateCallStatus(
         callId: String,
         status: CallStatus
@@ -70,7 +71,7 @@ class CallRepositoryImpl(
         val response = callDataSource.updateCallStatus(callId, status.wire)
         mapResponseToCall(response)
     }
-    
+
     override suspend fun getMyCalls(
         page: Int?,
         limit: Int?
@@ -80,7 +81,7 @@ class CallRepositoryImpl(
             mapResponseToCall(callResponse)
         }
     }
-    
+
     override suspend fun getCallById(callId: String): Result<CallDetail> = safeApiCall {
         val response = callDataSource.getCallById(callId)
         CallDetail(
@@ -91,8 +92,8 @@ class CallRepositoryImpl(
             hospitalId = response.hospitalId
         )
     }
-    
-    private fun mapResponseToCall(response: com.example.emergencynow.domain.model.response.CallResponse): Call {
+
+    private fun mapResponseToCall(response: CallResponse): Call {
         return Call(
             id = response.id,
             description = response.description,
@@ -105,10 +106,10 @@ class CallRepositoryImpl(
             routeSteps = null,
             ambulanceCurrentLatitude = null,
             ambulanceCurrentLongitude = null,
-            dispatchedAt = parseDate(response.dispatchedAt),
+            dispatchedAt = parseInstant(response.dispatchedAt),
             arrivedAt = null,
             completedAt = null,
-            createdAt = parseDate(response.createdAt) ?: java.util.Date(),
+            createdAt = parseInstant(response.createdAt),
             selectedHospitalId = response.hospitalId,
             selectedHospitalName = null,
             hospitalRoutePolyline = null,
@@ -117,16 +118,8 @@ class CallRepositoryImpl(
             hospitalRouteSteps = null
         )
     }
-    
-    private fun parseDate(dateString: String?): java.util.Date? {
-        if (dateString == null) return null
-        return try {
-            val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
-            format.timeZone = java.util.TimeZone.getTimeZone("UTC")
-            format.parse(dateString)
-        } catch (e: Exception) {
-            null
-        }
+
+    private fun parseInstant(s: String?): Instant? = s?.let {
+        try { Instant.parse(it) } catch (e: Exception) { null }
     }
-    
 }
