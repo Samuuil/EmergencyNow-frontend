@@ -138,7 +138,6 @@ val appModule = module {
 
     factory { CreateCallUseCase(get()) }
     factory { GetCallByIdUseCase(get()) }
-    factory { GetCallTrackingUseCase(get()) }
     factory { UpdateCallStatusUseCase(get()) }
     factory { GetUserCallsUseCase(get()) }
 
