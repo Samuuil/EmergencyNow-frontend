@@ -86,7 +86,7 @@ class CallRepositoryImpl(
         val response = callDataSource.getCallById(callId)
         CallDetail(
             id = response.id,
-            status = CallStatus.fromWire(response.status),
+            status = CallStatus.fromWire(response.status ?: "PENDING"),
             userEgn = response.userEgn,
             ambulanceId = response.ambulanceId,
             hospitalId = response.hospitalId
@@ -96,10 +96,10 @@ class CallRepositoryImpl(
     private fun mapResponseToCall(response: CallResponse): Call {
         return Call(
             id = response.id,
-            description = response.description,
-            latitude = response.latitude,
-            longitude = response.longitude,
-            status = CallStatus.fromWire(response.status),
+            description = response.description ?: "",
+            latitude = response.latitude ?: 0.0,
+            longitude = response.longitude ?: 0.0,
+            status = CallStatus.fromWire(response.status ?: "PENDING"),
             routePolyline = null,
             estimatedDistance = null,
             estimatedDuration = null,

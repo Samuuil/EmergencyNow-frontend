@@ -68,13 +68,7 @@ class CallTrackingViewModel(
             val status = CallStatus.fromWire(statusUpdate.status)
             _uiState.value = _uiState.value.copy(userCallStatus = status)
             when (status) {
-                CallStatus.ARRIVED -> _uiState.value = _uiState.value.copy(
-                    ambulanceLocation = null,
-                    activeRoutePolyline = emptyList(),
-                    activeRouteDistance = 0,
-                    activeRouteDuration = 0
-                )
-                CallStatus.COMPLETED, CallStatus.CANCELLED -> _uiState.value = _uiState.value.copy(
+                CallStatus.ARRIVED, CallStatus.COMPLETED, CallStatus.CANCELLED -> _uiState.value = _uiState.value.copy(
                     activeCallId = null,
                     ambulanceLocation = null,
                     activeRoutePolyline = emptyList(),

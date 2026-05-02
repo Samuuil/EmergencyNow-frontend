@@ -31,15 +31,15 @@ class HospitalDataSourceImpl(
         hospitalId: String,
         latitude: Double,
         longitude: Double
-    ): HospitalRouteResponse {
-        return hospitalService.selectHospitalForCall(
+    ) {
+        hospitalService.selectHospitalForCall(
             id = callId,
             body = SelectHospitalRequest(
                 hospitalId = hospitalId,
                 latitude = latitude,
                 longitude = longitude
             )
-        )
+        ).close()
     }
     
     override suspend fun getHospitalRoute(callId: String): HospitalRouteResponse {

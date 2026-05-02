@@ -27,17 +27,17 @@ data class Call(
 )
 
 enum class CallStatus(val wire: String) {
-    PENDING("PENDING"),
-    DISPATCHED("DISPATCHED"),
-    EN_ROUTE("EN_ROUTE"),
-    ARRIVED("ARRIVED"),
-    NAVIGATING_TO_HOSPITAL("NAVIGATING_TO_HOSPITAL"),
-    COMPLETED("COMPLETED"),
-    CANCELLED("CANCELLED");
+    PENDING("pending"),
+    DISPATCHED("dispatched"),
+    EN_ROUTE("en_route"),
+    ARRIVED("arrived"),
+    NAVIGATING_TO_HOSPITAL("navigating_to_hospital"),
+    COMPLETED("completed"),
+    CANCELLED("cancelled");
 
     companion object {
         fun fromWire(s: String): CallStatus =
-            entries.firstOrNull { it.wire == s.uppercase() } ?: PENDING
+            entries.firstOrNull { it.wire == s.lowercase() } ?: PENDING
     }
 }
 

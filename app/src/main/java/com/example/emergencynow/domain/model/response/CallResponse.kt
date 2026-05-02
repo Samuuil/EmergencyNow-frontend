@@ -5,11 +5,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CallResponse(
     val id: String,
-    val userId: String,
-    val description: String,
-    val latitude: Double,
-    val longitude: Double,
-    val status: String,
+    val userId: String? = null,
+    val description: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val status: String? = null,
     val createdAt: String? = null,
     val dispatchedAt: String? = null,
     val ambulanceId: String? = null,

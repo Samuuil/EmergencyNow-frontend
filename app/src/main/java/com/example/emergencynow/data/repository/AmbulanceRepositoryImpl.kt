@@ -4,6 +4,7 @@ import com.example.emergencynow.data.datasource.AmbulanceDataSource
 import com.example.emergencynow.data.extensions.safeApiCall
 import com.example.emergencynow.domain.model.entity.Ambulance
 import com.example.emergencynow.domain.repository.AmbulanceRepository
+import java.time.Instant
 
 class AmbulanceRepositoryImpl(
     private val ambulanceDataSource: AmbulanceDataSource
@@ -57,8 +58,8 @@ class AmbulanceRepositoryImpl(
             available = dto.available ?: false,
             driverId = dto.driverId,
             lastCallAcceptedAt = null,
-            createdAt = Date(),
-            updatedAt = Date()
+            createdAt = Instant.now(),
+            updatedAt = Instant.now()
         )
     }
 

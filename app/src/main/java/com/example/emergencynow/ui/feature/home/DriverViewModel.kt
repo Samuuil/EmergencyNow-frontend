@@ -218,21 +218,25 @@ class DriverViewModel(
         try {
             _uiState.value = _uiState.value.copy(isLoadingHospitals = true, showHospitalSelection = true)
             val location = _uiState.value.emergencyLocation ?: _uiState.value.driverLocation
+            Log.d("DriverViewModel", "loadHospitals: callId=$callId, emergencyLocation=${_uiState.value.emergencyLocation}, driverLocation=${_uiState.value.driverLocation}")
             if (location == null) {
+                Log.e("DriverViewModel", "loadHospitals: No location available!")
                 _uiState.value = _uiState.value.copy(
                     error = "Location not available for hospital suggestions",
                     isLoadingHospitals = false
                 )
                 return
             }
+            Log.d("DriverViewModel", "loadHospitals: Fetching hospitals at lat=${location.latitude}, lng=${location.longitude}")
             val hospitals = getHospitalsForCallUseCase(
                 callId = callId,
                 latitude = location.latitude,
                 longitude = location.longitude
             ).getOrThrow()
+            Log.d("DriverViewModel", "loadHospitals: Got ${hospitals.size} hospitals")
             _uiState.value = _uiState.value.copy(availableHospitals = hospitals, isLoadingHospitals = false)
         } catch (e: Exception) {
-            Log.e("DriverViewModel", "Failed to load hospitals", e)
+            Log.e("DriverViewModel", "Failed to load hospitals: ${e.message}", e)
             _uiState.value = _uiState.value.copy(
                 isLoadingHospitals = false,
                 error = "Failed to load hospitals: ${e.message}"

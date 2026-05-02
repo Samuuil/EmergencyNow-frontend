@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.emergencynow.domain.model.request.CreateCallRequest
 import com.example.emergencynow.domain.usecase.call.CreateCallUseCase
 import com.example.emergencynow.ui.util.AuthSession
+import com.example.emergencynow.ui.util.AuthStorage
+import com.example.emergencynow.ui.util.parseJwt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +23,8 @@ data class EmergencyCallUiState(
 )
 
 class EmergencyCallViewModel(
-    private val createCallUseCase: CreateCallUseCase
+    private val createCallUseCase: CreateCallUseCase,
+    private val authStorage: AuthStorage,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EmergencyCallUiState())
     val uiState: StateFlow<EmergencyCallUiState> = _uiState.asStateFlow()
@@ -49,7 +52,12 @@ class EmergencyCallViewModel(
                     latitude = state.latitude,
                     longitude = state.longitude
                 )
-                val result = createCallUseCase(request, AuthSession.userId ?: "")
+                var userId = AuthSession.userId
+                if (userId.isNullOrEmpty()) {
+                    userId = authStorage.accessToken?.let { parseJwt(it)?.sub }
+                    if (userId != null) AuthSession.userId = userId
+                }
+                val result = createCallUseCase(request, userId ?: "")
                 result.fold(
                     onSuccess = { call ->
                         _uiState.value = _uiState.value.copy(
