@@ -33,6 +33,12 @@ data class CallStatusUpdate(
     val status: String
 )
 
+data class CallQueued(
+    val callId: String,
+    val position: Int,
+    val queueSize: Int
+)
+
 class UserSocketManager {
     companion object {
         private const val TAG = "UserSocketManager"
@@ -45,6 +51,7 @@ class UserSocketManager {
     var onCallDispatched: ((CallDispatched) -> Unit)? = null
     var onAmbulanceLocation: ((AmbulanceLocationUpdate) -> Unit)? = null
     var onCallStatus: ((CallStatusUpdate) -> Unit)? = null
+    var onCallQueued: ((CallQueued) -> Unit)? = null
     var onConnectionChange: ((Boolean) -> Unit)? = null
 
     fun connect(accessToken: String) {
@@ -232,6 +239,21 @@ class UserSocketManager {
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing call.status: ${e.message}", e)
+                }
+            }
+
+            socket?.on("call.queued") { args ->
+                try {
+                    val data = args.firstOrNull() as? JSONObject ?: return@on
+                    val queued = CallQueued(
+                        callId = data.getString("callId"),
+                        position = data.optInt("position", 1),
+                        queueSize = data.optInt("queueSize", 1)
+                    )
+                    Log.d(TAG, "call.queued: callId=${queued.callId}, position=${queued.position}/${queued.queueSize}")
+                    onCallQueued?.invoke(queued)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing call.queued: ${e.message}", e)
                 }
             }
 

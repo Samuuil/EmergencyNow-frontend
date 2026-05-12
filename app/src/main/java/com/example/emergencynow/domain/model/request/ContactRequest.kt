@@ -8,3 +8,10 @@ data class CreateContactRequest(
     val phoneNumber: String,
     val email: String?
 )
+
+@Serializable
+data class UpdateContactRequest(
+    val name: String,
+    val phoneNumber: String,
+    val email: String?
+)

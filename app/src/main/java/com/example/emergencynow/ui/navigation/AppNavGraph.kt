@@ -97,14 +97,18 @@ fun AppNavGraph(navController: NavHostController, startDestination: Any = Welcom
                 onBack = { navController.popBackStack() },
                 onVerified = { isReturningUser ->
                     if (isReturningUser) navController.navigate(HomeRoute)
-                    else navController.navigate(PersonalInfoRoute)
+                    else navController.navigate(PersonalInfoRoute(isOnboarding = true))
                 }
             )
         }
-        composable<PersonalInfoRoute> {
+        composable<PersonalInfoRoute> { backStack ->
+            val args = backStack.toRoute<PersonalInfoRoute>()
             PersonalInformationScreen(
                 onBack = { navController.popBackStack() },
-                onContinue = { navController.navigate(EmergencyContactsRoute) }
+                onContinue = {
+                    if (args.isOnboarding) navController.navigate(EmergencyContactsRoute)
+                    else navController.popBackStack()
+                }
             )
         }
         composable<EmergencyContactsRoute> {
@@ -149,7 +153,7 @@ fun AppNavGraph(navController: NavHostController, startDestination: Any = Welcom
         composable<ProfileHomeRoute> {
             ProfileHomeScreen(
                 onBack = { navController.popBackStack() },
-                onPersonalInfo = { navController.navigate(PersonalInfoRoute) },
+                onPersonalInfo = { navController.navigate(PersonalInfoRoute()) },
                 onEmergencyContacts = { navController.navigate(EmergencyContactsRoute) }
             )
         }

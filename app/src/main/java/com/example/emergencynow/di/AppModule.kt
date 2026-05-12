@@ -141,6 +141,7 @@ val appModule = module {
 
     factory { GetContactsUseCase(get()) }
     factory { CreateContactUseCase(get()) }
+    factory { UpdateContactUseCase(get()) }
     factory { DeleteContactUseCase(get()) }
 
     factory { CreateCallUseCase(get()) }
@@ -193,7 +194,9 @@ val appModule = module {
         EmergencyContactsViewModel(
             getContactsUseCase = get(),
             createContactUseCase = get(),
-            deleteContactUseCase = get()
+            updateContactUseCase = get(),
+            deleteContactUseCase = get(),
+            notificationManager = get()
         )
     }
     viewModel {

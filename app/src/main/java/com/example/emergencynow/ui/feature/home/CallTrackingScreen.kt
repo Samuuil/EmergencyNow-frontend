@@ -74,12 +74,8 @@ fun CallTrackingScreen(
         }
     }
 
-    LaunchedEffect(trackingState.activeCallId, trackingState.userCallStatus) {
+    LaunchedEffect(trackingState.activeCallId) {
         if (trackingState.activeCallId == null) {
-            onBackToHome()
-        } else if (trackingState.userCallStatus == CallStatus.ARRIVED ||
-            trackingState.userCallStatus == CallStatus.COMPLETED ||
-            trackingState.userCallStatus == CallStatus.CANCELLED) {
             onBackToHome()
         }
     }
@@ -152,18 +148,36 @@ fun CallTrackingScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "Waiting for acceptance...",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                "Your emergency call is being dispatched to the nearest ambulance",
-                                fontSize = 14.sp,
-                                color = Color.Gray,
-                                textAlign = TextAlign.Center
-                            )
+                            if (trackingState.isQueued) {
+                                Text(
+                                    "All ambulances are currently busy",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textAlign = TextAlign.Center
+                                )
+                                trackingState.queuePosition?.let { pos ->
+                                    Text(
+                                        "You are #$pos in queue",
+                                        fontSize = 14.sp,
+                                        color = Color.Gray,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    "Waiting for acceptance...",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    "Your emergency call is being dispatched to the nearest ambulance",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                         CallStatus.DISPATCHED, CallStatus.EN_ROUTE -> {
                             Row(

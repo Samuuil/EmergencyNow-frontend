@@ -10,11 +10,11 @@ import com.example.emergencynow.domain.repository.ContactRepository
 class ContactRepositoryImpl(
     private val contactDataSource: ContactDataSource
 ) : ContactRepository {
-    
+
     override suspend fun getMyContacts(): Result<List<Contact>> = safeApiCall {
         contactDataSource.getMyContacts().toDomainList()
     }
-    
+
     override suspend fun createContact(
         name: String,
         phoneNumber: String,
@@ -22,7 +22,16 @@ class ContactRepositoryImpl(
     ): Result<Contact> = safeApiCall {
         contactDataSource.createContact(name, phoneNumber, email).toDomain()
     }
-    
+
+    override suspend fun updateContact(
+        id: String,
+        name: String,
+        phoneNumber: String,
+        email: String?
+    ): Result<Contact> = safeApiCall {
+        contactDataSource.updateContact(id, name, phoneNumber, email).toDomain()
+    }
+
     override suspend fun deleteContact(id: String): Result<Unit> = safeApiCall {
         contactDataSource.deleteContact(id)
     }

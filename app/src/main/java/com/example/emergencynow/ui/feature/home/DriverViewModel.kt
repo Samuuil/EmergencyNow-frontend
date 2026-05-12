@@ -137,7 +137,7 @@ class DriverViewModel(
             Log.d("DriverViewModel", "Socket connection changed: $connected")
             _uiState.value = _uiState.value.copy(
                 isSocketConnected = connected,
-                error = if (!connected) "Connection failed. Check logs for details." else null
+                error = if (!connected) "Connection lost." else null
             )
         }
 
@@ -165,15 +165,19 @@ class DriverViewModel(
         driverSocket.connect(accessToken)
     }
 
-    fun acceptCall(callId: String) {
-        driverSocket.acceptCall(callId)
-        _uiState.value = _uiState.value.copy(incomingCallOffer = null, activeCallId = callId)
-        fetchPatientEgn(callId)
+    fun acceptCall() {
+        val offer = _uiState.value.incomingCallOffer ?: return
+        // Clear immediately before emitting to prevent double-response
+        _uiState.value = _uiState.value.copy(incomingCallOffer = null, activeCallId = offer.callId)
+        driverSocket.acceptCall(offer.callId)
+        fetchPatientEgn(offer.callId)
     }
 
-    fun declineCall(callId: String) {
-        driverSocket.declineCall(callId)
+    fun declineCall() {
+        val offer = _uiState.value.incomingCallOffer ?: return
+        // Clear immediately before emitting to prevent double-response
         _uiState.value = _uiState.value.copy(incomingCallOffer = null)
+        driverSocket.declineCall(offer.callId)
     }
 
     private fun fetchPatientEgn(callId: String) {

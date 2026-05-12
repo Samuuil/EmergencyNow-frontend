@@ -355,35 +355,30 @@ fun HomeScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
+                                val hasAmbulance = driverState.assignedAmbulanceId != null
+                                val statusText = when {
+                                    !hasAmbulance -> "No Ambulance"
+                                    driverState.isSocketConnected -> "Available"
+                                    else -> "Connecting..."
+                                }
+                                val statusColor = when {
+                                    !hasAmbulance -> Color(0xFFF59E0B)
+                                    driverState.isSocketConnected -> Color(0xFF16A34A)
+                                    else -> Color.Gray
+                                }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = if (driverState.isSocketConnected) "Available" else "Connecting...",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (driverState.isSocketConnected) Color(0xFF16A34A) else Color.Gray
-                                        )
-                                        if (!driverState.isSocketConnected) {
-                                            Spacer(Modifier.width(8.dp))
-                                            IconButton(
-                                                onClick = { driverViewModel.retryConnection() },
-                                                modifier = Modifier.size(32.dp)
-                                            ) {
-                                                Icon(
-                                                    Icons.Filled.Refresh,
-                                                    contentDescription = "Retry connection",
-                                                    tint = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                        }
-                                    }
-                                    if (!driverState.isSocketConnected && driverState.error != null) {
+                                    Text(
+                                        text = statusText,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = statusColor
+                                    )
+                                    if (hasAmbulance && !driverState.isSocketConnected && driverState.error != null) {
                                         Spacer(Modifier.height(4.dp))
                                         Text(
-                                            text = driverState.error ?: "Connection failed",
+                                            text = "No internet connection",
                                             fontSize = 11.sp,
-                                            color = Color(0xFFEF4444),
-                                            maxLines = 2
+                                            color = Color(0xFFEF4444)
                                         )
                                     }
                                 }
@@ -697,8 +692,8 @@ fun HomeScreen(
     if (driverState.incomingCallOffer != null) {
         IncomingCallDialog(
             offer = driverState.incomingCallOffer!!,
-            onAccept = { driverViewModel.acceptCall(driverState.incomingCallOffer!!.callId) },
-            onDecline = { driverViewModel.declineCall(driverState.incomingCallOffer!!.callId) }
+            onAccept = { driverViewModel.acceptCall() },
+            onDecline = { driverViewModel.declineCall() }
         )
     }
 

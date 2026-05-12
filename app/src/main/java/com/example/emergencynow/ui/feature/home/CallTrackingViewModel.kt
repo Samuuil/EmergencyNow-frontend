@@ -6,6 +6,7 @@ import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.PolylineDecoder
 import com.example.emergencynow.ui.util.UserSocketManager
+import com.example.emergencynow.ui.util.CallQueued
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,8 @@ data class CallTrackingUiState(
     val activeRouteSteps: List<String> = emptyList(),
     val userCallStatus: CallStatus? = null,
     val isSocketConnected: Boolean = false,
+    val isQueued: Boolean = false,
+    val queuePosition: Int? = null,
 )
 
 class CallTrackingViewModel(
@@ -49,11 +52,22 @@ class CallTrackingViewModel(
                 activeRouteDistance = dispatched.distance,
                 activeRouteDuration = dispatched.duration,
                 activeRouteSteps = dispatched.steps,
-                userCallStatus = CallStatus.DISPATCHED
+                userCallStatus = CallStatus.DISPATCHED,
+                isQueued = false,
+                queuePosition = null,
+            )
+        }
+
+        userSocket.onCallQueued = { queued ->
+            _uiState.value = _uiState.value.copy(
+                isQueued = true,
+                queuePosition = queued.position,
             )
         }
 
         userSocket.onAmbulanceLocation = { update ->
+            // Ignore location pings after ambulance has arrived
+            if (_uiState.value.userCallStatus == CallStatus.ARRIVED) return@onAmbulanceLocation
             _uiState.value = _uiState.value.copy(
                 ambulanceLocation = LatLng(update.latitude, update.longitude),
                 activeRoutePolyline = update.polyline?.let { PolylineDecoder.decode(it) }
@@ -66,17 +80,26 @@ class CallTrackingViewModel(
 
         userSocket.onCallStatus = { statusUpdate ->
             val status = CallStatus.fromWire(statusUpdate.status)
-            _uiState.value = _uiState.value.copy(userCallStatus = status)
             when (status) {
-                CallStatus.ARRIVED, CallStatus.COMPLETED, CallStatus.CANCELLED -> _uiState.value = _uiState.value.copy(
+                CallStatus.ARRIVED -> _uiState.value = _uiState.value.copy(
+                    userCallStatus = CallStatus.ARRIVED,
+                    ambulanceLocation = null,
+                    activeRoutePolyline = emptyList(),
+                    activeRouteDistance = 0,
+                    activeRouteDuration = 0,
+                    activeRouteSteps = emptyList(),
+                )
+                CallStatus.COMPLETED, CallStatus.CANCELLED -> _uiState.value = _uiState.value.copy(
                     activeCallId = null,
                     ambulanceLocation = null,
                     activeRoutePolyline = emptyList(),
                     activeRouteDistance = 0,
                     activeRouteDuration = 0,
-                    userCallStatus = null
+                    userCallStatus = null,
+                    isQueued = false,
+                    queuePosition = null,
                 )
-                else -> {}
+                else -> _uiState.value = _uiState.value.copy(userCallStatus = status)
             }
         }
 
@@ -94,7 +117,9 @@ class CallTrackingViewModel(
             activeRoutePolyline = emptyList(),
             activeRouteDistance = 0,
             activeRouteDuration = 0,
-            userCallStatus = null
+            userCallStatus = null,
+            isQueued = false,
+            queuePosition = null,
         )
     }
 

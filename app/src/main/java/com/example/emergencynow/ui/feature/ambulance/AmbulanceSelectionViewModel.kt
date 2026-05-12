@@ -64,7 +64,10 @@ class AmbulanceSelectionViewModel(
     }
 
     fun selectAmbulance(ambulanceId: String) {
-        _uiState.value = _uiState.value.copy(selectedAmbulanceId = ambulanceId)
+        val current = _uiState.value.selectedAmbulanceId
+        _uiState.value = _uiState.value.copy(
+            selectedAmbulanceId = if (current == ambulanceId) null else ambulanceId
+        )
     }
 
     fun assignAmbulance(onSuccess: () -> Unit) {

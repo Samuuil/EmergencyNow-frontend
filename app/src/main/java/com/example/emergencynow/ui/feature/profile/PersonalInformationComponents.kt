@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,13 +17,22 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.emergencynow.ui.theme.BrandBlueDark
@@ -93,7 +103,7 @@ fun BloodTypeSelector(
     modifier: Modifier = Modifier
 ) {
     val bloodTypes = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
-    
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -142,47 +152,162 @@ fun DateInputField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var day by remember { mutableStateOf(if (value.length == 10) value.substring(8, 10) else "") }
+    var month by remember { mutableStateOf(if (value.length == 10) value.substring(5, 7) else "") }
+    var year by remember { mutableStateOf(if (value.length == 10) value.substring(0, 4) else "") }
+
+    // Sync if the ViewModel loads an existing value after initial composition
+    LaunchedEffect(value) {
+        if (value.length == 10 && value[4] == '-' && value[7] == '-') {
+            day = value.substring(8, 10)
+            month = value.substring(5, 7)
+            year = value.substring(0, 4)
+        }
+    }
+
+    val monthFocus = remember { FocusRequester() }
+    val yearFocus = remember { FocusRequester() }
+
+    fun emit(d: String, m: String, y: String) {
+        if (d.length == 2 && m.length == 2 && y.length == 4) {
+            onValueChange("$y-$m-$d")
+        }
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Column(modifier = Modifier.weight(1.2f)) {
+            Text(
+                text = "Day",
+                fontSize = 12.sp,
+                color = BrandBlueDark.copy(alpha = 0.6f)
+            )
+            Spacer(Modifier.height(4.dp))
+            DatePartBox(
+                value = day,
+                onValueChange = { v ->
+                    day = v
+                    emit(v, month, year)
+                    if (v.length == 2) try { monthFocus.requestFocus() } catch (_: Exception) {}
+                },
+                placeholder = "DD",
+                maxLength = 2
+            )
+        }
+
+        Text(
+            text = "/",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Light,
+            color = BrandBlueDark.copy(alpha = 0.3f),
+            modifier = Modifier.padding(bottom = 14.dp)
+        )
+
+        Column(modifier = Modifier.weight(1.4f)) {
+            Text(
+                text = "Month",
+                fontSize = 12.sp,
+                color = BrandBlueDark.copy(alpha = 0.6f)
+            )
+            Spacer(Modifier.height(4.dp))
+            DatePartBox(
+                value = month,
+                onValueChange = { v ->
+                    month = v
+                    emit(day, v, year)
+                    if (v.length == 2) try { yearFocus.requestFocus() } catch (_: Exception) {}
+                },
+                placeholder = "MM",
+                maxLength = 2,
+                focusRequester = monthFocus
+            )
+        }
+
+        Text(
+            text = "/",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Light,
+            color = BrandBlueDark.copy(alpha = 0.3f),
+            modifier = Modifier.padding(bottom = 14.dp)
+        )
+
+        Column(modifier = Modifier.weight(2f)) {
+            Text(
+                text = "Year",
+                fontSize = 12.sp,
+                color = BrandBlueDark.copy(alpha = 0.6f)
+            )
+            Spacer(Modifier.height(4.dp))
+            DatePartBox(
+                value = year,
+                onValueChange = { v ->
+                    year = v
+                    emit(day, month, v)
+                },
+                placeholder = "YYYY",
+                maxLength = 4,
+                focusRequester = yearFocus
+            )
+        }
+    }
+}
+
+@Composable
+private fun DatePartBox(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    maxLength: Int,
+    focusRequester: FocusRequester? = null
+) {
+    var isFocused by remember { mutableStateOf(false) }
+
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .height(52.dp)
             .border(
-                width = 1.dp,
-                color = BrandBlueDark.copy(alpha = 0.3f),
+                width = if (isFocused) 2.dp else 1.dp,
+                color = if (isFocused) BrandBlueDark else BrandBlueDark.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(12.dp)
             )
             .background(CurvePaleBlue, RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.CenterStart
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
         BasicTextField(
             value = value,
-            onValueChange = { newValue ->
-                val digitsOnly = newValue.filter { it.isDigit() }
-                val formatted = when {
-                    digitsOnly.length <= 4 -> digitsOnly
-                    digitsOnly.length <= 6 -> "${digitsOnly.substring(0, 4)}-${digitsOnly.substring(4)}"
-                    else -> "${digitsOnly.substring(0, 4)}-${digitsOnly.substring(4, 6)}-${digitsOnly.substring(6, minOf(8, digitsOnly.length))}"
-                }
-                if (formatted.length <= 10) {
-                    onValueChange(formatted)
-                }
+            onValueChange = { new ->
+                val digits = new.filter { it.isDigit() }
+                if (digits.length <= maxLength) onValueChange(digits)
             },
             textStyle = TextStyle(
-                fontSize = 16.sp,
-                color = BrandBlueDark
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = BrandBlueDark,
+                textAlign = TextAlign.Center
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             cursorBrush = SolidColor(BrandBlueDark),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+                .onFocusChanged { isFocused = it.isFocused },
             decorationBox = { innerTextField ->
-                Box(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
                     if (value.isEmpty()) {
                         Text(
-                            "YYYY-MM-DD",
-                            fontSize = 16.sp,
-                            color = BrandBlueDark.copy(alpha = 0.4f)
+                            text = placeholder,
+                            fontSize = if (maxLength == 4) 14.sp else 16.sp,
+                            color = BrandBlueDark.copy(alpha = 0.35f),
+                            textAlign = TextAlign.Center
                         )
                     }
                     innerTextField()
@@ -236,5 +361,3 @@ fun MultilineTextArea(
         )
     }
 }
-
-

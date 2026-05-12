@@ -1,11 +1,13 @@
 package com.example.emergencynow.data.service
 
 import com.example.emergencynow.domain.model.request.CreateContactRequest
+import com.example.emergencynow.domain.model.request.UpdateContactRequest
 import com.example.emergencynow.domain.model.response.ContactResponse
 import com.example.emergencynow.domain.model.response.PaginatedResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -15,6 +17,9 @@ interface ContactService {
 
     @POST("contacts/me")
     suspend fun createMyContact(@Body body: CreateContactRequest): ContactResponse
+
+    @PATCH("contacts/me/{id}")
+    suspend fun updateMyContact(@Path("id") id: String, @Body body: UpdateContactRequest): ContactResponse
 
     @DELETE("contacts/me/{id}")
     suspend fun deleteMyContact(@Path("id") id: String)
