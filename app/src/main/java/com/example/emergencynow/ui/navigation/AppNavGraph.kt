@@ -1,9 +1,14 @@
 package com.example.emergencynow.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -12,6 +17,7 @@ import androidx.navigation.toRoute
 import com.example.emergencynow.ui.constants.AmbulanceSelectionRoute
 import com.example.emergencynow.ui.constants.CallTrackingRoute
 import com.example.emergencynow.ui.constants.ChooseVerificationRoute
+import com.example.emergencynow.ui.constants.DispatcherAssignRoute
 import com.example.emergencynow.ui.constants.EmergencyCallRoute
 import com.example.emergencynow.ui.constants.EmergencyContactsRoute
 import com.example.emergencynow.ui.constants.EnterEgnRoute
@@ -30,6 +36,9 @@ import com.example.emergencynow.ui.feature.auth.EnterVerificationCodeScreen
 import com.example.emergencynow.ui.feature.auth.WelcomeScreen
 import com.example.emergencynow.ui.feature.call.EmergencyCallScreen
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsScreen
+import com.example.emergencynow.ui.feature.dispatcher.DispatcherAssignScreen
+import com.example.emergencynow.ui.feature.dispatcher.DispatcherHomeScreen
+import com.example.emergencynow.ui.feature.dispatcher.DispatcherViewModel
 import com.example.emergencynow.ui.feature.doctor.PatientLookupScreen
 import com.example.emergencynow.ui.feature.doctor.PatientProfileScreen
 import com.example.emergencynow.ui.feature.history.HistoryScreen
@@ -50,12 +59,9 @@ fun AppNavGraph(navController: NavHostController, startDestination: Any = Welcom
                 onLogin = { navController.navigate(EnterEgnRoute) }
             )
         }
-        composable<HomeRoute> {
-            val parentEntry = remember(navController.currentBackStackEntry) {
-                navController.getBackStackEntry<HomeRoute>()
-            }
-            val homeViewModel: HomeViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
-            val callTrackingViewModel: CallTrackingViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+        composable<HomeRoute> { backStackEntry ->
+            val homeViewModel: HomeViewModel = koinViewModel(viewModelStoreOwner = backStackEntry)
+            val callTrackingViewModel: CallTrackingViewModel = koinViewModel(viewModelStoreOwner = backStackEntry)
             val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
             val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -65,15 +71,49 @@ fun AppNavGraph(navController: NavHostController, startDestination: Any = Welcom
                 }
             }
 
-            HomeScreen(
-                onMakeEmergencyCall = { navController.navigate(EmergencyCallRoute) },
-                onOpenProfile = { navController.navigate(ProfileHomeRoute) },
-                onSelectAmbulance = { navController.navigate(AmbulanceSelectionRoute) },
-                onNavigateToHistory = { navController.navigate(HistoryRoute) },
-                onNavigateToContacts = { navController.navigate(EmergencyContactsRoute) },
-                onPatientLookup = { navController.navigate(PatientLookupRoute) },
-                viewModel = homeViewModel,
-                callTrackingViewModel = callTrackingViewModel,
+            if (homeState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (homeState.isDispatcher) {
+                val dispatcherViewModel: DispatcherViewModel = koinViewModel(viewModelStoreOwner = backStackEntry)
+                DispatcherHomeScreen(
+                    onOpenProfile = { navController.navigate(ProfileHomeRoute) },
+                    onAssignCall = { callId -> navController.navigate(DispatcherAssignRoute(callId)) },
+                    onMakeEmergencyCall = { navController.navigate(EmergencyCallRoute) },
+                    viewModel = dispatcherViewModel,
+                )
+            } else {
+                HomeScreen(
+                    onMakeEmergencyCall = { navController.navigate(EmergencyCallRoute) },
+                    onOpenProfile = { navController.navigate(ProfileHomeRoute) },
+                    onSelectAmbulance = { navController.navigate(AmbulanceSelectionRoute) },
+                    onNavigateToHistory = { navController.navigate(HistoryRoute) },
+                    onNavigateToContacts = { navController.navigate(EmergencyContactsRoute) },
+                    onPatientLookup = { navController.navigate(PatientLookupRoute) },
+                    viewModel = homeViewModel,
+                    callTrackingViewModel = callTrackingViewModel,
+                )
+            }
+        }
+        composable<DispatcherAssignRoute> { backStack ->
+            val parentEntry = remember(backStack) {
+                runCatching { navController.getBackStackEntry<HomeRoute>() }.getOrNull()
+            }
+            val dispatcherViewModel: DispatcherViewModel = if (parentEntry != null) {
+                koinViewModel(viewModelStoreOwner = parentEntry)
+            } else {
+                koinViewModel(viewModelStoreOwner = backStack)
+            }
+            val args = backStack.toRoute<DispatcherAssignRoute>()
+            DispatcherAssignScreen(
+                callId = args.callId,
+                onBack = { navController.popBackStack() },
+                onAssigned = { navController.popBackStack() },
+                viewModel = dispatcherViewModel,
             )
         }
         composable<EnterEgnRoute> {

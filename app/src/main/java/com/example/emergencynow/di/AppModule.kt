@@ -16,6 +16,9 @@ import com.example.emergencynow.domain.usecase.auth.GetUserOnboardingStateUseCas
 import com.example.emergencynow.domain.usecase.call.*
 import com.example.emergencynow.domain.usecase.call.GetCallByIdUseCase
 import com.example.emergencynow.domain.usecase.contact.*
+import com.example.emergencynow.domain.usecase.dispatcher.AssignAmbulanceUseCase
+import com.example.emergencynow.domain.usecase.dispatcher.GetAvailableAmbulancesForDispatcherUseCase
+import com.example.emergencynow.domain.usecase.dispatcher.GetDispatcherCallsUseCase
 import com.example.emergencynow.domain.usecase.hospital.*
 import com.example.emergencynow.domain.usecase.profile.*
 import com.example.emergencynow.domain.usecase.user.GetUserRoleUseCase
@@ -29,8 +32,10 @@ import com.example.emergencynow.ui.feature.history.HistoryViewModel
 import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsViewModel
 import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodViewModel
+import com.example.emergencynow.ui.feature.dispatcher.DispatcherViewModel
 import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
 import com.example.emergencynow.ui.feature.home.DriverViewModel
+import com.example.emergencynow.ui.util.DispatcherNotificationHelper
 import com.example.emergencynow.ui.util.DriverNotificationHelper
 import com.example.emergencynow.ui.AppViewModel
 import com.example.emergencynow.ui.util.NotificationManager
@@ -57,6 +62,7 @@ val appModule = module {
     single { com.example.emergencynow.data.repository.LocationRepository(androidContext()) }
     single { NotificationManager() }
     single { DriverNotificationHelper(androidContext()) }
+    single { DispatcherNotificationHelper(androidContext()) }
 
     single {
         HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
@@ -112,6 +118,7 @@ val appModule = module {
     single<AmbulanceService> { get<Retrofit>().create(AmbulanceService::class.java) }
     single<HospitalService> { get<Retrofit>().create(HospitalService::class.java) }
     single<UserService> { get<Retrofit>().create(UserService::class.java) }
+    single<DispatcherService> { get<Retrofit>().create(DispatcherService::class.java) }
 
     single<AuthDataSource> { AuthDataSourceImpl(get()) }
     single<ProfileDataSource> { ProfileDataSourceImpl(get()) }
@@ -120,6 +127,7 @@ val appModule = module {
     single<AmbulanceDataSource> { AmbulanceDataSourceImpl(get()) }
     single<HospitalDataSource> { HospitalDataSourceImpl(get()) }
     single<UserDataSource> { UserDataSourceImpl(get()) }
+    single<DispatcherDataSource> { DispatcherDataSourceImpl(get()) }
 
     single<AuthRepository> { AuthRepositoryImpl(get()) }
     single<ProfileRepository> { ProfileRepositoryImpl(get()) }
@@ -128,6 +136,7 @@ val appModule = module {
     single<AmbulanceRepository> { AmbulanceRepositoryImpl(get()) }
     single<HospitalRepository> { HospitalRepositoryImpl(get()) }
     single<UserRepository> { UserRepositoryImpl(get()) }
+    single<DispatcherRepository> { DispatcherRepositoryImpl(get()) }
 
     factory { RequestVerificationCodeUseCase(get()) }
     factory { VerifyCodeUseCase(get()) }
@@ -161,6 +170,10 @@ val appModule = module {
 
     factory { GetUserRoleUseCase(get()) }
 
+    factory { GetDispatcherCallsUseCase(get()) }
+    factory { GetAvailableAmbulancesForDispatcherUseCase(get()) }
+    factory { AssignAmbulanceUseCase(get()) }
+
     viewModel { AppViewModel(get(), get()) }
     viewModel { EnterEgnViewModel() }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get()) }
@@ -174,7 +187,6 @@ val appModule = module {
             selectHospitalUseCase = get(),
             getHospitalRouteUseCase = get(),
             getCallByIdUseCase = get(),
-            markAmbulanceAvailableUseCase = get(),
             driverNotificationHelper = get(),
             authStorage = get()
         )
@@ -203,6 +215,16 @@ val appModule = module {
         ChooseVerificationMethodViewModel(
             requestVerificationCodeUseCase = get(),
             notificationManager = get()
+        )
+    }
+    viewModel {
+        DispatcherViewModel(
+            authStorage = get(),
+            getDispatcherCallsUseCase = get(),
+            getAvailableAmbulancesUseCase = get(),
+            assignAmbulanceUseCase = get(),
+            dispatcherNotificationHelper = get(),
+            notificationManager = get(),
         )
     }
 }

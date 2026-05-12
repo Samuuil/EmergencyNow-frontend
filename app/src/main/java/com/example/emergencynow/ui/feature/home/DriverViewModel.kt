@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.emergencynow.domain.model.entity.NearbyHospital
 import com.example.emergencynow.domain.usecase.ambulance.GetAmbulanceByDriverUseCase
-import com.example.emergencynow.domain.usecase.ambulance.MarkAmbulanceAvailableUseCase
 import com.example.emergencynow.domain.usecase.ambulance.UnassignAmbulanceDriverUseCase
 import com.example.emergencynow.domain.usecase.call.GetCallByIdUseCase
 import com.example.emergencynow.domain.usecase.call.UpdateCallStatusUseCase
@@ -62,7 +61,6 @@ class DriverViewModel(
     private val selectHospitalUseCase: SelectHospitalUseCase,
     private val getHospitalRouteUseCase: GetHospitalRouteUseCase,
     private val getCallByIdUseCase: GetCallByIdUseCase,
-    private val markAmbulanceAvailableUseCase: MarkAmbulanceAvailableUseCase,
     private val driverNotificationHelper: DriverNotificationHelper,
     private val authStorage: AuthStorage,
 ) : ViewModel() {
@@ -312,11 +310,9 @@ class DriverViewModel(
 
     fun completeCall() {
         val callId = _uiState.value.activeCallId ?: return
-        val ambulanceId = _uiState.value.assignedAmbulanceId ?: return
         viewModelScope.launch {
             try {
-                markAmbulanceAvailableUseCase(ambulanceId)
-                driverSocket.completeCall(callId)
+                updateCallStatusUseCase(callId, CallStatus.COMPLETED).getOrThrow()
             } catch (e: Exception) {
                 Log.e("DriverViewModel", "Failed to complete call", e)
             } finally {

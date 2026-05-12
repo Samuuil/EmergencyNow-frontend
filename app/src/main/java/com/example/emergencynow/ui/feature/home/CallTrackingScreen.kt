@@ -60,7 +60,9 @@ fun CallTrackingScreen(
     }
 
     LaunchedEffect(trackingState.activeRoutePolyline, trackingState.ambulanceLocation, trackingState.userCallStatus) {
-        if (trackingState.userCallStatus != CallStatus.PENDING && trackingState.activeRoutePolyline.isNotEmpty()) {
+        val showRoute = trackingState.userCallStatus == CallStatus.DISPATCHED ||
+            trackingState.userCallStatus == CallStatus.EN_ROUTE
+        if (showRoute && trackingState.activeRoutePolyline.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
             trackingState.activeRoutePolyline.forEach { builder.include(it) }
             homeState.userLocation?.let { builder.include(it) }
@@ -114,7 +116,10 @@ fun CallTrackingScreen(
                     )
                 }
 
-                if (trackingState.userCallStatus != CallStatus.PENDING && trackingState.ambulanceLocation != null) {
+                val showAmbulanceOverlay = trackingState.userCallStatus == CallStatus.DISPATCHED ||
+                    trackingState.userCallStatus == CallStatus.EN_ROUTE
+
+                if (showAmbulanceOverlay && trackingState.ambulanceLocation != null) {
                     Marker(
                         state = MarkerState(position = trackingState.ambulanceLocation!!),
                         title = "Ambulance",
@@ -122,7 +127,7 @@ fun CallTrackingScreen(
                     )
                 }
 
-                if (trackingState.userCallStatus != CallStatus.PENDING && trackingState.activeRoutePolyline.isNotEmpty()) {
+                if (showAmbulanceOverlay && trackingState.activeRoutePolyline.isNotEmpty()) {
                     Polyline(
                         points = trackingState.activeRoutePolyline,
                         color = Color.Blue,
@@ -148,35 +153,53 @@ fun CallTrackingScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            if (trackingState.isQueued) {
-                                Text(
-                                    "All ambulances are currently busy",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    textAlign = TextAlign.Center
-                                )
-                                trackingState.queuePosition?.let { pos ->
+                            when {
+                                trackingState.isAwaitingDispatcher -> {
                                     Text(
-                                        "You are #$pos in queue",
+                                        "Waiting for a dispatcher",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    trackingState.queuePosition?.let { pos ->
+                                        Text(
+                                            "You are #$pos in queue",
+                                            fontSize = 14.sp,
+                                            color = Color.Gray,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                                trackingState.isWithDispatcher -> {
+                                    Text(
+                                        "A dispatcher is reviewing your call",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        "Selecting the nearest ambulance for you",
                                         fontSize = 14.sp,
                                         color = Color.Gray,
                                         textAlign = TextAlign.Center
                                     )
                                 }
-                            } else {
-                                Text(
-                                    "Waiting for acceptance...",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    "Your emergency call is being dispatched to the nearest ambulance",
-                                    fontSize = 14.sp,
-                                    color = Color.Gray,
-                                    textAlign = TextAlign.Center
-                                )
+                                else -> {
+                                    Text(
+                                        "Waiting for acceptance...",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        "Your emergency call is being dispatched",
+                                        fontSize = 14.sp,
+                                        color = Color.Gray,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
                         }
                         CallStatus.DISPATCHED, CallStatus.EN_ROUTE -> {
@@ -204,6 +227,52 @@ fun CallTrackingScreen(
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        CallStatus.ARRIVED -> {
+                            Icon(
+                                Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF16A34A),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "Ambulance has arrived",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = Color(0xFF16A34A),
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                "Help is here. Please follow paramedic instructions.",
+                                fontSize = 14.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        CallStatus.NAVIGATING_TO_HOSPITAL -> {
+                            Icon(
+                                Icons.Filled.LocalHospital,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "On the way to hospital",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                            if (trackingState.activeRouteDuration > 0) {
+                                Text(
+                                    "Estimated arrival: ${trackingState.activeRouteDuration / 60} min",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }

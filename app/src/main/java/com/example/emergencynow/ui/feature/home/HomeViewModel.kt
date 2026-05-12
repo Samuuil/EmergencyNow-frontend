@@ -22,6 +22,7 @@ data class HomeUiState(
     val userLocation: LatLng? = null,
     val isDriver: Boolean = false,
     val isDoctor: Boolean = false,
+    val isDispatcher: Boolean = false,
 )
 
 class HomeViewModel(
@@ -86,6 +87,7 @@ class HomeViewModel(
                 _uiState.value = _uiState.value.copy(
                     isDriver = role == "DRIVER",
                     isDoctor = role == "DOCTOR",
+                    isDispatcher = role == "DISPATCHER",
                     isLoading = false
                 )
             } catch (e: Exception) {

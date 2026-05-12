@@ -33,10 +33,14 @@ data class CallStatusUpdate(
     val status: String
 )
 
-data class CallQueued(
+data class CallAwaitingDispatcher(
     val callId: String,
     val position: Int,
     val queueSize: Int
+)
+
+data class CallWithDispatcher(
+    val callId: String
 )
 
 class UserSocketManager {
@@ -51,7 +55,8 @@ class UserSocketManager {
     var onCallDispatched: ((CallDispatched) -> Unit)? = null
     var onAmbulanceLocation: ((AmbulanceLocationUpdate) -> Unit)? = null
     var onCallStatus: ((CallStatusUpdate) -> Unit)? = null
-    var onCallQueued: ((CallQueued) -> Unit)? = null
+    var onCallAwaitingDispatcher: ((CallAwaitingDispatcher) -> Unit)? = null
+    var onCallWithDispatcher: ((CallWithDispatcher) -> Unit)? = null
     var onConnectionChange: ((Boolean) -> Unit)? = null
 
     fun connect(accessToken: String) {
@@ -242,18 +247,31 @@ class UserSocketManager {
                 }
             }
 
-            socket?.on("call.queued") { args ->
+            socket?.on("call.awaiting-dispatcher") { args ->
                 try {
                     val data = args.firstOrNull() as? JSONObject ?: return@on
-                    val queued = CallQueued(
+                    val awaiting = CallAwaitingDispatcher(
                         callId = data.getString("callId"),
                         position = data.optInt("position", 1),
                         queueSize = data.optInt("queueSize", 1)
                     )
-                    Log.d(TAG, "call.queued: callId=${queued.callId}, position=${queued.position}/${queued.queueSize}")
-                    onCallQueued?.invoke(queued)
+                    Log.d(TAG, "call.awaiting-dispatcher: callId=${awaiting.callId}, position=${awaiting.position}/${awaiting.queueSize}")
+                    onCallAwaitingDispatcher?.invoke(awaiting)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing call.queued: ${e.message}", e)
+                    Log.e(TAG, "Error parsing call.awaiting-dispatcher: ${e.message}", e)
+                }
+            }
+
+            socket?.on("call.with-dispatcher") { args ->
+                try {
+                    val data = args.firstOrNull() as? JSONObject ?: return@on
+                    val withDispatcher = CallWithDispatcher(
+                        callId = data.getString("callId"),
+                    )
+                    Log.d(TAG, "call.with-dispatcher: callId=${withDispatcher.callId}")
+                    onCallWithDispatcher?.invoke(withDispatcher)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing call.with-dispatcher: ${e.message}", e)
                 }
             }
 

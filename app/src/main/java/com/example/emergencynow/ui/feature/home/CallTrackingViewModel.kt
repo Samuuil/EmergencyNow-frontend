@@ -6,7 +6,6 @@ import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.PolylineDecoder
 import com.example.emergencynow.ui.util.UserSocketManager
-import com.example.emergencynow.ui.util.CallQueued
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +20,9 @@ data class CallTrackingUiState(
     val activeRouteSteps: List<String> = emptyList(),
     val userCallStatus: CallStatus? = null,
     val isSocketConnected: Boolean = false,
-    val isQueued: Boolean = false,
+    val isAwaitingDispatcher: Boolean = false,
     val queuePosition: Int? = null,
+    val isWithDispatcher: Boolean = false,
 )
 
 class CallTrackingViewModel(
@@ -53,51 +53,55 @@ class CallTrackingViewModel(
                 activeRouteDuration = dispatched.duration,
                 activeRouteSteps = dispatched.steps,
                 userCallStatus = CallStatus.DISPATCHED,
-                isQueued = false,
+                isAwaitingDispatcher = false,
                 queuePosition = null,
+                isWithDispatcher = false,
             )
         }
 
-        userSocket.onCallQueued = { queued ->
+        userSocket.onCallAwaitingDispatcher = { awaiting ->
             _uiState.value = _uiState.value.copy(
-                isQueued = true,
-                queuePosition = queued.position,
+                isAwaitingDispatcher = true,
+                queuePosition = awaiting.position,
+                isWithDispatcher = false,
+            )
+        }
+
+        userSocket.onCallWithDispatcher = {
+            _uiState.value = _uiState.value.copy(
+                isAwaitingDispatcher = false,
+                queuePosition = null,
+                isWithDispatcher = true,
             )
         }
 
         userSocket.onAmbulanceLocation = { update ->
-            // Ignore location pings after ambulance has arrived
-            if (_uiState.value.userCallStatus == CallStatus.ARRIVED) return@onAmbulanceLocation
-            _uiState.value = _uiState.value.copy(
-                ambulanceLocation = LatLng(update.latitude, update.longitude),
-                activeRoutePolyline = update.polyline?.let { PolylineDecoder.decode(it) }
-                    ?: _uiState.value.activeRoutePolyline,
-                activeRouteDistance = update.distance ?: _uiState.value.activeRouteDistance,
-                activeRouteDuration = update.duration ?: _uiState.value.activeRouteDuration,
-                activeRouteSteps = if (update.steps.isNotEmpty()) update.steps else _uiState.value.activeRouteSteps
-            )
+            if (_uiState.value.userCallStatus != CallStatus.ARRIVED) {
+                _uiState.value = _uiState.value.copy(
+                    ambulanceLocation = LatLng(update.latitude, update.longitude),
+                    activeRoutePolyline = update.polyline?.let { PolylineDecoder.decode(it) }
+                        ?: _uiState.value.activeRoutePolyline,
+                    activeRouteDistance = update.distance ?: _uiState.value.activeRouteDistance,
+                    activeRouteDuration = update.duration ?: _uiState.value.activeRouteDuration,
+                    activeRouteSteps = if (update.steps.isNotEmpty()) update.steps else _uiState.value.activeRouteSteps
+                )
+            }
         }
 
         userSocket.onCallStatus = { statusUpdate ->
             val status = CallStatus.fromWire(statusUpdate.status)
             when (status) {
-                CallStatus.ARRIVED -> _uiState.value = _uiState.value.copy(
-                    userCallStatus = CallStatus.ARRIVED,
-                    ambulanceLocation = null,
-                    activeRoutePolyline = emptyList(),
-                    activeRouteDistance = 0,
-                    activeRouteDuration = 0,
-                    activeRouteSteps = emptyList(),
-                )
                 CallStatus.COMPLETED, CallStatus.CANCELLED -> _uiState.value = _uiState.value.copy(
                     activeCallId = null,
                     ambulanceLocation = null,
                     activeRoutePolyline = emptyList(),
                     activeRouteDistance = 0,
                     activeRouteDuration = 0,
+                    activeRouteSteps = emptyList(),
                     userCallStatus = null,
-                    isQueued = false,
+                    isAwaitingDispatcher = false,
                     queuePosition = null,
+                    isWithDispatcher = false,
                 )
                 else -> _uiState.value = _uiState.value.copy(userCallStatus = status)
             }
@@ -118,8 +122,9 @@ class CallTrackingViewModel(
             activeRouteDistance = 0,
             activeRouteDuration = 0,
             userCallStatus = null,
-            isQueued = false,
+            isAwaitingDispatcher = false,
             queuePosition = null,
+            isWithDispatcher = false,
         )
     }
 
