@@ -161,6 +161,8 @@ class DispatcherViewModel(
         }
     }
 
+    fun stopAlert() = dispatcherNotificationHelper.stopAlert()
+
     fun callById(callId: String): DispatcherCallOffer? = _uiState.value.calls[callId]
 
     private fun refreshFromRest() {

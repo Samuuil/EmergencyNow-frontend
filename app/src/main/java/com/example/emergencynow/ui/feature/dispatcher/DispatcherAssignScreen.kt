@@ -77,6 +77,7 @@ fun DispatcherAssignScreen(
 
     LaunchedEffect(Unit) {
         viewModel.connectSocket()
+        viewModel.stopAlert()
     }
 
     LaunchedEffect(callId, state.isSocketConnected) {

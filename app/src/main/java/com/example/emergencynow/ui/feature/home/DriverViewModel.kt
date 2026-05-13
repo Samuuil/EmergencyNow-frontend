@@ -165,7 +165,7 @@ class DriverViewModel(
 
     fun acceptCall() {
         val offer = _uiState.value.incomingCallOffer ?: return
-        // Clear immediately before emitting to prevent double-response
+        driverNotificationHelper.stopAlert()
         _uiState.value = _uiState.value.copy(incomingCallOffer = null, activeCallId = offer.callId)
         driverSocket.acceptCall(offer.callId)
         fetchPatientEgn(offer.callId)
@@ -173,7 +173,7 @@ class DriverViewModel(
 
     fun declineCall() {
         val offer = _uiState.value.incomingCallOffer ?: return
-        // Clear immediately before emitting to prevent double-response
+        driverNotificationHelper.stopAlert()
         _uiState.value = _uiState.value.copy(incomingCallOffer = null)
         driverSocket.declineCall(offer.callId)
     }
