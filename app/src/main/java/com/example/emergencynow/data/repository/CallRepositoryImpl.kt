@@ -17,9 +17,10 @@ class CallRepositoryImpl(
     override suspend fun createCall(
         description: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        patientPhoneNumber: String?
     ): Result<Call> = safeApiCall {
-        val response = callDataSource.createCall(description, latitude, longitude)
+        val response = callDataSource.createCall(description, latitude, longitude, patientPhoneNumber)
         mapResponseToCall(response)
     }
 
@@ -88,6 +89,8 @@ class CallRepositoryImpl(
             id = response.id,
             status = CallStatus.fromWire(response.status ?: "PENDING"),
             userEgn = response.userEgn,
+            patientEgn = response.patientEgn,
+            patientPhoneNumber = response.patientPhoneNumber,
             ambulanceId = response.ambulanceId,
             hospitalId = response.hospitalId
         )
@@ -115,7 +118,9 @@ class CallRepositoryImpl(
             hospitalRoutePolyline = null,
             hospitalRouteDistance = null,
             hospitalRouteDuration = null,
-            hospitalRouteSteps = null
+            hospitalRouteSteps = null,
+            patientEgn = response.patientEgn,
+            patientPhoneNumber = response.patientPhoneNumber
         )
     }
 

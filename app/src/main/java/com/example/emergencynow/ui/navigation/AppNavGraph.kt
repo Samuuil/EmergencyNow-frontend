@@ -17,6 +17,7 @@ import androidx.navigation.toRoute
 import com.example.emergencynow.ui.constants.AmbulanceSelectionRoute
 import com.example.emergencynow.ui.constants.CallTrackingRoute
 import com.example.emergencynow.ui.constants.ChooseVerificationRoute
+import com.example.emergencynow.ui.constants.ContactPickerRoute
 import com.example.emergencynow.ui.constants.DispatcherAssignRoute
 import com.example.emergencynow.ui.constants.EmergencyCallRoute
 import com.example.emergencynow.ui.constants.EmergencyContactsRoute
@@ -35,6 +36,8 @@ import com.example.emergencynow.ui.feature.auth.EnterEgnScreen
 import com.example.emergencynow.ui.feature.auth.EnterVerificationCodeScreen
 import com.example.emergencynow.ui.feature.auth.WelcomeScreen
 import com.example.emergencynow.ui.feature.call.EmergencyCallScreen
+import com.example.emergencynow.ui.feature.call.EmergencyCallViewModel
+import com.example.emergencynow.ui.feature.contacts.ContactPickerScreen
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsScreen
 import com.example.emergencynow.ui.feature.dispatcher.DispatcherAssignScreen
 import com.example.emergencynow.ui.feature.dispatcher.DispatcherHomeScreen
@@ -163,19 +166,56 @@ fun AppNavGraph(navController: NavHostController, startDestination: Any = Welcom
                 onAmbulanceSelected = { navController.popBackStack() }
             )
         }
-        composable<EmergencyCallRoute> {
+        composable<EmergencyCallRoute> { backStackEntry ->
             val parentEntry = remember(navController.currentBackStackEntry) {
                 navController.getBackStackEntry<HomeRoute>()
             }
             val callTrackingViewModel: CallTrackingViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+            val emergencyCallViewModel: EmergencyCallViewModel = koinViewModel(viewModelStoreOwner = backStackEntry)
+
+            val savedHandle = backStackEntry.savedStateHandle
+            val pickedName by savedHandle.getStateFlow("picked_contact_name", "").collectAsStateWithLifecycle()
+            val pickedNumber by savedHandle.getStateFlow("picked_contact_number", "").collectAsStateWithLifecycle()
+            LaunchedEffect(pickedName, pickedNumber) {
+                if (pickedName.isNotBlank() && pickedNumber.isNotBlank()) {
+                    emergencyCallViewModel.setSelectedContact(pickedName, pickedNumber)
+                    savedHandle["picked_contact_name"] = ""
+                    savedHandle["picked_contact_number"] = ""
+                }
+            }
+
             EmergencyCallScreen(
                 onBack = { navController.popBackStack() },
                 onCallCreated = { callId ->
+                    val ecState = emergencyCallViewModel.uiState.value
+                    val identification = ecState.patientIdentification
+                    val identified = when (identification) {
+                        com.example.emergencynow.ui.feature.call.PatientIdentification.IDENTIFIED -> true
+                        com.example.emergencynow.ui.feature.call.PatientIdentification.NOT_IDENTIFIED -> false
+                        else -> null
+                    }
                     callTrackingViewModel.setActiveCallId(callId)
+                    callTrackingViewModel.setPatientContext(
+                        name = ecState.selectedContactName,
+                        identified = identified,
+                    )
                     navController.navigate(CallTrackingRoute) {
                         popUpTo<HomeRoute> { inclusive = false }
                     }
-                }
+                },
+                onPickContact = { navController.navigate(ContactPickerRoute) },
+                viewModel = emergencyCallViewModel,
+            )
+        }
+        composable<ContactPickerRoute> {
+            ContactPickerScreen(
+                onBack = { navController.popBackStack() },
+                onContactSelected = { contact ->
+                    val previous = navController.previousBackStackEntry
+                    previous?.savedStateHandle?.set("picked_contact_name", contact.displayName)
+                    previous?.savedStateHandle?.set("picked_contact_number", contact.phoneNumber)
+                    navController.popBackStack()
+                },
             )
         }
         composable<CallTrackingRoute> {

@@ -84,6 +84,16 @@ fun DispatcherAssignScreen(
     }
 
     LaunchedEffect(call?.callId) {
+        val c = call ?: return@LaunchedEffect
+        if (cameraPositionState.position.target == LatLng(0.0, 0.0)) {
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(
+                LatLng(c.latitude, c.longitude),
+                14f,
+            )
+        }
+    }
+
+    LaunchedEffect(call?.callId) {
         if (call == null && state.isSocketConnected) {
             onBack()
         }
@@ -164,6 +174,7 @@ fun DispatcherAssignScreen(
             }
 
             if (displayableAmbulances.isEmpty()) {
+                val showLoading = state.isRefreshingAmbulances || !state.hasLoadedAmbulancesOnce
                 Card(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -175,24 +186,38 @@ fun DispatcherAssignScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Icon(
-                            Icons.Filled.DirectionsCar,
-                            contentDescription = null,
-                            tint = BrandBlueDark.copy(alpha = 0.5f),
-                            modifier = Modifier.size(48.dp),
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "No ambulances available",
-                            fontWeight = FontWeight.Bold,
-                            color = BrandBlueDark,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Waiting for one to come online…",
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                        )
+                        if (showLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(40.dp),
+                                strokeWidth = 3.dp,
+                                color = BrandBlueDark,
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Locating ambulances…",
+                                fontWeight = FontWeight.Bold,
+                                color = BrandBlueDark,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.DirectionsCar,
+                                contentDescription = null,
+                                tint = BrandBlueDark.copy(alpha = 0.5f),
+                                modifier = Modifier.size(48.dp),
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "No ambulances available",
+                                fontWeight = FontWeight.Bold,
+                                color = BrandBlueDark,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Waiting for one to come online…",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                            )
+                        }
                     }
                 }
             }

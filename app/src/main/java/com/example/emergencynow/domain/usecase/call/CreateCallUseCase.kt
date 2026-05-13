@@ -9,7 +9,8 @@ class CreateCallUseCase(private val repository: CallRepository) {
         val result = repository.createCall(
             description = request.description,
             latitude = request.latitude,
-            longitude = request.longitude
+            longitude = request.longitude,
+            patientPhoneNumber = request.patientPhoneNumber
         )
         return result.map { call ->
             CallDto(
@@ -18,7 +19,9 @@ class CreateCallUseCase(private val repository: CallRepository) {
                 latitude = call.latitude,
                 longitude = call.longitude,
                 status = call.status.name,
-                createdAt = call.createdAt.toString()
+                createdAt = call.createdAt.toString(),
+                patientEgn = call.patientEgn,
+                patientPhoneNumber = call.patientPhoneNumber
             )
         }
     }

@@ -14,13 +14,15 @@ class CallDataSourceImpl(
     override suspend fun createCall(
         description: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        patientPhoneNumber: String?
     ): CallResponse {
         return callService.createCall(
             CreateCallRequest(
                 description = description,
                 latitude = latitude,
-                longitude = longitude
+                longitude = longitude,
+                patientPhoneNumber = patientPhoneNumber
             )
         )
     }

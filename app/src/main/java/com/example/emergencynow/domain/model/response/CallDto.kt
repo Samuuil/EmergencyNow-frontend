@@ -11,5 +11,7 @@ data class CallDto(
     val status: String,
     val createdAt: String? = null,
     val ambulanceId: String? = null,
-    val hospitalId: String? = null
+    val hospitalId: String? = null,
+    val patientEgn: String? = null,
+    val patientPhoneNumber: String? = null
 )

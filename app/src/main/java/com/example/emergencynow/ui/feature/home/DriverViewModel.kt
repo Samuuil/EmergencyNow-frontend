@@ -183,7 +183,7 @@ class DriverViewModel(
             try {
                 getCallByIdUseCase(callId).fold(
                     onSuccess = { callResponse ->
-                        _uiState.value = _uiState.value.copy(patientEgn = callResponse.userEgn)
+                        _uiState.value = _uiState.value.copy(patientEgn = callResponse.patientEgn ?: callResponse.userEgn)
                     },
                     onFailure = { error ->
                         Log.e("DriverViewModel", "Failed to fetch call details: ${error.message}")

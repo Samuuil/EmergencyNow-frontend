@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 data class CreateCallRequest(
     val description: String,
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+    val patientPhoneNumber: String? = null
 )

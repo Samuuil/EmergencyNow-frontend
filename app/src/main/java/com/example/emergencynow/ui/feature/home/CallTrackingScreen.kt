@@ -59,6 +59,13 @@ fun CallTrackingScreen(
         }
     }
 
+    LaunchedEffect(homeState.userLocation) {
+        val loc = homeState.userLocation ?: return@LaunchedEffect
+        if (cameraPositionState.position.target == LatLng(0.0, 0.0)) {
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(loc, 15f)
+        }
+    }
+
     LaunchedEffect(trackingState.activeRoutePolyline, trackingState.ambulanceLocation, trackingState.userCallStatus) {
         val showRoute = trackingState.userCallStatus == CallStatus.DISPATCHED ||
             trackingState.userCallStatus == CallStatus.EN_ROUTE
@@ -133,6 +140,38 @@ fun CallTrackingScreen(
                         color = Color.Blue,
                         width = 10f
                     )
+                }
+            }
+
+            trackingState.patientName?.let { name ->
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            "Calling on behalf of: $name",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        val identified = trackingState.patientIdentified
+                        if (identified != null) {
+                            Text(
+                                text = if (identified)
+                                    "Patient identified in the archive"
+                                else
+                                    "Patient could not be identified in the archive",
+                                fontSize = 12.sp,
+                                color = if (identified)
+                                    Color(0xFF16A34A)
+                                else
+                                    Color(0xFFEF4444),
+                            )
+                        }
+                    }
                 }
             }
 

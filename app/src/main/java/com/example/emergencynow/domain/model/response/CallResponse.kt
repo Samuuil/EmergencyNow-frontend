@@ -15,6 +15,8 @@ data class CallResponse(
     val ambulanceId: String? = null,
     val hospitalId: String? = null,
     val userEgn: String? = null,
+    val patientEgn: String? = null,
+    val patientPhoneNumber: String? = null,
     val routeSteps: List<RouteStepResponse>? = null
 )
 

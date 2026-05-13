@@ -21,10 +21,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -65,6 +69,7 @@ import org.koin.androidx.compose.koinViewModel
 fun EmergencyCallScreen(
     onBack: () -> Unit,
     onCallCreated: (String) -> Unit,
+    onPickContact: () -> Unit,
     viewModel: EmergencyCallViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
@@ -192,7 +197,16 @@ fun EmergencyCallScreen(
                 }
                 
                 Spacer(Modifier.height(24.dp))
-                
+
+                PatientSelectorSection(
+                    selectedName = uiState.selectedContactName,
+                    selectedNumber = uiState.selectedContactPhoneNumber,
+                    onPick = onPickContact,
+                    onClear = { viewModel.clearSelectedContact() },
+                )
+
+                Spacer(Modifier.height(24.dp))
+
                 if (uiState.latitude != null && uiState.longitude != null) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -317,6 +331,117 @@ fun EmergencyCallScreen(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientSelectorSection(
+    selectedName: String?,
+    selectedNumber: String?,
+    onPick: () -> Unit,
+    onClear: () -> Unit,
+) {
+    Text(
+        text = "Who is this call for?",
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Medium,
+        color = BrandBlueDark.copy(alpha = 0.7f),
+    )
+    Spacer(Modifier.height(8.dp))
+    if (selectedName == null) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onPick),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CurvePaleBlue),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(BrandBlueDark),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.PersonAdd,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Calling for myself",
+                        fontWeight = FontWeight.Bold,
+                        color = BrandBlueDark,
+                    )
+                    Text(
+                        "Tap to call for someone in your contacts",
+                        fontSize = 12.sp,
+                        color = BrandBlueDark.copy(alpha = 0.7f),
+                    )
+                }
+            }
+        }
+    } else {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CurvePaleBlue),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(BrandBlueDark),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Calling for: $selectedName",
+                        fontWeight = FontWeight.Bold,
+                        color = BrandBlueDark,
+                    )
+                    Text(
+                        selectedNumber ?: "",
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = BrandBlueDark.copy(alpha = 0.8f),
+                    )
+                }
+                IconButton(onClick = onClear) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Clear contact",
+                        tint = BrandBlueDark,
+                    )
+                }
             }
         }
     }

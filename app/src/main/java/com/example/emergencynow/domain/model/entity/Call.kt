@@ -23,7 +23,9 @@ data class Call(
     val hospitalRoutePolyline: String?,
     val hospitalRouteDistance: Int?,
     val hospitalRouteDuration: Int?,
-    val hospitalRouteSteps: List<RouteStep>?
+    val hospitalRouteSteps: List<RouteStep>?,
+    val patientEgn: String? = null,
+    val patientPhoneNumber: String? = null
 )
 
 enum class CallStatus(val wire: String) {

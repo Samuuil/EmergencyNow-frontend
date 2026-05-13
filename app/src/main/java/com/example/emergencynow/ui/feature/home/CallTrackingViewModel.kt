@@ -23,6 +23,8 @@ data class CallTrackingUiState(
     val isAwaitingDispatcher: Boolean = false,
     val queuePosition: Int? = null,
     val isWithDispatcher: Boolean = false,
+    val patientName: String? = null,
+    val patientIdentified: Boolean? = null,
 )
 
 class CallTrackingViewModel(
@@ -37,6 +39,13 @@ class CallTrackingViewModel(
     fun setActiveCallId(callId: String) {
         _uiState.value = _uiState.value.copy(activeCallId = callId, userCallStatus = CallStatus.PENDING)
         if (!_uiState.value.isSocketConnected) connectSocket()
+    }
+
+    fun setPatientContext(name: String?, identified: Boolean?) {
+        _uiState.value = _uiState.value.copy(
+            patientName = name,
+            patientIdentified = identified,
+        )
     }
 
     fun connectSocket() {
@@ -102,6 +111,8 @@ class CallTrackingViewModel(
                     isAwaitingDispatcher = false,
                     queuePosition = null,
                     isWithDispatcher = false,
+                    patientName = null,
+                    patientIdentified = null,
                 )
                 else -> _uiState.value = _uiState.value.copy(userCallStatus = status)
             }
@@ -125,6 +136,8 @@ class CallTrackingViewModel(
             isAwaitingDispatcher = false,
             queuePosition = null,
             isWithDispatcher = false,
+            patientName = null,
+            patientIdentified = null,
         )
     }
 

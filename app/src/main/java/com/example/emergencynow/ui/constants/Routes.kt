@@ -17,3 +17,4 @@ import kotlinx.serialization.Serializable
 @Serializable object PatientLookupRoute
 @Serializable data class PatientProfileRoute(val egn: String)
 @Serializable data class DispatcherAssignRoute(val callId: String)
+@Serializable object ContactPickerRoute

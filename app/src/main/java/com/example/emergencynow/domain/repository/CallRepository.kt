@@ -8,7 +8,8 @@ interface CallRepository {
     suspend fun createCall(
         description: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        patientPhoneNumber: String? = null
     ): Result<Call>
 
     suspend fun getCallTracking(callId: String): Result<Call>

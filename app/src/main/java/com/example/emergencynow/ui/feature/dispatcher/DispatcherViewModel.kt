@@ -24,6 +24,8 @@ data class DispatcherUiState(
     val pendingAssignments: Set<String> = emptySet(),
     val isAssigning: Boolean = false,
     val lastAssignError: String? = null,
+    val isRefreshingAmbulances: Boolean = false,
+    val hasLoadedAmbulancesOnce: Boolean = false,
 )
 
 class DispatcherViewModel(
@@ -114,7 +116,11 @@ class DispatcherViewModel(
         }
 
         socket.onAmbulanceListUpdated = { ambulances ->
-            _uiState.value = _uiState.value.copy(ambulances = ambulances)
+            _uiState.value = _uiState.value.copy(
+                ambulances = ambulances,
+                isRefreshingAmbulances = false,
+                hasLoadedAmbulancesOnce = true,
+            )
         }
 
         socket.connect(token)
@@ -126,6 +132,7 @@ class DispatcherViewModel(
     }
 
     fun requestAmbulanceRefresh() {
+        _uiState.value = _uiState.value.copy(isRefreshingAmbulances = true)
         socket.requestAmbulanceRefresh()
     }
 
@@ -170,8 +177,12 @@ class DispatcherViewModel(
             }
             try {
                 getAvailableAmbulancesUseCase().getOrNull()?.let { rest ->
-                    if (_uiState.value.ambulances.isEmpty()) {
-                        _uiState.value = _uiState.value.copy(ambulances = rest)
+                    val current = _uiState.value
+                    if (current.ambulances.isEmpty()) {
+                        _uiState.value = current.copy(
+                            ambulances = rest,
+                            hasLoadedAmbulancesOnce = true,
+                        )
                     }
                 }
             } catch (e: Exception) {

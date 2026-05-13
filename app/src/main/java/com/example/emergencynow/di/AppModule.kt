@@ -199,6 +199,7 @@ val appModule = module {
         )
     }
     viewModel { EmergencyCallViewModel(get(), get()) }
+    viewModel { com.example.emergencynow.ui.feature.contacts.ContactPickerViewModel() }
     viewModel { PersonalInformationViewModel(get(), get(), get()) }
     viewModel { HistoryViewModel(get()) }
     viewModel { PatientProfileViewModel(get()) }
