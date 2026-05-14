@@ -166,15 +166,6 @@ class DriverViewModel(
             fetchPatientEgn(route.callId)
         }
 
-        driverSocket.onRouteUpdate = { route ->
-            _uiState.value = _uiState.value.copy(
-                activeRoutePolyline = PolylineDecoder.decode(route.polyline),
-                activeRouteDistance = route.distance,
-                activeRouteDuration = route.duration,
-                activeRouteSteps = route.steps
-            )
-        }
-
         driverSocket.connect(accessToken)
     }
 

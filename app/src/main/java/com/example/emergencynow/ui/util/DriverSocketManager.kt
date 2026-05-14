@@ -38,7 +38,6 @@ class DriverSocketManager {
 
     var onCallOffer: ((CallOffer) -> Unit)? = null
     var onCallRoute: ((CallRoute) -> Unit)? = null
-    var onRouteUpdate: ((CallRoute) -> Unit)? = null
     var onConnectionChange: ((Boolean) -> Unit)? = null
 
     var onLocationRequest: ((requestId: Int) -> Unit)? = null
@@ -226,76 +225,6 @@ class DriverSocketManager {
                 }
             }
 
-            socket?.on("route.update") { args ->
-                try {
-                    val data = args.firstOrNull() as? JSONObject ?: return@on
-                    val routeObj = data.getJSONObject("route")
-                    val steps = mutableListOf<String>()
-                    
-                    val stepsField = when {
-                        routeObj.has("routeSteps") -> routeObj.get("routeSteps")
-                        routeObj.has("steps") -> routeObj.get("steps")
-                        else -> null
-                    }
-                    
-                    if (stepsField != null) {
-                        when (stepsField) {
-                            is org.json.JSONArray -> {
-                                Log.d(TAG, "Parsing ${stepsField.length()} route steps from JSONArray (update)")
-                                for (i in 0 until stepsField.length()) {
-                                    val item = stepsField.get(i)
-                                    when (item) {
-                                        is String -> {
-                                            steps.add(item)
-                                            Log.d(TAG, "Step $i (String): $item")
-                                        }
-                                        is JSONObject -> {
-                                            val instruction = item.optString("instruction", "")
-                                            if (instruction.isNotEmpty()) {
-                                                steps.add(instruction)
-                                                Log.d(TAG, "Step $i (Object): $instruction")
-                                            } else {
-                                                Log.w(TAG, "Step $i has no instruction field: $item")
-                                            }
-                                        }
-                                        else -> {
-                                            Log.w(TAG, "Step $i is unexpected type: ${item.javaClass.name}")
-                                        }
-                                    }
-                                }
-                            }
-                            is JSONObject -> {
-                                val instruction = stepsField.optString("instruction", "")
-                                if (instruction.isNotEmpty()) {
-                                    steps.add(instruction)
-                                    Log.d(TAG, "Single step (Object): $instruction")
-                                } else {
-                                    Log.w(TAG, "Single step object has no instruction: $stepsField")
-                                }
-                            }
-                            else -> {
-                                Log.w(TAG, "Steps field is unexpected type: ${stepsField.javaClass.name}")
-                            }
-                        }
-                    } else {
-                        Log.w(TAG, "No steps or routeSteps field found in route object (update)")
-                    }
-                    
-                    Log.d(TAG, "Total steps parsed (update): ${steps.size}")
-                    val route = CallRoute(
-                        callId = data.getString("callId"),
-                        polyline = routeObj.getString("polyline"),
-                        distance = routeObj.getInt("distance"),
-                        duration = routeObj.getInt("duration"),
-                        steps = steps
-                    )
-                    Log.d(TAG, "Received route update with ${route.steps.size} steps: $route")
-                    onRouteUpdate?.invoke(route)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing route.update: ${e.message}", e)
-                }
-            }
-
             socket?.on("location.request") { args ->
                 try {
                     val data = args.firstOrNull() as? JSONObject ?: return@on
@@ -363,23 +292,6 @@ class DriverSocketManager {
 
     fun declineCall(callId: String) {
         respondToCall(callId, false)
-    }
-
-    fun completeCall(callId: String) {
-        if (socket == null || !isConnected) {
-            Log.w(TAG, "Cannot complete call - socket not connected")
-            return
-        }
-
-        try {
-            val data = JSONObject().apply {
-                put("callId", callId)
-            }
-            socket?.emit("call.complete", data)
-            Log.d(TAG, "Sent call.complete: callId=$callId")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error sending call.complete: ${e.message}")
-        }
     }
 
     fun sendLocationResponse(requestId: Int, latitude: Double, longitude: Double) {
