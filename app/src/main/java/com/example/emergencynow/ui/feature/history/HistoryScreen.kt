@@ -19,7 +19,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.emergencynow.domain.model.entity.Call
 import com.example.emergencynow.domain.model.entity.CallStatus
-import com.example.emergencynow.ui.components.decorations.EnterEgnBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.feature.history.CallHistoryItem
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
@@ -33,7 +34,7 @@ fun HistoryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     Box(modifier = Modifier.fillMaxSize()) {
-        EnterEgnBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.ENTER_EGN, modifier = Modifier.fillMaxSize())
         
         Column(modifier = Modifier.fillMaxSize()) {
             Row(

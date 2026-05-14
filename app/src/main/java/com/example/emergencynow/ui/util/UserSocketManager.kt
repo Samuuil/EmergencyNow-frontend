@@ -5,7 +5,7 @@ import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
 import java.net.URI
-import com.example.emergencynow.ui.util.NetworkConfig
+import com.example.emergencynow.BuildConfig
 
 data class CallDispatched(
     val callId: String,
@@ -33,9 +33,21 @@ data class CallStatusUpdate(
     val status: String
 )
 
-object UserSocketManager {
-    private const val TAG = "UserSocketManager"
-    private const val NAMESPACE = "/users"
+data class CallAwaitingDispatcher(
+    val callId: String,
+    val position: Int,
+    val queueSize: Int
+)
+
+data class CallWithDispatcher(
+    val callId: String
+)
+
+class UserSocketManager {
+    companion object {
+        private const val TAG = "UserSocketManager"
+        private const val NAMESPACE = "/users"
+    }
 
     private var socket: Socket? = null
     private var isConnected = false
@@ -43,6 +55,8 @@ object UserSocketManager {
     var onCallDispatched: ((CallDispatched) -> Unit)? = null
     var onAmbulanceLocation: ((AmbulanceLocationUpdate) -> Unit)? = null
     var onCallStatus: ((CallStatusUpdate) -> Unit)? = null
+    var onCallAwaitingDispatcher: ((CallAwaitingDispatcher) -> Unit)? = null
+    var onCallWithDispatcher: ((CallWithDispatcher) -> Unit)? = null
     var onConnectionChange: ((Boolean) -> Unit)? = null
 
     fun connect(accessToken: String) {
@@ -52,15 +66,9 @@ object UserSocketManager {
         Log.d(TAG, "Callbacks set: onCallDispatched=${onCallDispatched != null}, onAmbulanceLocation=${onAmbulanceLocation != null}, onCallStatus=${onCallStatus != null}")
         Log.d(TAG, "========================================")
 
-        if (socket != null && isConnected) {
-            Log.d(TAG, "Socket already connected - callbacks will be invoked when events arrive")
-            Log.d(TAG, "Socket connected: ${socket?.connected()}, Socket ID: ${socket?.id()}")
-            onConnectionChange?.invoke(true)
-            return
-        }
-
+        // Always clean up existing socket to avoid stale connections
         if (socket != null) {
-            Log.d(TAG, "Cleaning up existing disconnected socket...")
+            Log.d(TAG, "Cleaning up existing socket before reconnecting...")
             socket?.off()
             socket?.disconnect()
             socket = null
@@ -76,7 +84,7 @@ object UserSocketManager {
                 reconnectionDelay = 1000
             }
 
-            val base = NetworkConfig.currentBase()
+            val base = BuildConfig.BASE_URL.removeSuffix("/")
             Log.d(TAG, "Creating socket for ${base}$NAMESPACE")
             socket = IO.socket(URI.create("${base}$NAMESPACE"), options)
 
@@ -97,16 +105,6 @@ object UserSocketManager {
                 Log.e(TAG, "Connection error: $error (${error?.javaClass?.simpleName})")
                 isConnected = false
                 onConnectionChange?.invoke(false)
-                if (NetworkConfig.isPrimary()) {
-                    try {
-                        Log.w(TAG, "Retrying with fallback base: ${NetworkConfig.fallbackBaseUrl()}")
-                        NetworkConfig.switchToFallback()
-                        disconnect()
-                        connect(accessToken)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Fallback retry failed: ${e.message}")
-                    }
-                }
             }
 
             socket?.on("call.dispatched") { args ->
@@ -249,6 +247,34 @@ object UserSocketManager {
                 }
             }
 
+            socket?.on("call.awaiting-dispatcher") { args ->
+                try {
+                    val data = args.firstOrNull() as? JSONObject ?: return@on
+                    val awaiting = CallAwaitingDispatcher(
+                        callId = data.getString("callId"),
+                        position = data.optInt("position", 1),
+                        queueSize = data.optInt("queueSize", 1)
+                    )
+                    Log.d(TAG, "call.awaiting-dispatcher: callId=${awaiting.callId}, position=${awaiting.position}/${awaiting.queueSize}")
+                    onCallAwaitingDispatcher?.invoke(awaiting)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing call.awaiting-dispatcher: ${e.message}", e)
+                }
+            }
+
+            socket?.on("call.with-dispatcher") { args ->
+                try {
+                    val data = args.firstOrNull() as? JSONObject ?: return@on
+                    val withDispatcher = CallWithDispatcher(
+                        callId = data.getString("callId"),
+                    )
+                    Log.d(TAG, "call.with-dispatcher: callId=${withDispatcher.callId}")
+                    onCallWithDispatcher?.invoke(withDispatcher)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing call.with-dispatcher: ${e.message}", e)
+                }
+            }
+
             socket?.connect()
             Log.d(TAG, "Connecting to WebSocket...")
         } catch (e: Exception) {
@@ -257,14 +283,10 @@ object UserSocketManager {
     }
 
     fun disconnect() {
-        socket?.disconnect()
         socket?.off()
+        socket?.disconnect()
         socket = null
         isConnected = false
-        onCallDispatched = null
-        onAmbulanceLocation = null
-        onCallStatus = null
-        onConnectionChange = null
         Log.d(TAG, "Disconnected and cleaned up socket")
     }
 

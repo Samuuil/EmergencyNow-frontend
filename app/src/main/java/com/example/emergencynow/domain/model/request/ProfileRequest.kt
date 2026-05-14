@@ -1,11 +1,15 @@
 package com.example.emergencynow.domain.model.request
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class GenderDto {
     MALE,
     FEMALE,
     OTHER
 }
 
+@Serializable
 data class CreateProfileRequest(
     val height: Int,
     val weight: Int,

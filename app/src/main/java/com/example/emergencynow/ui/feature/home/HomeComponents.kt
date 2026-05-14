@@ -220,7 +220,7 @@ fun BottomNavItem(
 
 @Composable
 fun HospitalSelectionDialog(
-    hospitals: List<com.example.emergencynow.domain.model.response.HospitalDto>,
+    hospitals: List<com.example.emergencynow.domain.model.entity.NearbyHospital>,
     isLoading: Boolean,
     onHospitalSelected: (String) -> Unit,
     onDismiss: () -> Unit
@@ -298,10 +298,10 @@ fun HospitalSelectionDialog(
                                                 fontWeight = FontWeight.Bold,
                                                 color = BrandBlueDark
                                             )
-                                            if (hospital.distance != null) {
+                                            if (hospital.distanceMeters != null) {
                                                 Spacer(modifier = Modifier.height(4.dp))
                                                 Text(
-                                                    "Distance: ${hospital.distance}m",
+                                                    "Distance: ${hospital.distanceMeters}m",
                                                     fontSize = 14.sp,
                                                     color = BrandBlueDark.copy(alpha = 0.7f)
                                                 )

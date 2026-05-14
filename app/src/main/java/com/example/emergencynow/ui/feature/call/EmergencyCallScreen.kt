@@ -21,10 +21,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,95 +52,24 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
-import com.example.emergencynow.domain.model.request.CreateCallRequest
-import com.example.emergencynow.domain.usecase.call.CreateCallUseCase
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.draw.shadow
-import com.example.emergencynow.ui.components.decorations.WelcomeScreenBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
 import com.example.emergencynow.ui.theme.EmergencyRed
 import com.google.android.gms.location.LocationServices
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-
-data class EmergencyCallUiState(
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val callCreated: Boolean = false,
-    val callId: String? = null,
-    val description: String = "",
-    val latitude: Double? = null,
-    val longitude: Double? = null
-)
-
-class EmergencyCallViewModel(
-    private val createCallUseCase: CreateCallUseCase
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(EmergencyCallUiState())
-    val uiState: StateFlow<EmergencyCallUiState> = _uiState.asStateFlow()
-
-    fun updateDescription(description: String) {
-        _uiState.value = _uiState.value.copy(description = description)
-    }
-
-    fun updateLocation(latitude: Double, longitude: Double) {
-        _uiState.value = _uiState.value.copy(latitude = latitude, longitude = longitude)
-    }
-
-    fun createCall() {
-        viewModelScope.launch {
-            val state = _uiState.value
-            if (state.latitude == null || state.longitude == null) {
-                _uiState.value = state.copy(error = "Location not available")
-                return@launch
-            }
-
-            _uiState.value = state.copy(isLoading = true, error = null)
-            try {
-                val request = CreateCallRequest(
-                    description = state.description.ifEmpty { "Emergency" },
-                    latitude = state.latitude,
-                    longitude = state.longitude
-                )
-                val result = createCallUseCase(request)
-                result.fold(
-                    onSuccess = { call ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            callCreated = true,
-                            callId = call.id
-                        )
-                    },
-                    onFailure = { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to create call"
-                        )
-                    }
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Unknown error"
-                )
-            }
-        }
-    }
-}
 
 @SuppressLint("MissingPermission")
 @Composable
 fun EmergencyCallScreen(
     onBack: () -> Unit,
     onCallCreated: (String) -> Unit,
+    onPickContact: () -> Unit,
     viewModel: EmergencyCallViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
@@ -173,7 +106,7 @@ fun EmergencyCallScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        WelcomeScreenBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.WELCOME, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()
@@ -264,7 +197,16 @@ fun EmergencyCallScreen(
                 }
                 
                 Spacer(Modifier.height(24.dp))
-                
+
+                PatientSelectorSection(
+                    selectedName = uiState.selectedContactName,
+                    selectedNumber = uiState.selectedContactPhoneNumber,
+                    onPick = onPickContact,
+                    onClear = { viewModel.clearSelectedContact() },
+                )
+
+                Spacer(Modifier.height(24.dp))
+
                 if (uiState.latitude != null && uiState.longitude != null) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -389,6 +331,117 @@ fun EmergencyCallScreen(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientSelectorSection(
+    selectedName: String?,
+    selectedNumber: String?,
+    onPick: () -> Unit,
+    onClear: () -> Unit,
+) {
+    Text(
+        text = "Who is this call for?",
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Medium,
+        color = BrandBlueDark.copy(alpha = 0.7f),
+    )
+    Spacer(Modifier.height(8.dp))
+    if (selectedName == null) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onPick),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CurvePaleBlue),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(BrandBlueDark),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.PersonAdd,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Calling for myself",
+                        fontWeight = FontWeight.Bold,
+                        color = BrandBlueDark,
+                    )
+                    Text(
+                        "Tap to call for someone in your contacts",
+                        fontSize = 12.sp,
+                        color = BrandBlueDark.copy(alpha = 0.7f),
+                    )
+                }
+            }
+        }
+    } else {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CurvePaleBlue),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(BrandBlueDark),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Calling for: $selectedName",
+                        fontWeight = FontWeight.Bold,
+                        color = BrandBlueDark,
+                    )
+                    Text(
+                        selectedNumber ?: "",
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = BrandBlueDark.copy(alpha = 0.8f),
+                    )
+                }
+                IconButton(onClick = onClear) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Clear contact",
+                        tint = BrandBlueDark,
+                    )
+                }
             }
         }
     }

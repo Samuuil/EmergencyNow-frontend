@@ -1,4 +1,4 @@
-﻿package com.example.emergencynow.ui.components.inputs
+package com.example.emergencynow.ui.components.inputs
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -36,10 +38,11 @@ fun PrimaryTextField(
     enabled: Boolean = true,
     keyboardType: KeyboardType = KeyboardType.Text,
     maxLength: Int = Int.MAX_VALUE,
-    textColor: Color? = null
+    textColor: Color? = null,
+    focusRequester: FocusRequester? = null
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    
+
     Box(
         modifier = modifier.fillMaxWidth()
     ) {
@@ -62,6 +65,7 @@ fun PrimaryTextField(
                     color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(RoundedCorners.corner_16)
                 )
+                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
                 .onFocusChanged { isFocused = it.isFocused },
             decorationBox = { innerTextField ->
                 Box(

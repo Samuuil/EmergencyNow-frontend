@@ -31,7 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.ui.components.decorations.WelcomeScreenBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.BrandBlueMid
 
@@ -43,7 +44,7 @@ fun WelcomeScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        WelcomeScreenBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.WELCOME, modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier

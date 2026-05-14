@@ -11,4 +11,6 @@ interface AmbulanceRepository {
         ambulanceId: String,
         driverId: String?
     ): Result<Ambulance>
+
+    suspend fun markAmbulanceAvailable(ambulanceId: String): Result<Unit>
 }

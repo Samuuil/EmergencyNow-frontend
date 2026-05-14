@@ -5,14 +5,20 @@ import com.example.emergencynow.data.datasource.*
 import com.example.emergencynow.data.datasource.impl.*
 import com.example.emergencynow.data.repository.*
 import com.example.emergencynow.data.service.*
-import com.example.emergencynow.data.session.SessionManager
 import com.example.emergencynow.data.session.TokenAuthenticator
 import com.example.emergencynow.data.session.TokenInterceptor
+import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.domain.repository.*
 import com.example.emergencynow.domain.usecase.ambulance.*
+import com.example.emergencynow.domain.usecase.ambulance.MarkAmbulanceAvailableUseCase
 import com.example.emergencynow.domain.usecase.auth.*
+import com.example.emergencynow.domain.usecase.auth.GetUserOnboardingStateUseCase
 import com.example.emergencynow.domain.usecase.call.*
+import com.example.emergencynow.domain.usecase.call.GetCallByIdUseCase
 import com.example.emergencynow.domain.usecase.contact.*
+import com.example.emergencynow.domain.usecase.dispatcher.AssignAmbulanceUseCase
+import com.example.emergencynow.domain.usecase.dispatcher.GetAvailableAmbulancesForDispatcherUseCase
+import com.example.emergencynow.domain.usecase.dispatcher.GetDispatcherCallsUseCase
 import com.example.emergencynow.domain.usecase.hospital.*
 import com.example.emergencynow.domain.usecase.profile.*
 import com.example.emergencynow.domain.usecase.user.GetUserRoleUseCase
@@ -26,23 +32,48 @@ import com.example.emergencynow.ui.feature.history.HistoryViewModel
 import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
 import com.example.emergencynow.ui.feature.contacts.EmergencyContactsViewModel
 import com.example.emergencynow.ui.feature.auth.ChooseVerificationMethodViewModel
+import com.example.emergencynow.ui.feature.dispatcher.DispatcherViewModel
+import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
+import com.example.emergencynow.ui.feature.home.DriverViewModel
+import com.example.emergencynow.ui.util.DispatcherNotificationHelper
 import com.example.emergencynow.ui.util.DriverNotificationHelper
+import com.example.emergencynow.ui.util.FcmTokenRegistrar
+import com.example.emergencynow.ui.util.PendingCallOfferStorage
+import com.example.emergencynow.ui.AppViewModel
 import com.example.emergencynow.ui.util.NotificationManager
+import com.example.emergencynow.domain.usecase.notifications.RegisterDeviceTokenUseCase
+import com.example.emergencynow.domain.usecase.notifications.UnregisterDeviceTokenUseCase
+import com.example.emergencynow.domain.repository.DeviceTokenRepository
+import com.example.emergencynow.data.repository.DeviceTokenRepositoryImpl
+import com.example.emergencynow.data.datasource.DeviceTokenDataSource
+import com.example.emergencynow.data.datasource.impl.DeviceTokenDataSourceImpl
+import com.example.emergencynow.data.service.DeviceTokenService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+
+private val json = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = false
+}
 
 val appModule = module {
 
-    single { SessionManager(androidContext()) }
+    single { AuthStorage(androidContext()) }
+    single { com.example.emergencynow.data.repository.LocationRepository(androidContext()) }
     single { NotificationManager() }
     single { DriverNotificationHelper(androidContext()) }
+    single { DispatcherNotificationHelper(androidContext()) }
+    single { PendingCallOfferStorage(androidContext()) }
+    single { FcmTokenRegistrar(get()) }
 
     single {
         HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
@@ -61,7 +92,7 @@ val appModule = module {
         Retrofit.Builder()
             .baseUrl(BuildConfig.BASE_URL)
             .client(get<OkHttpClient>(qualifier = named("auth_refresh")))
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
     }
 
@@ -69,8 +100,8 @@ val appModule = module {
         get<Retrofit>(qualifier = named("auth_refresh")).create(AuthService::class.java)
     }
 
-    single { TokenInterceptor(androidContext()) }
-    single { TokenAuthenticator(get<AuthService>(qualifier = named("auth_refresh")), androidContext()) }
+    single { TokenInterceptor(get()) }
+    single { TokenAuthenticator(get<AuthService>(qualifier = named("auth_refresh")), get()) }
 
     single<OkHttpClient> {
         OkHttpClient.Builder()
@@ -87,7 +118,7 @@ val appModule = module {
         Retrofit.Builder()
             .baseUrl(BuildConfig.BASE_URL)
             .client(get())
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
     }
 
@@ -98,6 +129,8 @@ val appModule = module {
     single<AmbulanceService> { get<Retrofit>().create(AmbulanceService::class.java) }
     single<HospitalService> { get<Retrofit>().create(HospitalService::class.java) }
     single<UserService> { get<Retrofit>().create(UserService::class.java) }
+    single<DispatcherService> { get<Retrofit>().create(DispatcherService::class.java) }
+    single<DeviceTokenService> { get<Retrofit>().create(DeviceTokenService::class.java) }
 
     single<AuthDataSource> { AuthDataSourceImpl(get()) }
     single<ProfileDataSource> { ProfileDataSourceImpl(get()) }
@@ -106,6 +139,8 @@ val appModule = module {
     single<AmbulanceDataSource> { AmbulanceDataSourceImpl(get()) }
     single<HospitalDataSource> { HospitalDataSourceImpl(get()) }
     single<UserDataSource> { UserDataSourceImpl(get()) }
+    single<DispatcherDataSource> { DispatcherDataSourceImpl(get()) }
+    single<DeviceTokenDataSource> { DeviceTokenDataSourceImpl(get()) }
 
     single<AuthRepository> { AuthRepositoryImpl(get()) }
     single<ProfileRepository> { ProfileRepositoryImpl(get()) }
@@ -114,62 +149,75 @@ val appModule = module {
     single<AmbulanceRepository> { AmbulanceRepositoryImpl(get()) }
     single<HospitalRepository> { HospitalRepositoryImpl(get()) }
     single<UserRepository> { UserRepositoryImpl(get()) }
+    single<DispatcherRepository> { DispatcherRepositoryImpl(get()) }
+    single<DeviceTokenRepository> { DeviceTokenRepositoryImpl(get()) }
 
-    factory { RequestVerificationCodeUseCase(lazy { get<AuthRepository>() }) }
-    factory { VerifyCodeUseCase(lazy { get<AuthRepository>() }) }
-    factory { RefreshTokenUseCase(lazy { get<AuthRepository>() }) }
+    factory { RequestVerificationCodeUseCase(get()) }
+    factory { VerifyCodeUseCase(get()) }
+    factory { RefreshTokenUseCase(get()) }
+    factory { GetUserOnboardingStateUseCase(get()) }
 
-    factory { CreateProfileUseCase(lazy { get<ProfileRepository>() }) }
-    factory { UpdateProfileUseCase(lazy { get<ProfileRepository>() }) }
-    factory { GetProfileUseCase(lazy { get<ProfileRepository>() }) }
-    factory { GetProfileByEgnUseCase(lazy { get<ProfileRepository>() }) }
+    factory { CreateProfileUseCase(get()) }
+    factory { UpdateProfileUseCase(get()) }
+    factory { GetProfileUseCase(get()) }
+    factory { GetProfileByEgnUseCase(get()) }
 
-    factory { GetContactsUseCase(lazy { get<ContactRepository>() }) }
-    factory { CreateContactUseCase(lazy { get<ContactRepository>() }) }
-    factory { DeleteContactUseCase(lazy { get<ContactRepository>() }) }
+    factory { GetContactsUseCase(get()) }
+    factory { CreateContactUseCase(get()) }
+    factory { UpdateContactUseCase(get()) }
+    factory { DeleteContactUseCase(get()) }
 
-    factory { CreateCallUseCase(lazy { get<CallRepository>() }) }
-    factory { GetCallTrackingUseCase(lazy { get<CallRepository>() }) }
-    factory { UpdateCallStatusUseCase(lazy { get<CallRepository>() }) }
-    factory { GetUserCallsUseCase(lazy { get<CallRepository>() }) }
+    factory { CreateCallUseCase(get()) }
+    factory { GetCallByIdUseCase(get()) }
+    factory { UpdateCallStatusUseCase(get()) }
+    factory { GetUserCallsUseCase(get()) }
 
-    factory { GetAvailableAmbulancesUseCase(lazy { get<AmbulanceRepository>() }) }
-    factory { GetAmbulanceByDriverUseCase(lazy { get<AmbulanceRepository>() }) }
-    factory { AssignAmbulanceDriverUseCase(lazy { get<AmbulanceRepository>() }) }
-    factory { UnassignAmbulanceDriverUseCase(lazy { get<AmbulanceRepository>() }) }
+    factory { GetAvailableAmbulancesUseCase(get()) }
+    factory { GetAmbulanceByDriverUseCase(get()) }
+    factory { AssignAmbulanceDriverUseCase(get()) }
+    factory { UnassignAmbulanceDriverUseCase(get()) }
+    factory { MarkAmbulanceAvailableUseCase(get()) }
 
-    factory { GetHospitalsForCallUseCase(lazy { get<HospitalRepository>() }) }
-    factory { SelectHospitalUseCase(lazy { get<HospitalRepository>() }) }
-    factory { GetHospitalRouteUseCase(lazy { get<HospitalRepository>() }) }
+    factory { GetHospitalsForCallUseCase(get()) }
+    factory { SelectHospitalUseCase(get()) }
+    factory { GetHospitalRouteUseCase(get()) }
 
-    factory { GetUserRoleUseCase(lazy { get<UserRepository>() }) }
+    factory { GetUserRoleUseCase(get()) }
 
-    viewModel { EnterEgnViewModel(get()) }
-    viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get(), androidContext()) }
-    viewModel { 
-        HomeViewModel(
-            getUserRoleUseCase = get(),
+    factory { GetDispatcherCallsUseCase(get()) }
+    factory { GetAvailableAmbulancesForDispatcherUseCase(get()) }
+    factory { AssignAmbulanceUseCase(get()) }
+
+    factory { RegisterDeviceTokenUseCase(get()) }
+    factory { UnregisterDeviceTokenUseCase(get()) }
+
+    viewModel { AppViewModel(get(), get(), get()) }
+    viewModel { EnterEgnViewModel() }
+    viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get(), locationRepository = get()) }
+    viewModel {
+        DriverViewModel(
             getAmbulanceByDriverUseCase = get(),
-            getAvailableAmbulancesUseCase = get(),
-            assignAmbulanceDriverUseCase = get(),
             unassignAmbulanceDriverUseCase = get(),
             updateCallStatusUseCase = get(),
             getHospitalsForCallUseCase = get(),
             selectHospitalUseCase = get(),
             getHospitalRouteUseCase = get(),
-            ambulanceService = get(),
-            callRepository = get(),
-            userRepository = get(),
-            driverNotificationHelper = get()
+            getCallByIdUseCase = get(),
+            driverNotificationHelper = get(),
+            authStorage = get(),
+            pendingCallOfferStorage = get(),
         )
     }
+    viewModel { CallTrackingViewModel(authStorage = get()) }
     viewModel {
         AmbulanceSelectionViewModel(
             getAvailableAmbulancesUseCase = get(),
             assignAmbulanceDriverUseCase = get()
         )
     }
-    viewModel { EmergencyCallViewModel(get()) }
+    viewModel { EmergencyCallViewModel(get(), get()) }
+    viewModel { com.example.emergencynow.ui.feature.contacts.ContactPickerViewModel() }
     viewModel { PersonalInformationViewModel(get(), get(), get()) }
     viewModel { HistoryViewModel(get()) }
     viewModel { PatientProfileViewModel(get()) }
@@ -177,13 +225,25 @@ val appModule = module {
         EmergencyContactsViewModel(
             getContactsUseCase = get(),
             createContactUseCase = get(),
-            deleteContactUseCase = get()
+            updateContactUseCase = get(),
+            deleteContactUseCase = get(),
+            notificationManager = get()
         )
     }
     viewModel {
         ChooseVerificationMethodViewModel(
             requestVerificationCodeUseCase = get(),
             notificationManager = get()
+        )
+    }
+    viewModel {
+        DispatcherViewModel(
+            authStorage = get(),
+            getDispatcherCallsUseCase = get(),
+            getAvailableAmbulancesUseCase = get(),
+            assignAmbulanceUseCase = get(),
+            dispatcherNotificationHelper = get(),
+            notificationManager = get(),
         )
     }
 }

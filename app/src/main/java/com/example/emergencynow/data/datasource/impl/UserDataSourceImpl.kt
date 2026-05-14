@@ -2,23 +2,19 @@ package com.example.emergencynow.data.datasource.impl
 
 import com.example.emergencynow.data.datasource.UserDataSource
 import com.example.emergencynow.data.service.UserService
-import okhttp3.ResponseBody
 
 class UserDataSourceImpl(
     private val userService: UserService
 ) : UserDataSource {
     override suspend fun getUserRole(userId: String): String {
-        val body: ResponseBody = userService.getUserRole(id = userId)
-        return body.string().trim()
+        return userService.getUserRole(id = userId).role
     }
-    
+
     override suspend fun getUserEgn(userId: String): String {
-        val response = userService.getUserEgn(id = userId)
-        return response.egn
+        return userService.getUserEgn(id = userId).egn
     }
-    
+
     override suspend fun getMyEgn(): String {
-        val response = userService.getMyEgn()
-        return response.egn
+        return userService.getMyEgn().egn
     }
 }
