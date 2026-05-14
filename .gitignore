@@ -20,6 +20,11 @@ local.properties
 /StateArchive
 *.log
 *.md
+!README.md
 # Firebase config files (project-specific, contain Firebase project IDs/sender IDs)
 /app/google-services.json
 /app/src/*/google-services.json
+*.jks
+*.keystore
+keystore.properties
+/app/release/
