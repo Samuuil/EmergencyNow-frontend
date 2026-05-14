@@ -101,7 +101,7 @@ fun DispatcherAssignScreen(
     }
 
     val displayableAmbulances = state.ambulances.filter {
-        it.available && it.driverOnline && it.latitude != null && it.longitude != null
+        it.available && it.latitude != null && it.longitude != null
     }
 
     LaunchedEffect(displayableAmbulances, call) {
@@ -316,9 +316,17 @@ private fun AmbulanceAssignDialog(
                         modifier = Modifier
                             .size(10.dp)
                             .background(
-                                if (ambulance.driverOnline) Color(0xFF16A34A) else Color.Gray,
+                                if (ambulance.driverOnline) Color(0xFF16A34A) else Color(0xFFF59E0B),
                                 CircleShape,
                             ),
+                    )
+                }
+                if (!ambulance.driverOnline) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Driver app is closed — delivery via push only",
+                        fontSize = 12.sp,
+                        color = Color(0xFFB45309),
                     )
                 }
                 Spacer(Modifier.height(20.dp))

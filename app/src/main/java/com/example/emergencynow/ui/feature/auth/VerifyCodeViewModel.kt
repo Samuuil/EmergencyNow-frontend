@@ -9,6 +9,7 @@ import com.example.emergencynow.domain.usecase.auth.VerifyCodeUseCase
 import com.example.emergencynow.ui.util.parseJwt
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.AuthStorage
+import com.example.emergencynow.ui.util.FcmTokenRegistrar
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -20,6 +21,7 @@ class VerifyCodeViewModel(
     private val authStorage: AuthStorage,
     private val getOnboardingStateUseCase: GetUserOnboardingStateUseCase,
     private val notificationManager: com.example.emergencynow.ui.util.NotificationManager,
+    private val fcmTokenRegistrar: FcmTokenRegistrar,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VerifyCodeUIState())
@@ -68,6 +70,8 @@ class VerifyCodeViewModel(
                     authStorage.refreshToken = token.refreshToken
                     val payload = parseJwt(token.accessToken)
                     AuthSession.userId = payload?.sub
+
+                    fcmTokenRegistrar.fetchAndRegister()
 
                     val isReturningUser = checkIfReturningUser()
 

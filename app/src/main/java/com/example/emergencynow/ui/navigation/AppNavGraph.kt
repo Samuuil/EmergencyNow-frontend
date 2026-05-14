@@ -85,6 +85,7 @@ fun AppNavGraph(navController: NavHostController, startDestination: Any = Welcom
                 val dispatcherViewModel: DispatcherViewModel = koinViewModel(viewModelStoreOwner = backStackEntry)
                 DispatcherHomeScreen(
                     onOpenProfile = { navController.navigate(ProfileHomeRoute) },
+                    onOpenContacts = { navController.navigate(EmergencyContactsRoute) },
                     onAssignCall = { callId -> navController.navigate(DispatcherAssignRoute(callId)) },
                     onMakeEmergencyCall = { navController.navigate(EmergencyCallRoute) },
                     viewModel = dispatcherViewModel,

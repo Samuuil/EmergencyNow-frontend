@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Person
@@ -51,6 +52,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun DispatcherHomeScreen(
     onOpenProfile: () -> Unit,
+    onOpenContacts: () -> Unit,
     onAssignCall: (String) -> Unit,
     onMakeEmergencyCall: () -> Unit,
     viewModel: DispatcherViewModel = koinViewModel(),
@@ -152,6 +154,12 @@ fun DispatcherHomeScreen(
                     label = "Calls",
                     onClick = { },
                     isSelected = true,
+                )
+                BottomNavItem(
+                    icon = Icons.Filled.Contacts,
+                    label = "Contacts",
+                    onClick = onOpenContacts,
+                    isSelected = false,
                 )
                 BottomNavItem(
                     icon = Icons.Filled.Person,

@@ -17,6 +17,7 @@ import com.example.emergencynow.ui.util.CallOffer
 import com.example.emergencynow.ui.util.parseJwt
 import com.example.emergencynow.ui.util.DriverNotificationHelper
 import com.example.emergencynow.ui.util.DriverSocketManager
+import com.example.emergencynow.ui.util.PendingCallOfferStorage
 import com.example.emergencynow.BuildConfig
 import com.example.emergencynow.ui.util.PolylineDecoder
 import com.google.android.gms.maps.model.LatLng
@@ -63,6 +64,7 @@ class DriverViewModel(
     private val getCallByIdUseCase: GetCallByIdUseCase,
     private val driverNotificationHelper: DriverNotificationHelper,
     private val authStorage: AuthStorage,
+    private val pendingCallOfferStorage: PendingCallOfferStorage,
 ) : ViewModel() {
 
     private val driverSocket = DriverSocketManager()
@@ -72,6 +74,19 @@ class DriverViewModel(
 
     fun loadData(userId: String) {
         viewModelScope.launch { loadAmbulanceData(userId) }
+        consumePendingOffer()
+    }
+
+    private fun consumePendingOffer() {
+        val pending = pendingCallOfferStorage.read() ?: return
+        if (_uiState.value.activeCallId != null) {
+            pendingCallOfferStorage.clear()
+            return
+        }
+        _uiState.value = _uiState.value.copy(
+            incomingCallOffer = pending,
+            emergencyLocation = LatLng(pending.latitude, pending.longitude),
+        )
     }
 
     fun refresh() {
@@ -166,6 +181,7 @@ class DriverViewModel(
     fun acceptCall() {
         val offer = _uiState.value.incomingCallOffer ?: return
         driverNotificationHelper.stopAlert()
+        pendingCallOfferStorage.clearIfMatches(offer.callId)
         _uiState.value = _uiState.value.copy(incomingCallOffer = null, activeCallId = offer.callId)
         driverSocket.acceptCall(offer.callId)
         fetchPatientEgn(offer.callId)
@@ -174,6 +190,7 @@ class DriverViewModel(
     fun declineCall() {
         val offer = _uiState.value.incomingCallOffer ?: return
         driverNotificationHelper.stopAlert()
+        pendingCallOfferStorage.clearIfMatches(offer.callId)
         _uiState.value = _uiState.value.copy(incomingCallOffer = null)
         driverSocket.declineCall(offer.callId)
     }

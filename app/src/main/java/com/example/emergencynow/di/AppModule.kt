@@ -37,8 +37,17 @@ import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
 import com.example.emergencynow.ui.feature.home.DriverViewModel
 import com.example.emergencynow.ui.util.DispatcherNotificationHelper
 import com.example.emergencynow.ui.util.DriverNotificationHelper
+import com.example.emergencynow.ui.util.FcmTokenRegistrar
+import com.example.emergencynow.ui.util.PendingCallOfferStorage
 import com.example.emergencynow.ui.AppViewModel
 import com.example.emergencynow.ui.util.NotificationManager
+import com.example.emergencynow.domain.usecase.notifications.RegisterDeviceTokenUseCase
+import com.example.emergencynow.domain.usecase.notifications.UnregisterDeviceTokenUseCase
+import com.example.emergencynow.domain.repository.DeviceTokenRepository
+import com.example.emergencynow.data.repository.DeviceTokenRepositoryImpl
+import com.example.emergencynow.data.datasource.DeviceTokenDataSource
+import com.example.emergencynow.data.datasource.impl.DeviceTokenDataSourceImpl
+import com.example.emergencynow.data.service.DeviceTokenService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
@@ -63,6 +72,8 @@ val appModule = module {
     single { NotificationManager() }
     single { DriverNotificationHelper(androidContext()) }
     single { DispatcherNotificationHelper(androidContext()) }
+    single { PendingCallOfferStorage(androidContext()) }
+    single { FcmTokenRegistrar(get()) }
 
     single {
         HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
@@ -119,6 +130,7 @@ val appModule = module {
     single<HospitalService> { get<Retrofit>().create(HospitalService::class.java) }
     single<UserService> { get<Retrofit>().create(UserService::class.java) }
     single<DispatcherService> { get<Retrofit>().create(DispatcherService::class.java) }
+    single<DeviceTokenService> { get<Retrofit>().create(DeviceTokenService::class.java) }
 
     single<AuthDataSource> { AuthDataSourceImpl(get()) }
     single<ProfileDataSource> { ProfileDataSourceImpl(get()) }
@@ -128,6 +140,7 @@ val appModule = module {
     single<HospitalDataSource> { HospitalDataSourceImpl(get()) }
     single<UserDataSource> { UserDataSourceImpl(get()) }
     single<DispatcherDataSource> { DispatcherDataSourceImpl(get()) }
+    single<DeviceTokenDataSource> { DeviceTokenDataSourceImpl(get()) }
 
     single<AuthRepository> { AuthRepositoryImpl(get()) }
     single<ProfileRepository> { ProfileRepositoryImpl(get()) }
@@ -137,6 +150,7 @@ val appModule = module {
     single<HospitalRepository> { HospitalRepositoryImpl(get()) }
     single<UserRepository> { UserRepositoryImpl(get()) }
     single<DispatcherRepository> { DispatcherRepositoryImpl(get()) }
+    single<DeviceTokenRepository> { DeviceTokenRepositoryImpl(get()) }
 
     factory { RequestVerificationCodeUseCase(get()) }
     factory { VerifyCodeUseCase(get()) }
@@ -174,9 +188,12 @@ val appModule = module {
     factory { GetAvailableAmbulancesForDispatcherUseCase(get()) }
     factory { AssignAmbulanceUseCase(get()) }
 
-    viewModel { AppViewModel(get(), get()) }
+    factory { RegisterDeviceTokenUseCase(get()) }
+    factory { UnregisterDeviceTokenUseCase(get()) }
+
+    viewModel { AppViewModel(get(), get(), get()) }
     viewModel { EnterEgnViewModel() }
-    viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get()) }
+    viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get(), locationRepository = get()) }
     viewModel {
         DriverViewModel(
@@ -188,7 +205,8 @@ val appModule = module {
             getHospitalRouteUseCase = get(),
             getCallByIdUseCase = get(),
             driverNotificationHelper = get(),
-            authStorage = get()
+            authStorage = get(),
+            pendingCallOfferStorage = get(),
         )
     }
     viewModel { CallTrackingViewModel(authStorage = get()) }

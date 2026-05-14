@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.emergencynow.domain.usecase.auth.RefreshTokenUseCase
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.AuthStorage
+import com.example.emergencynow.ui.util.FcmTokenRegistrar
 import com.example.emergencynow.ui.util.parseJwt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ sealed interface StartupState {
 class AppViewModel(
     private val authStorage: AuthStorage,
     private val refreshTokenUseCase: RefreshTokenUseCase,
+    private val fcmTokenRegistrar: FcmTokenRegistrar,
 ) : ViewModel() {
 
     private val _startupState = MutableStateFlow<StartupState>(StartupState.Loading)
@@ -41,6 +43,7 @@ class AppViewModel(
                     authStorage.accessToken = token.accessToken
                     authStorage.refreshToken = token.refreshToken
                     AuthSession.userId = parseJwt(token.accessToken)?.sub
+                    fcmTokenRegistrar.fetchAndRegister()
                     _startupState.value = StartupState.Authenticated
                 },
                 onFailure = {
