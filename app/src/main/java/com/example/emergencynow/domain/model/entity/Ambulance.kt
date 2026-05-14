@@ -1,6 +1,6 @@
 package com.example.emergencynow.domain.model.entity
 
-import java.util.Date
+import java.time.Instant
 
 data class Ambulance(
     val id: String,
@@ -10,7 +10,7 @@ data class Ambulance(
     val longitude: Double?,
     val available: Boolean,
     val driverId: String?,
-    val lastCallAcceptedAt: Date?,
-    val createdAt: Date,
-    val updatedAt: Date
+    val lastCallAcceptedAt: Instant?,
+    val createdAt: Instant?,
+    val updatedAt: Instant?
 )

@@ -18,7 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.components.cards.InfoRow
 import com.example.emergencynow.ui.components.cards.ProfileInfoCard
 import com.example.emergencynow.ui.theme.BrandBlueDark
@@ -39,7 +40,7 @@ fun PatientProfileScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.CHOOSE_VERIFICATION, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier

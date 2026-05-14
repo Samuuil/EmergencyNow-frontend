@@ -6,4 +6,9 @@
     <string name="driver_call_notification_message">%1$s</string>
     <string name="driver_call_notification_details_distance">%1$d m away</string>
     <string name="driver_call_notification_details_duration_minutes">ETA %1$d min</string>
+    <string name="dispatcher_call_channel_name">Assigned Calls</string>
+    <string name="dispatcher_call_channel_description">Alerts when a new call is assigned to you for dispatch.</string>
+    <string name="dispatcher_call_notification_title">New Call Assigned</string>
+    <string name="dispatcher_call_notification_message">%1$s</string>
+    <string name="dispatcher_call_notification_caller">From: %1$s</string>
 </resources>

@@ -17,24 +17,42 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.emergencynow.domain.model.entity.Contact
 import com.example.emergencynow.ui.components.inputs.PrimaryTextField
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import com.example.emergencynow.ui.theme.CurvePaleBlue
-
-data class Contact(var name: String, var phone: String, var email: String = "", var id: String? = null)
+import kotlinx.coroutines.delay
 
 @Composable
 fun ContactCard(
     index: Int,
     contact: Contact,
+    autoFocus: Boolean = false,
     onChange: (Contact) -> Unit,
     onRemove: () -> Unit
 ) {
+    val nameFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            delay(300)
+            try {
+                nameFocusRequester.requestFocus()
+            } catch (e: IllegalStateException) {
+                // Field not yet attached to layout
+            }
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -52,7 +70,7 @@ fun ContactCard(
                 Text(
                     text = "Contact ${index + 1}",
                     fontSize = 16.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontWeight = FontWeight.Bold,
                     color = BrandBlueDark
                 )
                 IconButton(onClick = onRemove) {
@@ -63,34 +81,35 @@ fun ContactCard(
                     )
                 }
             }
-            
+
             Spacer(Modifier.height(16.dp))
-            
+
             PrimaryTextField(
                 value = contact.name,
                 onValueChange = { onChange(contact.copy(name = it)) },
                 label = "Full Name",
                 placeholder = "Full Name",
                 keyboardType = KeyboardType.Text,
-                textColor = BrandBlueDark
+                textColor = BrandBlueDark,
+                focusRequester = nameFocusRequester
             )
-            
+
             Spacer(Modifier.height(16.dp))
-            
+
             PrimaryTextField(
-                value = contact.phone,
-                onValueChange = { onChange(contact.copy(phone = it)) },
+                value = contact.phoneNumber,
+                onValueChange = { onChange(contact.copy(phoneNumber = it)) },
                 label = "Phone Number",
                 placeholder = "Phone Number",
                 keyboardType = KeyboardType.Phone,
                 textColor = BrandBlueDark
             )
-            
+
             Spacer(Modifier.height(16.dp))
-            
+
             PrimaryTextField(
-                value = contact.email,
-                onValueChange = { onChange(contact.copy(email = it)) },
+                value = contact.email ?: "",
+                onValueChange = { onChange(contact.copy(email = it.ifBlank { null })) },
                 label = "Email (Optional)",
                 placeholder = "Email",
                 keyboardType = KeyboardType.Email,
@@ -99,5 +118,3 @@ fun ContactCard(
         }
     }
 }
-
-

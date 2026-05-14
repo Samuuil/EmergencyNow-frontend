@@ -1,5 +1,8 @@
 package com.example.emergencynow.domain.model.response
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class PaginationMeta(
     val itemsPerPage: Int?,
     val totalItems: Int?,
@@ -8,6 +11,7 @@ data class PaginationMeta(
     val sortBy: List<List<String>>?
 )
 
+@Serializable
 data class PaginationLinks(
     val current: String?,
     val next: String?,
@@ -16,6 +20,7 @@ data class PaginationLinks(
     val last: String?
 )
 
+@Serializable
 data class PaginatedResponse<T>(
     val data: List<T>,
     val meta: PaginationMeta?,

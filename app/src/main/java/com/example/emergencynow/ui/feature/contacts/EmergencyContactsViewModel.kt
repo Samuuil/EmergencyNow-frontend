@@ -3,30 +3,38 @@ package com.example.emergencynow.ui.feature.contacts
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.emergencynow.domain.model.entity.Contact
 import com.example.emergencynow.domain.usecase.contact.CreateContactUseCase
 import com.example.emergencynow.domain.usecase.contact.DeleteContactUseCase
 import com.example.emergencynow.domain.usecase.contact.GetContactsUseCase
+import com.example.emergencynow.domain.usecase.contact.UpdateContactUseCase
 import com.example.emergencynow.ui.util.AuthSession
+import com.example.emergencynow.ui.util.NotificationManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+private val emptyContact = Contact(id = "", name = "", phoneNumber = "", email = null)
+
 data class EmergencyContactsUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
-    val error: String? = null,
-    val contacts: List<Contact> = listOf(Contact("", ""))
+    val contacts: List<Contact> = listOf(emptyContact)
 )
 
 class EmergencyContactsViewModel(
     private val getContactsUseCase: GetContactsUseCase,
     private val createContactUseCase: CreateContactUseCase,
-    private val deleteContactUseCase: DeleteContactUseCase
+    private val updateContactUseCase: UpdateContactUseCase,
+    private val deleteContactUseCase: DeleteContactUseCase,
+    private val notificationManager: NotificationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EmergencyContactsUiState())
     val uiState: StateFlow<EmergencyContactsUiState> = _uiState.asStateFlow()
+
+    private var originalContacts: List<Contact> = emptyList()
 
     init {
         loadContacts()
@@ -35,70 +43,59 @@ class EmergencyContactsViewModel(
     fun loadContacts() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-                
-                val accessToken = AuthSession.accessToken
-                if (accessToken.isNullOrEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "Missing session. Log in again."
-                    )
+                _uiState.value = _uiState.value.copy(isLoading = true)
+
+                if (AuthSession.userId.isNullOrEmpty()) {
+                    notificationManager.showError("Your session has expired. Please log in again.")
+                    _uiState.value = _uiState.value.copy(isLoading = false)
                     return@launch
                 }
 
                 val remoteContacts = getContactsUseCase().getOrDefault(emptyList())
-                val contacts = if (remoteContacts.isEmpty()) {
-                    listOf(Contact("", "", ""))
-                } else {
-                    remoteContacts.map { Contact(it.name, it.phoneNumber, it.email ?: "", it.id) }
-                }
-                
-                _uiState.value = _uiState.value.copy(
-                    contacts = contacts,
-                    isLoading = false
-                )
+                originalContacts = remoteContacts
+                val contacts = if (remoteContacts.isEmpty()) listOf(emptyContact) else remoteContacts
+
+                _uiState.value = _uiState.value.copy(contacts = contacts, isLoading = false)
             } catch (e: Exception) {
                 Log.e("EmergencyContactsViewModel", "Failed to load contacts", e)
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Failed to load contacts: ${e.localizedMessage ?: e::class.simpleName}"
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                notificationManager.showError(
+                    e.message ?: "Failed to load contacts. Please try again."
                 )
             }
         }
     }
 
     fun updateContact(index: Int, contact: Contact) {
-        val updatedContacts = _uiState.value.contacts.toMutableList()
-        updatedContacts[index] = contact
-        _uiState.value = _uiState.value.copy(contacts = updatedContacts)
+        val updated = _uiState.value.contacts.toMutableList()
+        updated[index] = contact
+        _uiState.value = _uiState.value.copy(contacts = updated)
     }
 
     fun addContact() {
-        val currentContacts = _uiState.value.contacts
-        if (currentContacts.size < 5) {
-            _uiState.value = _uiState.value.copy(
-                contacts = currentContacts + Contact("", "", "")
-            )
+        val current = _uiState.value.contacts
+        if (current.size < 5) {
+            _uiState.value = _uiState.value.copy(contacts = current + emptyContact)
         }
     }
 
     fun removeContact(index: Int) {
         viewModelScope.launch {
             try {
-                val accessToken = AuthSession.accessToken
                 val toRemove = _uiState.value.contacts[index]
-                
-                if (!toRemove.id.isNullOrEmpty() && !accessToken.isNullOrEmpty()) {
-                    deleteContactUseCase(toRemove.id!!).getOrThrow()
+
+                if (toRemove.id.isNotEmpty() && !AuthSession.userId.isNullOrEmpty()) {
+                    deleteContactUseCase(toRemove.id).getOrThrow()
+                    originalContacts = originalContacts.filter { it.id != toRemove.id }
                 }
-                
-                val updatedContacts = _uiState.value.contacts.toMutableList()
-                updatedContacts.removeAt(index)
-                _uiState.value = _uiState.value.copy(contacts = updatedContacts)
+
+                val updated = _uiState.value.contacts.toMutableList()
+                updated.removeAt(index)
+                _uiState.value = _uiState.value.copy(contacts = updated)
             } catch (e: Exception) {
                 Log.e("EmergencyContactsViewModel", "Failed to remove contact", e)
-                _uiState.value = _uiState.value.copy(
-                    error = "Failed to remove contact."
+                notificationManager.showError(
+                    e.message ?: "Failed to remove contact. Please try again."
                 )
             }
         }
@@ -107,51 +104,52 @@ class EmergencyContactsViewModel(
     fun saveContacts(onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                val accessToken = AuthSession.accessToken
-                if (accessToken.isNullOrEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        error = "Missing session. Log in again."
-                    )
+                if (AuthSession.userId.isNullOrEmpty()) {
+                    notificationManager.showError("Your session has expired. Please log in again.")
                     return@launch
                 }
 
-                val validContacts = _uiState.value.contacts.filter { 
-                    it.name.isNotBlank() && it.phone.isNotBlank() 
+                val validContacts = _uiState.value.contacts.filter {
+                    it.name.isNotBlank() && it.phoneNumber.isNotBlank()
                 }
-                
+
                 if (validContacts.isEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        error = "Add at least one contact."
+                    notificationManager.showError(
+                        "Please fill in at least one contact's name and phone number."
                     )
                     return@launch
                 }
 
-                _uiState.value = _uiState.value.copy(isSaving = true, error = null)
-                
-                val newContacts = validContacts.filter { it.id == null }
-                newContacts.forEach { contact ->
+                _uiState.value = _uiState.value.copy(isSaving = true)
+
+                validContacts.filter { it.id.isEmpty() }.forEach { contact ->
                     createContactUseCase(
                         name = contact.name,
-                        phoneNumber = contact.phone,
-                        email = contact.email.ifBlank { null }
+                        phoneNumber = contact.phoneNumber,
+                        email = contact.email?.ifBlank { null }
                     ).getOrThrow()
                 }
-                
+
+                validContacts.filter { contact ->
+                    contact.id.isNotEmpty() && originalContacts.none { it == contact }
+                }.forEach { contact ->
+                    updateContactUseCase(
+                        id = contact.id,
+                        name = contact.name,
+                        phoneNumber = contact.phoneNumber,
+                        email = contact.email?.ifBlank { null }
+                    ).getOrThrow()
+                }
+
                 _uiState.value = _uiState.value.copy(isSaving = false)
                 onSuccess()
             } catch (e: Exception) {
                 Log.e("EmergencyContactsViewModel", "Failed to save contacts", e)
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    error = "Failed to save contacts."
+                _uiState.value = _uiState.value.copy(isSaving = false)
+                notificationManager.showError(
+                    e.message ?: "Failed to save contacts. Please try again."
                 )
             }
         }
     }
-
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
 }
-
-

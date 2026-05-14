@@ -3,7 +3,7 @@ package com.example.emergencynow.domain.usecase.profile
 import com.example.emergencynow.domain.model.entity.Profile
 import com.example.emergencynow.domain.repository.ProfileRepository
 
-class UpdateProfileUseCase(private val repository: Lazy<ProfileRepository>) {
+class UpdateProfileUseCase(private val repository: ProfileRepository) {
     suspend operator fun invoke(
         height: Int,
         weight: Int,
@@ -14,6 +14,6 @@ class UpdateProfileUseCase(private val repository: Lazy<ProfileRepository>) {
         medicines: List<String>?,
         dateOfBirth: String?
     ): Result<Profile> {
-        return repository.value.updateProfile(height, weight, gender, allergies, bloodType, illnesses, medicines, dateOfBirth)
+        return repository.updateProfile(height, weight, gender, allergies, bloodType, illnesses, medicines, dateOfBirth)
     }
 }

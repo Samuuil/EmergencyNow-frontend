@@ -33,18 +33,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import com.example.emergencynow.ui.theme.BrandBlueDark
@@ -53,6 +47,7 @@ import com.example.emergencynow.ui.theme.CurvePaleBlue
 import com.example.emergencynow.ui.util.createAmbulanceMarker
 import com.example.emergencynow.ui.util.createHospitalMarker
 import com.example.emergencynow.ui.util.createUserLocationMarker
+import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.feature.home.BottomNavItem
 import com.example.emergencynow.ui.feature.home.HospitalSelectionDialog
 import com.example.emergencynow.ui.feature.home.IncomingCallDialog
@@ -71,31 +66,37 @@ fun HomeScreen(
     onNavigateToHistory: () -> Unit,
     onNavigateToContacts: () -> Unit,
     onPatientLookup: () -> Unit = {},
-    viewModel: HomeViewModel = koinViewModel()
+    viewModel: HomeViewModel = koinViewModel(),
+    driverViewModel: DriverViewModel = koinViewModel(),
+    callTrackingViewModel: CallTrackingViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val homeState by viewModel.uiState.collectAsStateWithLifecycle()
+    val driverState by driverViewModel.uiState.collectAsStateWithLifecycle()
+    val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
     var showPatientProfile by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            viewModel.refreshData()
-        }
-    }
-
-    val locationCallback = remember {
-        object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                val location = locationResult.lastLocation ?: return
-                val latLng = LatLng(location.latitude, location.longitude)
-                viewModel.updateUserLocation(latLng)
-
-                if (uiState.userLocation == null) {
-                    cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
+    LaunchedEffect(lifecycleOwner, homeState.isLoading, homeState.isDriver) {
+        if (homeState.isLoading) return@LaunchedEffect
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            // Reconnect on every foreground transition
+            if (homeState.isDriver) {
+                val userId = com.example.emergencynow.ui.util.AuthSession.userId
+                if (userId != null) driverViewModel.loadData(userId)
+            } else {
+                callTrackingViewModel.connectSocket()
+            }
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                // Disconnect when app goes to background
+                if (homeState.isDriver) {
+                    driverViewModel.disconnectSocket()
+                } else {
+                    callTrackingViewModel.disconnectSocket()
                 }
             }
         }
@@ -106,20 +107,7 @@ fun HomeScreen(
         onResult = { permissions ->
             val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                     permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-            if (granted) {
-                val locationRequest = LocationRequest.Builder(
-                    Priority.PRIORITY_HIGH_ACCURACY,
-                    2000L
-                ).apply {
-                    setMinUpdateIntervalMillis(1000L)
-                }.build()
-                
-                fusedLocationClient.requestLocationUpdates(
-                    locationRequest,
-                    locationCallback,
-                    null
-                )
-            }
+            if (granted) viewModel.startLocationUpdates()
         }
     )
 
@@ -132,139 +120,121 @@ fun HomeScreen(
         )
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
+    LaunchedEffect(homeState.userLocation) {
+        val location = homeState.userLocation ?: return@LaunchedEffect
+        driverViewModel.updateDriverLocation(location)
+        if (cameraPositionState.position.target == com.google.android.gms.maps.model.LatLng(0.0, 0.0)) {
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(location, 15f)
         }
     }
 
-    LaunchedEffect(uiState.hospitalRoutePolyline) {
-        val points = uiState.hospitalRoutePolyline
+    LaunchedEffect(driverState.hospitalRoutePolyline) {
+        val points = driverState.hospitalRoutePolyline
         if (points.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
             points.forEach { builder.include(it) }
-            uiState.userLocation?.let { builder.include(it) }
-            uiState.hospitalLocation?.let { builder.include(it) }
+            homeState.userLocation?.let { builder.include(it) }
+            driverState.hospitalLocation?.let { builder.include(it) }
             val bounds = builder.build()
             cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100))
         }
     }
 
-    LaunchedEffect(uiState.activeRoutePolyline, uiState.ambulanceLocation) {
-        if (!uiState.isDriver && uiState.activeRoutePolyline.isNotEmpty()) {
+    LaunchedEffect(trackingState.activeRoutePolyline, trackingState.ambulanceLocation) {
+        if (!homeState.isDriver && trackingState.activeRoutePolyline.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
-            uiState.activeRoutePolyline.forEach { builder.include(it) }
-            uiState.userLocation?.let { builder.include(it) }
-            uiState.ambulanceLocation?.let { builder.include(it) }
+            trackingState.activeRoutePolyline.forEach { builder.include(it) }
+            homeState.userLocation?.let { builder.include(it) }
+            trackingState.ambulanceLocation?.let { builder.include(it) }
             val bounds = builder.build()
             cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100))
         }
     }
 
-    LaunchedEffect(uiState.activeCallId, uiState.userLocation) {
-        if (uiState.isDriver && uiState.activeCallId != null && uiState.userLocation != null) {
-            while (uiState.activeCallId != null) {
-                val location = uiState.userLocation
-                val callId = uiState.activeCallId
-                if (location != null && callId != null) {
-                    com.example.emergencynow.ui.util.DriverSocketManager.sendLocationUpdate(
-                        callId = callId,
-                        latitude = location.latitude,
-                        longitude = location.longitude
-                    )
-                }
-                delay(2000)
-            }
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState
         ) {
-            uiState.userLocation?.let { location ->
+            homeState.userLocation?.let { location ->
                 Marker(
                     state = MarkerState(position = location),
-                    title = if (uiState.isDriver) {
-                        if (uiState.assignedAmbulanceId != null) "Your Ambulance" else "Your Location"
+                    title = if (homeState.isDriver) {
+                        if (driverState.assignedAmbulanceId != null) "Your Ambulance" else "Your Location"
                     } else {
                         "Your Location"
                     },
-                    icon = if (uiState.isDriver) {
-                        if (uiState.assignedAmbulanceId != null) {
-                            createAmbulanceMarker(context, R.drawable.ambulance)
-                        } else {
-                            createUserLocationMarker(context, R.drawable.user)
-                        }
+                    icon = if (homeState.isDriver && driverState.assignedAmbulanceId != null) {
+                        createAmbulanceMarker(context, R.drawable.ambulance)
                     } else {
                         createUserLocationMarker(context, R.drawable.user)
                     }
                 )
             }
 
-            if (uiState.isDriver && uiState.emergencyLocation != null) {
+            if (homeState.isDriver && driverState.emergencyLocation != null) {
                 Marker(
-                    state = MarkerState(position = uiState.emergencyLocation!!),
+                    state = MarkerState(position = driverState.emergencyLocation!!),
                     title = "Emergency",
                     icon = createUserLocationMarker(context, R.drawable.user)
                 )
             }
 
-            if (!uiState.isDriver && uiState.ambulanceLocation != null && 
-                uiState.userCallStatus != "pending" && uiState.userCallStatus != "arrived") {
+            if (!homeState.isDriver && trackingState.ambulanceLocation != null &&
+                trackingState.userCallStatus != CallStatus.PENDING && trackingState.userCallStatus != CallStatus.ARRIVED) {
                 Marker(
-                    state = MarkerState(position = uiState.ambulanceLocation!!),
+                    state = MarkerState(position = trackingState.ambulanceLocation!!),
                     title = "Ambulance",
                     icon = createAmbulanceMarker(context, R.drawable.ambulance)
                 )
             }
 
-            if (uiState.hospitalLocation != null) {
+            if (driverState.hospitalLocation != null) {
                 Marker(
-                    state = MarkerState(position = uiState.hospitalLocation!!),
-                    title = uiState.selectedHospitalName ?: "Hospital",
+                    state = MarkerState(position = driverState.hospitalLocation!!),
+                    title = driverState.selectedHospitalName ?: "Hospital",
                     icon = createHospitalMarker(context, R.drawable.hospital)
                 )
             }
 
-            if (uiState.isDriver && uiState.activeRoutePolyline.isNotEmpty() && uiState.callStatus != CallStatus.NAVIGATING_TO_HOSPITAL) {
+            if (homeState.isDriver && driverState.activeRoutePolyline.isNotEmpty() && driverState.callStatus != CallStatus.NAVIGATING_TO_HOSPITAL) {
                 Polyline(
-                    points = uiState.activeRoutePolyline,
+                    points = driverState.activeRoutePolyline,
                     color = Color.Blue,
                     width = 10f
                 )
             }
 
-            if (uiState.hospitalRoutePolyline.isNotEmpty()) {
+            if (driverState.hospitalRoutePolyline.isNotEmpty()) {
                 Polyline(
-                    points = uiState.hospitalRoutePolyline,
+                    points = driverState.hospitalRoutePolyline,
                     color = Color(0xFF3B82F6),
                     width = 12f
                 )
             }
         }
 
-        if (uiState.isDriver) {
-            if (uiState.activeCallId != null) {
+        if (homeState.isDriver) {
+            if (driverState.activeCallId != null) {
                     var expanded by remember { mutableStateOf(false) }
-                    
-                    val currentSteps = if (uiState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
-                        uiState.hospitalRouteSteps
+
+                    val currentSteps = if (driverState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
+                        driverState.hospitalRouteSteps
                     } else {
-                        uiState.activeRouteSteps
+                        driverState.activeRouteSteps
                     }
-                    
-                    val currentDistance = if (uiState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
-                        uiState.hospitalRouteDistance
+
+                    val currentDistance = if (driverState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
+                        driverState.hospitalRouteDistance
                     } else {
-                        uiState.activeRouteDistance
+                        driverState.activeRouteDistance
                     }
-                    
-                    val currentDuration = if (uiState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
-                        uiState.hospitalRouteDuration
+
+                    val currentDuration = if (driverState.callStatus == CallStatus.NAVIGATING_TO_HOSPITAL) {
+                        driverState.hospitalRouteDuration
                     } else {
-                        uiState.activeRouteDuration
+                        driverState.activeRouteDuration
                     }
                     
                     Card(
@@ -298,24 +268,20 @@ fun HomeScreen(
                                     horizontalArrangement = Arrangement.End
                                 ) {
                                     IconButton(
-                                        onClick = { 
-                                            Log.d("HomeScreen", "Profile icon clicked!")
-                                            Log.d("HomeScreen", "   patientEgn: ${uiState.patientEgn}")
-                                            if (uiState.patientEgn != null) {
+                                        onClick = {
+                                            if (driverState.patientEgn != null) {
                                                 showPatientProfile = true
-                                            } else {
-                                                Log.w("HomeScreen", "Patient EGN is not available yet")
                                             }
                                         },
                                         modifier = Modifier.size(48.dp),
-                                        enabled = uiState.patientEgn != null
+                                        enabled = driverState.patientEgn != null
                                     ) {
                                         Icon(
                                             imageVector = Icons.Filled.Person,
                                             contentDescription = "View Patient Profile",
-                                            tint = if (uiState.patientEgn != null) 
-                                                BrandBlueDark 
-                                            else 
+                                            tint = if (driverState.patientEgn != null)
+                                                BrandBlueDark
+                                            else
                                                 Color.Gray,
                                             modifier = Modifier.size(28.dp)
                                         )
@@ -389,35 +355,30 @@ fun HomeScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
+                                val hasAmbulance = driverState.assignedAmbulanceId != null
+                                val statusText = when {
+                                    !hasAmbulance -> "No Ambulance"
+                                    driverState.isSocketConnected -> "Available"
+                                    else -> "Connecting..."
+                                }
+                                val statusColor = when {
+                                    !hasAmbulance -> Color(0xFFF59E0B)
+                                    driverState.isSocketConnected -> Color(0xFF16A34A)
+                                    else -> Color.Gray
+                                }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = if (uiState.isSocketConnected) "Available" else "Connecting...",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (uiState.isSocketConnected) Color(0xFF16A34A) else Color.Gray
-                                        )
-                                        if (!uiState.isSocketConnected) {
-                                            Spacer(Modifier.width(8.dp))
-                                            IconButton(
-                                                onClick = { viewModel.retryConnection() },
-                                                modifier = Modifier.size(32.dp)
-                                            ) {
-                                                Icon(
-                                                    Icons.Filled.Refresh,
-                                                    contentDescription = "Retry connection",
-                                                    tint = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                        }
-                                    }
-                                    if (!uiState.isSocketConnected && uiState.error != null) {
+                                    Text(
+                                        text = statusText,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = statusColor
+                                    )
+                                    if (hasAmbulance && !driverState.isSocketConnected && driverState.error != null) {
                                         Spacer(Modifier.height(4.dp))
                                         Text(
-                                            text = uiState.error ?: "Connection failed",
+                                            text = "No internet connection",
                                             fontSize = 11.sp,
-                                            color = Color(0xFFEF4444),
-                                            maxLines = 2
+                                            color = Color(0xFFEF4444)
                                         )
                                     }
                                 }
@@ -425,7 +386,7 @@ fun HomeScreen(
                         }
                     }
                 }
-        } else if (uiState.activeCallId != null && uiState.userCallStatus != "arrived") {
+        } else if (trackingState.activeCallId != null && trackingState.userCallStatus != CallStatus.ARRIVED) {
             Card(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -453,10 +414,10 @@ fun HomeScreen(
                         )
                     }
                     
-                    if (uiState.activeRouteDistance > 0) {
+                    if (trackingState.activeRouteDistance > 0) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         Text(
-                            "Estimated arrival: ${uiState.activeRouteDuration / 60} min (${uiState.activeRouteDistance}m)",
+                            "Estimated arrival: ${trackingState.activeRouteDuration / 60} min (${trackingState.activeRouteDistance}m)",
                             fontSize = 14.sp,
                             color = BrandBlueDark,
                             fontWeight = FontWeight.Medium
@@ -466,14 +427,14 @@ fun HomeScreen(
             }
         }
 
-        if (uiState.isDriver && uiState.activeCallId != null) {
-            when (uiState.callStatus) {
+        if (homeState.isDriver && driverState.activeCallId != null) {
+            when (driverState.callStatus) {
                 CallStatus.EN_ROUTE -> {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
-                            .padding(bottom = 190.dp)
+                            .padding(bottom = 240.dp)
                             .fillMaxWidth()
                             .height(56.dp)
                             .shadow(
@@ -483,7 +444,7 @@ fun HomeScreen(
                             )
                             .clip(RoundedCornerShape(12.dp))
                             .background(BrandBlueDark)
-                            .clickable { viewModel.updateCallStatus(CallStatus.ARRIVED) },
+                            .clickable { driverViewModel.updateCallStatus(CallStatus.ARRIVED) },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -499,7 +460,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
-                            .padding(bottom = 190.dp)
+                            .padding(bottom = 240.dp)
                             .fillMaxWidth()
                             .height(56.dp)
                             .shadow(
@@ -509,7 +470,7 @@ fun HomeScreen(
                             )
                             .clip(RoundedCornerShape(12.dp))
                             .background(BrandBlueDark)
-                            .clickable { viewModel.completeCall() },
+                            .clickable { driverViewModel.completeCall() },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -529,8 +490,8 @@ fun HomeScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
         ) {
-            if (uiState.isDriver) {
-                if (uiState.assignedAmbulanceId == null) {
+            if (homeState.isDriver) {
+                if (driverState.assignedAmbulanceId == null) {
                     Button(
                         onClick = onSelectAmbulance,
                         modifier = Modifier
@@ -609,16 +570,16 @@ fun HomeScreen(
                                         letterSpacing = 1.sp
                                     )
                                     Text(
-                                        text = uiState.assignedAmbulancePlate ?: "Unknown",
+                                        text = driverState.assignedAmbulancePlate ?: "Unknown",
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = BrandBlueDark
                                     )
                                 }
                             }
-                            if (uiState.activeCallId == null) {
+                            if (driverState.activeCallId == null) {
                                 OutlinedButton(
-                                    onClick = { viewModel.unassignAmbulance() },
+                                    onClick = { driverViewModel.unassignAmbulance() },
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = BrandBlueDark
                                     ),
@@ -632,7 +593,7 @@ fun HomeScreen(
                 }
             }
             
-            if (uiState.isDoctor) {
+            if (homeState.isDoctor) {
                 Button(
                     onClick = onPatientLookup,
                     modifier = Modifier
@@ -660,7 +621,7 @@ fun HomeScreen(
                 }
             }
 
-            if (!uiState.isDriver || (uiState.isDriver && uiState.activeCallId == null)) {
+            if (!homeState.isDriver || (homeState.isDriver && driverState.activeCallId == null)) {
                 Button(
                     onClick = onMakeEmergencyCall,
                     modifier = Modifier
@@ -728,34 +689,30 @@ fun HomeScreen(
         }
     }
 
-    if (uiState.incomingCallOffer != null) {
+    if (driverState.incomingCallOffer != null) {
         IncomingCallDialog(
-            offer = uiState.incomingCallOffer!!,
-            onAccept = { viewModel.acceptCall(uiState.incomingCallOffer!!.callId) },
-            onDecline = { viewModel.declineCall(uiState.incomingCallOffer!!.callId) }
+            offer = driverState.incomingCallOffer!!,
+            onAccept = { driverViewModel.acceptCall() },
+            onDecline = { driverViewModel.declineCall() }
         )
     }
 
-    if (uiState.showHospitalSelection) {
+    if (driverState.showHospitalSelection) {
         HospitalSelectionDialog(
-            hospitals = uiState.availableHospitals,
-            isLoading = uiState.isLoadingHospitals || uiState.isSelectingHospital,
+            hospitals = driverState.availableHospitals,
+            isLoading = driverState.isLoadingHospitals || driverState.isSelectingHospital,
             onHospitalSelected = { hospitalId ->
-                viewModel.selectHospital(hospitalId)
+                driverViewModel.selectHospital(hospitalId)
             },
             onDismiss = { }
         )
     }
 
-    uiState.patientEgn?.let { egn ->
+    driverState.patientEgn?.let { egn ->
         if (showPatientProfile) {
-            Log.d("HomeScreen", "Showing patient profile dialog for EGN: $egn")
             PatientProfileDialog(
                 egn = egn,
-                onDismiss = { 
-                    Log.d("HomeScreen", "Closing patient profile dialog")
-                    showPatientProfile = false 
-                }
+                onDismiss = { showPatientProfile = false }
             )
         }
     }

@@ -18,14 +18,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
@@ -34,114 +31,60 @@ import org.koin.androidx.compose.koinViewModel
 import com.example.emergencynow.ui.util.createAmbulanceMarker
 import com.example.emergencynow.ui.util.createUserLocationMarker
 import com.example.emergencynow.R
+import com.example.emergencynow.domain.model.entity.CallStatus
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CallTrackingScreen(
     onBackToHome: () -> Unit,
-    viewModel: HomeViewModel = koinViewModel()
+    homeViewModel: HomeViewModel = koinViewModel(),
+    callTrackingViewModel: CallTrackingViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val trackingState by callTrackingViewModel.uiState.collectAsStateWithLifecycle()
     val cameraPositionState = rememberCameraPositionState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(uiState.activeCallId, uiState.userCallStatus, uiState.isSocketConnected) {
-        android.util.Log.d("CallTrackingScreen", "=== CALL TRACKING STATE ===")
-        android.util.Log.d("CallTrackingScreen", "activeCallId: ${uiState.activeCallId}")
-        android.util.Log.d("CallTrackingScreen", "userCallStatus: ${uiState.userCallStatus}")
-        android.util.Log.d("CallTrackingScreen", "isSocketConnected: ${uiState.isSocketConnected}")
-        android.util.Log.d("CallTrackingScreen", "isDriver: ${uiState.isDriver}")
-        android.util.Log.d("CallTrackingScreen", "ambulanceLocation: ${uiState.ambulanceLocation}")
-        android.util.Log.d("CallTrackingScreen", "===========================")
-    }
-
-    LaunchedEffect(Unit) {
-        android.util.Log.d("CallTrackingScreen", "CallTrackingScreen launched")
-        android.util.Log.d("CallTrackingScreen", "Ensuring user WebSocket is connected for tracking")
-        if (!uiState.isDriver && !uiState.isSocketConnected) {
-            android.util.Log.d("CallTrackingScreen", "WebSocket not connected, calling loadUserData()")
-            viewModel.loadUserData()
-        } else {
-            android.util.Log.d("CallTrackingScreen", "WebSocket already connected or user is driver")
-        }
-    }
-
-    val locationCallback = remember {
-        object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                val location = locationResult.lastLocation ?: return
-                val latLng = LatLng(location.latitude, location.longitude)
-                viewModel.updateUserLocation(latLng)
-
-                if (uiState.userLocation == null) {
-                    cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
-                }
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            callTrackingViewModel.connectSocket()
+            homeViewModel.startLocationUpdates()
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                callTrackingViewModel.disconnectSocket()
             }
         }
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
-        onResult = { permissions ->
-            val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                    permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-            if (granted) {
-                val locationRequest = LocationRequest.Builder(
-                    Priority.PRIORITY_HIGH_ACCURACY,
-                    2000L
-                ).apply {
-                    setMinUpdateIntervalMillis(1000L)
-                }.build()
-                
-                fusedLocationClient.requestLocationUpdates(
-                    locationRequest,
-                    locationCallback,
-                    null
-                )
-            }
-        }
-    )
-
-    LaunchedEffect(Unit) {
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
+    LaunchedEffect(homeState.userLocation) {
+        val loc = homeState.userLocation ?: return@LaunchedEffect
+        if (cameraPositionState.position.target == LatLng(0.0, 0.0)) {
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(loc, 15f)
         }
     }
 
-    LaunchedEffect(uiState.activeRoutePolyline, uiState.ambulanceLocation, uiState.userCallStatus) {
-        if (uiState.userCallStatus != "pending" && uiState.activeRoutePolyline.isNotEmpty()) {
+    LaunchedEffect(trackingState.activeRoutePolyline, trackingState.ambulanceLocation, trackingState.userCallStatus) {
+        val showRoute = trackingState.userCallStatus == CallStatus.DISPATCHED ||
+            trackingState.userCallStatus == CallStatus.EN_ROUTE
+        if (showRoute && trackingState.activeRoutePolyline.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
-            uiState.activeRoutePolyline.forEach { builder.include(it) }
-            uiState.userLocation?.let { builder.include(it) }
-            uiState.ambulanceLocation?.let { builder.include(it) }
+            trackingState.activeRoutePolyline.forEach { builder.include(it) }
+            homeState.userLocation?.let { builder.include(it) }
+            trackingState.ambulanceLocation?.let { builder.include(it) }
             val bounds = builder.build()
             cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100))
         } else {
-            uiState.userLocation?.let { userLocation ->
+            homeState.userLocation?.let { userLocation ->
                 cameraPositionState.position = CameraPosition.fromLatLngZoom(userLocation, 15f)
             }
         }
     }
 
-    LaunchedEffect(uiState.activeCallId, uiState.userCallStatus) {
-        android.util.Log.d("CallTrackingScreen", "Status check - activeCallId: ${uiState.activeCallId}, userCallStatus: ${uiState.userCallStatus}")
-
-        if (uiState.activeCallId == null) {
-            android.util.Log.d("CallTrackingScreen", "No active call - redirecting to home")
-            onBackToHome()
-        } else if (uiState.userCallStatus == "arrived" || uiState.userCallStatus == "completed" || uiState.userCallStatus == "cancelled") {
-            android.util.Log.d("CallTrackingScreen", "Call status is ${uiState.userCallStatus} - redirecting to home")
+    LaunchedEffect(trackingState.activeCallId) {
+        if (trackingState.activeCallId == null) {
             onBackToHome()
         }
     }
@@ -149,16 +92,11 @@ fun CallTrackingScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
-                    Text(
-                        "Emergency Call Tracking",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                title = { Text("Emergency Call Tracking", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            viewModel.clearCallState()
+                            callTrackingViewModel.clearCallState()
                             onBackToHome()
                         }
                     ) {
@@ -177,7 +115,7 @@ fun CallTrackingScreen(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState
             ) {
-                uiState.userLocation?.let { location ->
+                homeState.userLocation?.let { location ->
                     Marker(
                         state = MarkerState(position = location),
                         title = "Your Location",
@@ -185,20 +123,55 @@ fun CallTrackingScreen(
                     )
                 }
 
-                if (uiState.userCallStatus != "pending" && uiState.ambulanceLocation != null) {
+                val showAmbulanceOverlay = trackingState.userCallStatus == CallStatus.DISPATCHED ||
+                    trackingState.userCallStatus == CallStatus.EN_ROUTE
+
+                if (showAmbulanceOverlay && trackingState.ambulanceLocation != null) {
                     Marker(
-                        state = MarkerState(position = uiState.ambulanceLocation!!),
+                        state = MarkerState(position = trackingState.ambulanceLocation!!),
                         title = "Ambulance",
                         icon = createAmbulanceMarker(context, R.drawable.ambulance)
                     )
                 }
 
-                if (uiState.userCallStatus != "pending" && uiState.activeRoutePolyline.isNotEmpty()) {
+                if (showAmbulanceOverlay && trackingState.activeRoutePolyline.isNotEmpty()) {
                     Polyline(
-                        points = uiState.activeRoutePolyline,
+                        points = trackingState.activeRoutePolyline,
                         color = Color.Blue,
                         width = 10f
                     )
+                }
+            }
+
+            trackingState.patientName?.let { name ->
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            "Calling on behalf of: $name",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        val identified = trackingState.patientIdentified
+                        if (identified != null) {
+                            Text(
+                                text = if (identified)
+                                    "Patient identified in the archive"
+                                else
+                                    "Patient could not be identified in the archive",
+                                fontSize = 12.sp,
+                                color = if (identified)
+                                    Color(0xFF16A34A)
+                                else
+                                    Color(0xFFEF4444),
+                            )
+                        }
+                    }
                 }
             }
 
@@ -212,27 +185,63 @@ fun CallTrackingScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    when (uiState.userCallStatus) {
-                        "pending" -> {
+                    when (trackingState.userCallStatus) {
+                        CallStatus.PENDING -> {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(48.dp),
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "Waiting for acceptance...",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                "Your emergency call is being dispatched to the nearest ambulance",
-                                fontSize = 14.sp,
-                                color = Color.Gray,
-                                textAlign = TextAlign.Center
-                            )
+                            when {
+                                trackingState.isAwaitingDispatcher -> {
+                                    Text(
+                                        "Waiting for a dispatcher",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    trackingState.queuePosition?.let { pos ->
+                                        Text(
+                                            "You are #$pos in queue",
+                                            fontSize = 14.sp,
+                                            color = Color.Gray,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                                trackingState.isWithDispatcher -> {
+                                    Text(
+                                        "A dispatcher is reviewing your call",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        "Selecting the nearest ambulance for you",
+                                        fontSize = 14.sp,
+                                        color = Color.Gray,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                else -> {
+                                    Text(
+                                        "Waiting for acceptance...",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        "Your emergency call is being dispatched",
+                                        fontSize = 14.sp,
+                                        color = Color.Gray,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
                         }
-                        "dispatched", "en_route" -> {
+                        CallStatus.DISPATCHED, CallStatus.EN_ROUTE -> {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -250,14 +259,59 @@ fun CallTrackingScreen(
                                     fontSize = 18.sp
                                 )
                             }
-                            
-                            if (uiState.activeRouteDistance > 0) {
+                            if (trackingState.activeRouteDistance > 0) {
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                                 Text(
-                                    "Estimated arrival: ${uiState.activeRouteDuration / 60} min (${uiState.activeRouteDistance}m)",
+                                    "Estimated arrival: ${trackingState.activeRouteDuration / 60} min (${trackingState.activeRouteDistance}m)",
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        CallStatus.ARRIVED -> {
+                            Icon(
+                                Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF16A34A),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "Ambulance has arrived",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = Color(0xFF16A34A),
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                "Help is here. Please follow paramedic instructions.",
+                                fontSize = 14.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        CallStatus.NAVIGATING_TO_HOSPITAL -> {
+                            Icon(
+                                Icons.Filled.LocalHospital,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "On the way to hospital",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                            if (trackingState.activeRouteDuration > 0) {
+                                Text(
+                                    "Estimated arrival: ${trackingState.activeRouteDuration / 60} min",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }

@@ -2,6 +2,7 @@ package com.example.emergencynow.ui.feature.auth
 data class EnterEgnUIState(
     val egn: String = "",
     val isLoading: Boolean = false,
+    val error: String? = null,
     val shouldNavigateToVerification: Boolean = false
 )
 

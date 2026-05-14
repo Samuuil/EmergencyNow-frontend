@@ -1,8 +1,6 @@
 package com.example.emergencynow.ui.feature.ambulance
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,21 +12,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,16 +30,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.emergencynow.ui.components.decorations.DottedPatternBackground
-import com.example.emergencynow.ui.feature.ambulance.AmbulanceCard
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.theme.BrandBlueDark
-import com.example.emergencynow.ui.theme.BrandBlueMid
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -60,7 +50,7 @@ fun AmbulanceSelectionScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        DottedPatternBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(variant = BackgroundVariant.ENTER_EGN, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier.fillMaxSize()
@@ -76,7 +66,7 @@ fun AmbulanceSelectionScreen(
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = BrandBlueDark
                     )
                 }
                 Spacer(Modifier.weight(1f))
@@ -84,7 +74,7 @@ fun AmbulanceSelectionScreen(
                     text = "Select Ambulance",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = BrandBlueDark,
                     modifier = Modifier.padding(end = 48.dp)
                 )
                 Spacer(Modifier.weight(1f))
@@ -175,26 +165,29 @@ fun AmbulanceSelectionScreen(
                     onClick = { viewModel.assignAmbulance(onAmbulanceSelected) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(56.dp)
+                        .shadow(
+                            elevation = 20.dp,
+                            shape = RoundedCornerShape(16.dp),
+                            spotColor = BrandBlueDark.copy(alpha = 0.2f)
+                        ),
                     enabled = uiState.selectedAmbulanceId != null && !uiState.isAssigning,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = BrandBlueDark,
                         contentColor = Color.White,
-                        disabledContainerColor = BrandBlueMid,
-                        disabledContentColor = Color.White
+                        disabledContainerColor = Color(0xFFE5E7EB),
+                        disabledContentColor = Color(0xFF6B7280)
                     ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     if (uiState.isAssigning) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            color = if (uiState.selectedAmbulanceId != null) Color.White else Color.White,
+                            color = Color.White,
                             strokeWidth = 2.dp
                         )
                     } else {
                         Text("Confirm Selection", fontSize = 16.sp)
-                        Spacer(Modifier.width(8.dp))
-                        Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
                     }
                 }
             }

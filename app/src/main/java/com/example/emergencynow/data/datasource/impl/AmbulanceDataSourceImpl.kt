@@ -26,4 +26,8 @@ class AmbulanceDataSourceImpl(
             body = AssignDriverRequest(driverId = driverId)
         )
     }
+
+    override suspend fun markAmbulanceAvailable(ambulanceId: String): AmbulanceDto {
+        return ambulanceService.markAmbulanceAsAvailable(ambulanceId)
+    }
 }

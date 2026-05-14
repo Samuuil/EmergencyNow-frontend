@@ -9,13 +9,13 @@ interface HospitalDataSource {
         latitude: Double,
         longitude: Double
     ): List<HospitalDto>
-    
+
     suspend fun selectHospitalForCall(
         callId: String,
         hospitalId: String,
         latitude: Double,
         longitude: Double
-    ): HospitalRouteResponse
-    
+    )
+
     suspend fun getHospitalRoute(callId: String): HospitalRouteResponse
 }

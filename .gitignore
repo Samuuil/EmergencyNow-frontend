@@ -7,6 +7,8 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/gradle.xml
+/.idea/caches/deviceStreaming.xml
 .DS_Store
 /build
 /captures
@@ -14,8 +16,15 @@
 .cxx
 local.properties
 /app/src/main/res/values/google_maps_api.xml
-/Backend
 /Example
 /StateArchive
 *.log
 *.md
+!README.md
+# Firebase config files (project-specific, contain Firebase project IDs/sender IDs)
+/app/google-services.json
+/app/src/*/google-services.json
+*.jks
+*.keystore
+keystore.properties
+/app/release/

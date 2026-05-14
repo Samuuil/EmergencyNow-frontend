@@ -1,6 +1,6 @@
 package com.example.emergencynow.domain.model.entity
 
-import java.util.Date
+import java.time.Instant
 
 data class Call(
     val id: String,
@@ -14,26 +14,33 @@ data class Call(
     val routeSteps: List<RouteStep>?,
     val ambulanceCurrentLatitude: Double?,
     val ambulanceCurrentLongitude: Double?,
-    val dispatchedAt: Date?,
-    val arrivedAt: Date?,
-    val completedAt: Date?,
-    val createdAt: Date,
+    val dispatchedAt: Instant?,
+    val arrivedAt: Instant?,
+    val completedAt: Instant?,
+    val createdAt: Instant?,
     val selectedHospitalId: String?,
     val selectedHospitalName: String?,
     val hospitalRoutePolyline: String?,
     val hospitalRouteDistance: Int?,
     val hospitalRouteDuration: Int?,
-    val hospitalRouteSteps: List<RouteStep>?
+    val hospitalRouteSteps: List<RouteStep>?,
+    val patientEgn: String? = null,
+    val patientPhoneNumber: String? = null
 )
 
-enum class CallStatus {
-    PENDING,
-    DISPATCHED,
-    EN_ROUTE,
-    ARRIVED,
-    NAVIGATING_TO_HOSPITAL,
-    COMPLETED,
-    CANCELLED
+enum class CallStatus(val wire: String) {
+    PENDING("pending"),
+    DISPATCHED("dispatched"),
+    EN_ROUTE("en_route"),
+    ARRIVED("arrived"),
+    NAVIGATING_TO_HOSPITAL("navigating_to_hospital"),
+    COMPLETED("completed"),
+    CANCELLED("cancelled");
+
+    companion object {
+        fun fromWire(s: String): CallStatus =
+            entries.firstOrNull { it.wire == s.lowercase() } ?: PENDING
+    }
 }
 
 data class RouteStep(

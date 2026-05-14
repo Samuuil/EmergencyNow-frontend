@@ -2,7 +2,6 @@
 package com.example.emergencynow.ui.feature.auth
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,9 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowBackIos
-import androidx.compose.material.icons.filled.CropSquare
-import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,14 +38,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.emergencynow.ui.components.decorations.ChooseVerificationBackground
+import com.example.emergencynow.ui.components.decorations.BackgroundVariant
+import com.example.emergencynow.ui.components.decorations.DecorativeBackground
 import com.example.emergencynow.ui.theme.BrandBlueMid
 import com.example.emergencynow.ui.theme.BrandBlueDark
 import androidx.compose.runtime.collectAsState
@@ -68,7 +63,7 @@ fun ChooseVerificationMethodScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        ChooseVerificationBackground(modifier = Modifier.fillMaxSize())
+        DecorativeBackground(BackgroundVariant.CHOOSE_VERIFICATION, modifier = Modifier.fillMaxSize())
         
         Column(
             modifier = Modifier
@@ -155,52 +150,6 @@ fun ChooseVerificationMethodScreen(
 
                 
                 Spacer(Modifier.weight(1f))
-            }
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp)
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = Color(0xFFE5E7EB),
-                        shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp)
-                    )
-                    .padding(horizontal = 40.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = { },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Reorder,
-                        contentDescription = "Recent apps",
-                        tint = Color(0xFF4B5563),
-                        modifier = Modifier.rotate(90f)
-                    )
-                }
-                
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .border(2.dp, Color(0xFF4B5563), RoundedCornerShape(4.dp))
-                )
-                
-                IconButton(
-                    onClick = { },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBackIos,
-                        contentDescription = "Back",
-                        tint = Color(0xFF4B5563)
-                    )
-                }
             }
         }
 

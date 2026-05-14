@@ -1,37 +1,37 @@
 package com.example.emergencynow.domain.model.response
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class CallTrackingResponse(
-    @SerializedName("callId")
     val callId: String,
-    
-    @SerializedName("status")
     val status: String,
-    
-    @SerializedName("ambulanceId")
     val ambulanceId: String? = null,
-    
-    @SerializedName("driverLatitude")
     val driverLatitude: Double? = null,
-    
-    @SerializedName("driverLongitude")
     val driverLongitude: Double? = null,
-    
-    @SerializedName("estimatedArrival")
     val estimatedArrival: Int? = null,
-    
-    @SerializedName("route")
     val route: RouteDto? = null
 )
 
+@Serializable
 data class RouteDto(
-    @SerializedName("polyline")
     val polyline: String,
-    
-    @SerializedName("distance")
     val distance: Int,
-    
-    @SerializedName("duration")
-    val duration: Int
+    val duration: Int,
+    val steps: List<RouteStepDto>? = null
+)
+
+@Serializable
+data class RouteStepDto(
+    val distance: Int,
+    val duration: Int,
+    val instruction: String,
+    val startLocation: LocationDto,
+    val endLocation: LocationDto
+)
+
+@Serializable
+data class LocationDto(
+    val lat: Double,
+    val lng: Double
 )

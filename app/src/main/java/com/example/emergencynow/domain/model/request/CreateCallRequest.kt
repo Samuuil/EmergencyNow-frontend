@@ -1,17 +1,11 @@
 package com.example.emergencynow.domain.model.request
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class CreateCallRequest(
-    @SerializedName("description")
     val description: String,
-    
-    @SerializedName("latitude")
     val latitude: Double,
-    
-    @SerializedName("longitude")
     val longitude: Double,
-    
-    @SerializedName("userEgn")
-    val userEgn: String
+    val patientPhoneNumber: String? = null
 )

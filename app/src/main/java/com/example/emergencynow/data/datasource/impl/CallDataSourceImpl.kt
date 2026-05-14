@@ -15,14 +15,14 @@ class CallDataSourceImpl(
         description: String,
         latitude: Double,
         longitude: Double,
-        userEgn: String
+        patientPhoneNumber: String?
     ): CallResponse {
         return callService.createCall(
             CreateCallRequest(
                 description = description,
                 latitude = latitude,
                 longitude = longitude,
-                userEgn = userEgn
+                patientPhoneNumber = patientPhoneNumber
             )
         )
     }
