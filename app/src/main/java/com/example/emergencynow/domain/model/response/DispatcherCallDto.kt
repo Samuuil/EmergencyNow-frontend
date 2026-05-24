@@ -4,21 +4,27 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DispatcherCallDto(
-    val id: String,
-    val description: String? = null,
+    val callId: String,
+    val description: String = "",
     val latitude: Double,
     val longitude: Double,
-    val createdAt: String? = null,
-    val user: DispatcherCallUserDto? = null,
+    val createdAt: String = "",
+    val userName: String? = null,
+    val patient: PatientDto? = null,
 )
 
 @Serializable
-data class DispatcherCallUserDto(
-    val id: String? = null,
-    val stateArchive: DispatcherCallStateArchiveDto? = null,
-)
-
-@Serializable
-data class DispatcherCallStateArchiveDto(
-    val fullName: String? = null,
+data class PatientDto(
+    val egn: String,
+    val fullName: String,
+    val phoneNumber: String,
+    val email: String,
+    val bloodType: String? = null,
+    val allergies: List<String>? = null,
+    val medicines: List<String>? = null,
+    val illnesses: List<String>? = null,
+    val height: Int? = null,
+    val weight: Int? = null,
+    val gender: String? = null,
+    val dateOfBirth: String? = null,
 )

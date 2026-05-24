@@ -5,8 +5,10 @@ import com.example.emergencynow.data.extensions.safeApiCall
 import com.example.emergencynow.domain.model.entity.Call
 import com.example.emergencynow.domain.model.entity.CallDetail
 import com.example.emergencynow.domain.model.entity.CallStatus
+import com.example.emergencynow.domain.model.entity.Location
+import com.example.emergencynow.domain.model.entity.RouteStep
 import com.example.emergencynow.domain.model.response.CallResponse
-import com.example.emergencynow.domain.model.mapper.toDomain
+import com.example.emergencynow.domain.model.response.RouteStepResponse
 import com.example.emergencynow.domain.repository.CallRepository
 import java.time.Instant
 
@@ -22,47 +24,6 @@ class CallRepositoryImpl(
     ): Result<Call> = safeApiCall {
         val response = callDataSource.createCall(description, latitude, longitude, patientPhoneNumber)
         mapResponseToCall(response)
-    }
-
-    override suspend fun getCallTracking(callId: String): Result<Call> = safeApiCall {
-        val response = callDataSource.getCallTracking(callId)
-        Call(
-            id = response.callId,
-            description = "",
-            latitude = 0.0,
-            longitude = 0.0,
-            status = CallStatus.fromWire(response.status),
-            routePolyline = response.route?.polyline,
-            estimatedDistance = response.route?.distance,
-            estimatedDuration = response.route?.duration,
-            routeSteps = response.route?.steps?.map { step ->
-                com.example.emergencynow.domain.model.entity.RouteStep(
-                    distance = step.distance,
-                    duration = step.duration,
-                    instruction = step.instruction,
-                    startLocation = com.example.emergencynow.domain.model.entity.Location(
-                        lat = step.startLocation.lat,
-                        lng = step.startLocation.lng
-                    ),
-                    endLocation = com.example.emergencynow.domain.model.entity.Location(
-                        lat = step.endLocation.lat,
-                        lng = step.endLocation.lng
-                    )
-                )
-            },
-            ambulanceCurrentLatitude = response.driverLatitude,
-            ambulanceCurrentLongitude = response.driverLongitude,
-            dispatchedAt = null,
-            arrivedAt = null,
-            completedAt = null,
-            createdAt = null,
-            selectedHospitalId = null,
-            selectedHospitalName = null,
-            hospitalRoutePolyline = null,
-            hospitalRouteDistance = null,
-            hospitalRouteDuration = null,
-            hospitalRouteSteps = null
-        )
     }
 
     override suspend fun updateCallStatus(
@@ -91,8 +52,7 @@ class CallRepositoryImpl(
             userEgn = response.userEgn,
             patientEgn = response.patientEgn,
             patientPhoneNumber = response.patientPhoneNumber,
-            ambulanceId = response.ambulanceId,
-            hospitalId = response.hospitalId
+            selectedHospitalId = response.selectedHospitalId,
         )
     }
 
@@ -103,26 +63,34 @@ class CallRepositoryImpl(
             latitude = response.latitude ?: 0.0,
             longitude = response.longitude ?: 0.0,
             status = CallStatus.fromWire(response.status ?: "PENDING"),
-            routePolyline = null,
-            estimatedDistance = null,
-            estimatedDuration = null,
-            routeSteps = null,
-            ambulanceCurrentLatitude = null,
-            ambulanceCurrentLongitude = null,
+            routePolyline = response.routePolyline,
+            estimatedDistance = response.estimatedDistance,
+            estimatedDuration = response.estimatedDuration,
+            routeSteps = response.routeSteps?.map { it.toDomain() },
+            ambulanceCurrentLatitude = response.ambulanceCurrentLatitude,
+            ambulanceCurrentLongitude = response.ambulanceCurrentLongitude,
             dispatchedAt = parseInstant(response.dispatchedAt),
-            arrivedAt = null,
-            completedAt = null,
+            arrivedAt = parseInstant(response.arrivedAt),
+            completedAt = parseInstant(response.completedAt),
             createdAt = parseInstant(response.createdAt),
-            selectedHospitalId = response.hospitalId,
-            selectedHospitalName = null,
-            hospitalRoutePolyline = null,
-            hospitalRouteDistance = null,
-            hospitalRouteDuration = null,
-            hospitalRouteSteps = null,
+            selectedHospitalId = response.selectedHospitalId,
+            selectedHospitalName = response.selectedHospitalName,
+            hospitalRoutePolyline = response.hospitalRoutePolyline,
+            hospitalRouteDistance = response.hospitalRouteDistance,
+            hospitalRouteDuration = response.hospitalRouteDuration,
+            hospitalRouteSteps = response.hospitalRouteSteps?.map { it.toDomain() },
             patientEgn = response.patientEgn,
-            patientPhoneNumber = response.patientPhoneNumber
+            patientPhoneNumber = response.patientPhoneNumber,
         )
     }
+
+    private fun RouteStepResponse.toDomain(): RouteStep = RouteStep(
+        distance = distance,
+        duration = duration,
+        instruction = instruction,
+        startLocation = Location(lat = startLocation?.lat ?: 0.0, lng = startLocation?.lng ?: 0.0),
+        endLocation = Location(lat = endLocation?.lat ?: 0.0, lng = endLocation?.lng ?: 0.0),
+    )
 
     private fun parseInstant(s: String?): Instant? = s?.let {
         try { Instant.parse(it) } catch (e: Exception) { null }

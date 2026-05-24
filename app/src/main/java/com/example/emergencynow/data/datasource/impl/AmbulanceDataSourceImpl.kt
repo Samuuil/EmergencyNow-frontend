@@ -8,15 +8,15 @@ import com.example.emergencynow.data.service.AmbulanceService
 class AmbulanceDataSourceImpl(
     private val ambulanceService: AmbulanceService
 ) : AmbulanceDataSource {
-    
+
     override suspend fun getAvailableAmbulances(): List<AmbulanceDto> {
         return ambulanceService.getAvailableAmbulances().data
     }
-    
+
     override suspend fun getAmbulanceByDriver(driverId: String): AmbulanceDto? {
         return ambulanceService.getAmbulanceByDriver(driverId)
     }
-    
+
     override suspend fun assignAmbulanceDriver(
         ambulanceId: String,
         driverId: String?
@@ -25,9 +25,5 @@ class AmbulanceDataSourceImpl(
             id = ambulanceId,
             body = AssignDriverRequest(driverId = driverId)
         )
-    }
-
-    override suspend fun markAmbulanceAvailable(ambulanceId: String): AmbulanceDto {
-        return ambulanceService.markAmbulanceAsAvailable(ambulanceId)
     }
 }
