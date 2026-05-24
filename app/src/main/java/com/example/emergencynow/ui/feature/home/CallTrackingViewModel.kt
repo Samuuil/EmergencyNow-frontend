@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.PolylineDecoder
-import com.example.emergencynow.ui.util.UserSocketManager
+import com.example.emergencynow.ui.util.IUserSocketManager
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,9 +29,8 @@ data class CallTrackingUiState(
 
 class CallTrackingViewModel(
     private val authStorage: AuthStorage,
+    private val userSocket: IUserSocketManager,
 ) : ViewModel() {
-
-    private val userSocket = UserSocketManager()
 
     private val _uiState = MutableStateFlow(CallTrackingUiState())
     val uiState: StateFlow<CallTrackingUiState> = _uiState.asStateFlow()

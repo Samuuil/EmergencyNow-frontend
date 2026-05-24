@@ -16,7 +16,7 @@ import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.ui.util.CallOffer
 import com.example.emergencynow.ui.util.parseJwt
 import com.example.emergencynow.ui.util.DriverNotificationHelper
-import com.example.emergencynow.ui.util.DriverSocketManager
+import com.example.emergencynow.ui.util.IDriverSocketManager
 import com.example.emergencynow.ui.util.PendingCallOfferStorage
 import com.example.emergencynow.BuildConfig
 import com.example.emergencynow.ui.util.PolylineDecoder
@@ -65,9 +65,8 @@ class DriverViewModel(
     private val driverNotificationHelper: DriverNotificationHelper,
     private val authStorage: AuthStorage,
     private val pendingCallOfferStorage: PendingCallOfferStorage,
+    private val driverSocket: IDriverSocketManager,
 ) : ViewModel() {
-
-    private val driverSocket = DriverSocketManager()
 
     private val _uiState = MutableStateFlow(DriverUiState())
     val uiState: StateFlow<DriverUiState> = _uiState.asStateFlow()
