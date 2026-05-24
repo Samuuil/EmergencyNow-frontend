@@ -20,7 +20,4 @@ interface AmbulanceService {
         @Path("id") id: String,
         @Body body: AssignDriverRequest
     ): AmbulanceDto
-
-    @PATCH("ambulances/{id}/available")
-    suspend fun markAmbulanceAsAvailable(@Path("id") id: String): AmbulanceDto
 }

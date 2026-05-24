@@ -17,5 +17,4 @@ data class TokenResponse(
 data class JwtPayload(
     val sub: String? = null,
     val role: String? = null,
-    val egn: String? = null,
 )

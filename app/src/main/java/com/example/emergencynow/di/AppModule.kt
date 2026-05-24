@@ -10,7 +10,6 @@ import com.example.emergencynow.data.session.TokenInterceptor
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.domain.repository.*
 import com.example.emergencynow.domain.usecase.ambulance.*
-import com.example.emergencynow.domain.usecase.ambulance.MarkAmbulanceAvailableUseCase
 import com.example.emergencynow.domain.usecase.auth.*
 import com.example.emergencynow.domain.usecase.auth.GetUserOnboardingStateUseCase
 import com.example.emergencynow.domain.usecase.call.*
@@ -176,7 +175,6 @@ val appModule = module {
     factory { GetAmbulanceByDriverUseCase(get()) }
     factory { AssignAmbulanceDriverUseCase(get()) }
     factory { UnassignAmbulanceDriverUseCase(get()) }
-    factory { MarkAmbulanceAvailableUseCase(get()) }
 
     factory { GetHospitalsForCallUseCase(get()) }
     factory { SelectHospitalUseCase(get()) }

@@ -333,24 +333,6 @@ class DriverSocketManager {
     }
 
 
-    fun sendLocationUpdate(latitude: Double, longitude: Double) {
-        if (socket == null || !isConnected) {
-            Log.w(TAG, "Cannot send location - socket not connected")
-            return
-        }
-
-        try {
-            val data = JSONObject().apply {
-                put("latitude", latitude)
-                put("longitude", longitude)
-            }
-            socket?.emit("location.update", data)
-            Log.d(TAG, "Sent location.update: lat=$latitude, lng=$longitude")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error sending location.update: ${e.message}")
-        }
-    }
-
     fun disconnect() {
         Log.d(TAG, "Disconnect requested")
         connectionTimeoutHandler?.removeCallbacksAndMessages(null)
