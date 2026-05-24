@@ -54,6 +54,12 @@ android {
         compose = true
         buildConfig = true
     }
+    packaging {
+        resources {
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE-notice.md"
+        }
+    }
     testOptions {
         unitTests {
             isReturnDefaultValues = true
@@ -116,6 +122,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation("io.mockk:mockk-android:1.13.10")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
