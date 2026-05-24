@@ -36,6 +36,10 @@ import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
 import com.example.emergencynow.ui.feature.home.DriverViewModel
 import com.example.emergencynow.ui.util.DispatcherNotificationHelper
 import com.example.emergencynow.ui.util.DriverNotificationHelper
+import com.example.emergencynow.ui.util.DriverSocketManager
+import com.example.emergencynow.ui.util.IDriverSocketManager
+import com.example.emergencynow.ui.util.IUserSocketManager
+import com.example.emergencynow.ui.util.UserSocketManager
 import com.example.emergencynow.ui.util.FcmTokenRegistrar
 import com.example.emergencynow.ui.util.PendingCallOfferStorage
 import com.example.emergencynow.ui.AppViewModel
@@ -73,6 +77,8 @@ val appModule = module {
     single { DispatcherNotificationHelper(androidContext()) }
     single { PendingCallOfferStorage(androidContext()) }
     single { FcmTokenRegistrar(get()) }
+    factory<IDriverSocketManager> { DriverSocketManager() }
+    factory<IUserSocketManager> { UserSocketManager() }
 
     single {
         HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
@@ -205,9 +211,10 @@ val appModule = module {
             driverNotificationHelper = get(),
             authStorage = get(),
             pendingCallOfferStorage = get(),
+            driverSocket = get(),
         )
     }
-    viewModel { CallTrackingViewModel(authStorage = get()) }
+    viewModel { CallTrackingViewModel(authStorage = get(), userSocket = get()) }
     viewModel {
         AmbulanceSelectionViewModel(
             getAvailableAmbulancesUseCase = get(),

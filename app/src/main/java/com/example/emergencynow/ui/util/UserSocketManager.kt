@@ -43,7 +43,19 @@ data class CallWithDispatcher(
     val callId: String
 )
 
-class UserSocketManager {
+interface IUserSocketManager {
+    var onCallDispatched: ((CallDispatched) -> Unit)?
+    var onAmbulanceLocation: ((AmbulanceLocationUpdate) -> Unit)?
+    var onCallStatus: ((CallStatusUpdate) -> Unit)?
+    var onCallAwaitingDispatcher: ((CallAwaitingDispatcher) -> Unit)?
+    var onCallWithDispatcher: ((CallWithDispatcher) -> Unit)?
+    var onConnectionChange: ((Boolean) -> Unit)?
+    fun connect(accessToken: String)
+    fun disconnect()
+    fun isConnected(): Boolean
+}
+
+class UserSocketManager : IUserSocketManager {
     companion object {
         private const val TAG = "UserSocketManager"
         private const val NAMESPACE = "/users"
@@ -52,14 +64,14 @@ class UserSocketManager {
     private var socket: Socket? = null
     private var isConnected = false
 
-    var onCallDispatched: ((CallDispatched) -> Unit)? = null
-    var onAmbulanceLocation: ((AmbulanceLocationUpdate) -> Unit)? = null
-    var onCallStatus: ((CallStatusUpdate) -> Unit)? = null
-    var onCallAwaitingDispatcher: ((CallAwaitingDispatcher) -> Unit)? = null
-    var onCallWithDispatcher: ((CallWithDispatcher) -> Unit)? = null
-    var onConnectionChange: ((Boolean) -> Unit)? = null
+    override var onCallDispatched: ((CallDispatched) -> Unit)? = null
+    override var onAmbulanceLocation: ((AmbulanceLocationUpdate) -> Unit)? = null
+    override var onCallStatus: ((CallStatusUpdate) -> Unit)? = null
+    override var onCallAwaitingDispatcher: ((CallAwaitingDispatcher) -> Unit)? = null
+    override var onCallWithDispatcher: ((CallWithDispatcher) -> Unit)? = null
+    override var onConnectionChange: ((Boolean) -> Unit)? = null
 
-    fun connect(accessToken: String) {
+    override fun connect(accessToken: String) {
         Log.d(TAG, "========================================")
         Log.d(TAG, "connect() called with token: ${accessToken.take(20)}...")
         Log.d(TAG, "Current socket state: socket=${socket != null}, isConnected=$isConnected")
@@ -282,7 +294,7 @@ class UserSocketManager {
         }
     }
 
-    fun disconnect() {
+    override fun disconnect() {
         socket?.off()
         socket?.disconnect()
         socket = null
@@ -290,5 +302,5 @@ class UserSocketManager {
         Log.d(TAG, "Disconnected and cleaned up socket")
     }
 
-    fun isConnected(): Boolean = isConnected
+    override fun isConnected(): Boolean = isConnected
 }

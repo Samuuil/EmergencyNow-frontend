@@ -54,6 +54,20 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+            all {
+                it.maxHeapSize = "256m"
+                it.maxParallelForks = 1
+                it.jvmArgs(
+                    "-Djdk.attach.allowAttachSelf=true",
+                    "-XX:+EnableDynamicAgentLoading",
+                    "-Xshare:off"
+                )
+            }
+        }
+    }
 }
 
 dependencies {
@@ -95,6 +109,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     testImplementation(libs.junit)
+    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("app.cash.turbine:turbine:1.1.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
