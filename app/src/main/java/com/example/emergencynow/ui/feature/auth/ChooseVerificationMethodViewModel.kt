@@ -43,7 +43,7 @@ class ChooseVerificationMethodViewModel(
             } catch (e: Exception) {
                 Log.e("ChooseVerificationMethodViewModel", "Failed to send verification code", e)
                 _uiState.value = _uiState.value.copy(isLoading = false)
-                notificationManager.showError("Failed to send verification code.")
+                notificationManager.showError(e.message ?: "Failed to send verification code.")
             }
         }
     }

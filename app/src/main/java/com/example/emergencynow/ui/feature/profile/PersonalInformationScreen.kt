@@ -315,14 +315,6 @@ fun PersonalInformationScreen(
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                     )
                     
-                    if (uiState.error != null) {
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            text = uiState.error ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 14.sp
-                        )
-                    }
                 }
                 
                 Column(

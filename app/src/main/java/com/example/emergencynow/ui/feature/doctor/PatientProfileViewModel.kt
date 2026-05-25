@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.emergencynow.domain.model.entity.Profile
 import com.example.emergencynow.domain.usecase.profile.GetProfileByEgnUseCase
+import com.example.emergencynow.ui.util.NotificationManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +17,8 @@ data class PatientProfileUiState(
 )
 
 class PatientProfileViewModel(
-    private val getProfileByEgnUseCase: GetProfileByEgnUseCase
+    private val getProfileByEgnUseCase: GetProfileByEgnUseCase,
+    private val notificationManager: NotificationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PatientProfileUiState())
@@ -35,17 +37,15 @@ class PatientProfileViewModel(
                         )
                     },
                     onFailure = { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to load patient profile"
-                        )
+                        val message = error.message ?: "Failed to load patient profile"
+                        _uiState.value = _uiState.value.copy(isLoading = false, error = message)
+                        notificationManager.showError(message)
                     }
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "An unexpected error occurred"
-                )
+                val message = e.message ?: "An unexpected error occurred"
+                _uiState.value = _uiState.value.copy(isLoading = false, error = message)
+                notificationManager.showError(message)
             }
         }
     }

@@ -109,7 +109,21 @@ class EmergencyContactsViewModel(
                     return@launch
                 }
 
-                val validContacts = _uiState.value.contacts.filter {
+                val allContacts = _uiState.value.contacts
+                val partialContacts = allContacts.filter { contact ->
+                    val hasSomething = contact.name.isNotBlank() || contact.phoneNumber.isNotBlank() || !contact.email.isNullOrBlank()
+                    val isValid = contact.name.isNotBlank() && contact.phoneNumber.isNotBlank()
+                    hasSomething && !isValid
+                }
+
+                if (partialContacts.isNotEmpty()) {
+                    notificationManager.showError(
+                        "Some contacts are incomplete. Each contact requires both a name and phone number."
+                    )
+                    return@launch
+                }
+
+                val validContacts = allContacts.filter {
                     it.name.isNotBlank() && it.phoneNumber.isNotBlank()
                 }
 
