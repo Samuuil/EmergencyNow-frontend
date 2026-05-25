@@ -1,6 +1,8 @@
 package com.example.emergencynow.ui.feature.dispatcher
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,21 +24,27 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -49,8 +57,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.emergencynow.domain.model.entity.DispatcherCallOffer
+import com.example.emergencynow.domain.model.entity.PatientRecord
 import com.example.emergencynow.ui.feature.home.BottomNavItem
 import com.example.emergencynow.ui.theme.BrandBlueDark
+import com.example.emergencynow.ui.theme.CurvePaleBlue
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -231,6 +241,8 @@ private fun DispatcherCallCard(
     isPending: Boolean,
     onAssign: () -> Unit,
 ) {
+    var patientExpanded by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -268,6 +280,45 @@ private fun DispatcherCallCard(
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
+            if (call.patient != null) {
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = Color(0xFFE5E7EB))
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { patientExpanded = !patientExpanded }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Filled.MedicalServices,
+                        contentDescription = null,
+                        tint = BrandBlueDark,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Patient Medical Profile",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = BrandBlueDark,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        imageVector = if (patientExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = if (patientExpanded) "Collapse patient profile" else "Expand patient profile",
+                        tint = BrandBlueDark,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+
+                AnimatedVisibility(visible = patientExpanded) {
+                    PatientProfileSection(patient = call.patient)
+                }
+            }
+
             Spacer(Modifier.height(16.dp))
 
             if (isPending) {
@@ -300,6 +351,69 @@ private fun DispatcherCallCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PatientProfileSection(patient: PatientRecord) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .background(CurvePaleBlue, RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (patient.fullName.isNotBlank()) {
+            ProfileRow(label = "Name", value = patient.fullName)
+        }
+        if (!patient.bloodType.isNullOrBlank()) {
+            ProfileRow(label = "Blood type", value = patient.bloodType, highlight = true)
+        }
+        if (!patient.gender.isNullOrBlank()) {
+            ProfileRow(label = "Gender", value = patient.gender.replaceFirstChar { it.uppercase() })
+        }
+        if (!patient.dateOfBirth.isNullOrBlank()) {
+            ProfileRow(label = "Date of birth", value = patient.dateOfBirth.take(10))
+        }
+        if ((patient.height ?: 0) > 0 || (patient.weight ?: 0) > 0) {
+            val hw = listOfNotNull(
+                patient.height?.let { "${it} cm" },
+                patient.weight?.let { "${it} kg" },
+            ).joinToString(" / ")
+            ProfileRow(label = "Height / Weight", value = hw)
+        }
+        if (!patient.allergies.isNullOrEmpty()) {
+            ProfileRow(label = "Allergies", value = patient.allergies.joinToString(", "), highlight = true)
+        }
+        if (!patient.illnesses.isNullOrEmpty()) {
+            ProfileRow(label = "Illnesses", value = patient.illnesses.joinToString(", "))
+        }
+        if (!patient.medicines.isNullOrEmpty()) {
+            ProfileRow(label = "Medicines", value = patient.medicines.joinToString(", "))
+        }
+        if (patient.phoneNumber.isNotBlank()) {
+            ProfileRow(label = "Phone", value = patient.phoneNumber)
+        }
+    }
+}
+
+@Composable
+private fun ProfileRow(label: String, value: String, highlight: Boolean = false) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "$label:",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF6B7280),
+            modifier = Modifier.width(110.dp),
+        )
+        Text(
+            text = value,
+            fontSize = 12.sp,
+            color = if (highlight) Color(0xFFDC2626) else Color(0xFF1F2937),
+            fontWeight = if (highlight) FontWeight.Bold else FontWeight.Normal,
+        )
     }
 }
 

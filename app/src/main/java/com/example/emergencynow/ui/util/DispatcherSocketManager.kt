@@ -28,6 +28,7 @@ class DispatcherSocketManager {
     var onDriverAccepted: ((callId: String, ambulanceId: String) -> Unit)? = null
     var onDriverRejected: ((callId: String, ambulanceId: String, ambulances: List<DispatcherAmbulanceSummary>) -> Unit)? = null
     var onAmbulanceUnavailable: ((callId: String, ambulanceId: String, ambulances: List<DispatcherAmbulanceSummary>) -> Unit)? = null
+    var onDriverNoResponse: ((callId: String, ambulanceId: String, ambulances: List<DispatcherAmbulanceSummary>) -> Unit)? = null
     var onAmbulanceListUpdated: ((List<DispatcherAmbulanceSummary>) -> Unit)? = null
     var onConnectionChange: ((Boolean) -> Unit)? = null
 
@@ -150,6 +151,18 @@ class DispatcherSocketManager {
                     onAmbulanceUnavailable?.invoke(callId, ambulanceId, ambulances)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing ambulance.unavailable: ${e.message}", e)
+                }
+            }
+
+            socket?.on("driver.no-response") { args ->
+                try {
+                    val data = args.firstOrNull() as? JSONObject ?: return@on
+                    val callId = data.getString("callId")
+                    val ambulanceId = data.getString("ambulanceId")
+                    val ambulances = parseAmbulanceList(data.optJSONArray("ambulances"))
+                    onDriverNoResponse?.invoke(callId, ambulanceId, ambulances)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing driver.no-response: ${e.message}", e)
                 }
             }
 
