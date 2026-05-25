@@ -120,6 +120,7 @@ dependencies {
     testImplementation("app.cash.turbine:turbine:1.1.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation("io.mockk:mockk-android:1.13.10")
