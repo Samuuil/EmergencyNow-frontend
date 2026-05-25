@@ -41,6 +41,7 @@ import com.example.emergencynow.ui.util.IDriverSocketManager
 import com.example.emergencynow.ui.util.IUserSocketManager
 import com.example.emergencynow.ui.util.UserSocketManager
 import com.example.emergencynow.ui.util.FcmTokenRegistrar
+import com.example.emergencynow.ui.util.NetworkMonitor
 import com.example.emergencynow.ui.util.PendingCallOfferStorage
 import com.example.emergencynow.ui.AppViewModel
 import com.example.emergencynow.ui.util.NotificationManager
@@ -73,6 +74,7 @@ val appModule = module {
     single { AuthStorage(androidContext()) }
     single { com.example.emergencynow.data.repository.LocationRepository(androidContext()) }
     single { NotificationManager() }
+    single { NetworkMonitor(androidContext()) }
     single { DriverNotificationHelper(androidContext()) }
     single { DispatcherNotificationHelper(androidContext()) }
     single { PendingCallOfferStorage(androidContext()) }
@@ -195,10 +197,10 @@ val appModule = module {
     factory { RegisterDeviceTokenUseCase(get()) }
     factory { UnregisterDeviceTokenUseCase(get()) }
 
-    viewModel { AppViewModel(get(), get(), get()) }
+    viewModel { AppViewModel(get(), get(), get(), get()) }
     viewModel { EnterEgnViewModel() }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get(), get()) }
-    viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get(), locationRepository = get()) }
+    viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get(), locationRepository = get(), notificationManager = get()) }
     viewModel {
         DriverViewModel(
             getAmbulanceByDriverUseCase = get(),
@@ -218,14 +220,15 @@ val appModule = module {
     viewModel {
         AmbulanceSelectionViewModel(
             getAvailableAmbulancesUseCase = get(),
-            assignAmbulanceDriverUseCase = get()
+            assignAmbulanceDriverUseCase = get(),
+            notificationManager = get()
         )
     }
-    viewModel { EmergencyCallViewModel(get(), get()) }
+    viewModel { EmergencyCallViewModel(get(), get(), get()) }
     viewModel { com.example.emergencynow.ui.feature.contacts.ContactPickerViewModel() }
-    viewModel { PersonalInformationViewModel(get(), get(), get()) }
-    viewModel { HistoryViewModel(get()) }
-    viewModel { PatientProfileViewModel(get()) }
+    viewModel { PersonalInformationViewModel(get(), get(), get(), get()) }
+    viewModel { HistoryViewModel(get(), get()) }
+    viewModel { PatientProfileViewModel(get(), get()) }
     viewModel {
         EmergencyContactsViewModel(
             getContactsUseCase = get(),

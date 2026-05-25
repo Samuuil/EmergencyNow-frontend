@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.emergencynow.domain.model.entity.Call
 import com.example.emergencynow.domain.usecase.call.GetUserCallsUseCase
+import com.example.emergencynow.ui.util.NotificationManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +18,8 @@ data class HistoryUiState(
 )
 
 class HistoryViewModel(
-    private val getUserCallsUseCase: GetUserCallsUseCase
+    private val getUserCallsUseCase: GetUserCallsUseCase,
+    private val notificationManager: NotificationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HistoryUiState())
@@ -42,18 +44,16 @@ class HistoryViewModel(
                     },
                     onFailure = { exception ->
                         Log.e("HistoryViewModel", "Failed to load user calls", exception)
-                        _uiState.value = _uiState.value.copy(
-                            error = exception.message ?: "Failed to load call history",
-                            isLoading = false
-                        )
+                        val message = exception.message ?: "Failed to load call history"
+                        _uiState.value = _uiState.value.copy(error = message, isLoading = false)
+                        notificationManager.showError(message)
                     }
                 )
             } catch (e: Exception) {
                 Log.e("HistoryViewModel", "Error loading user calls", e)
-                _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "An unexpected error occurred",
-                    isLoading = false
-                )
+                val message = e.message ?: "An unexpected error occurred"
+                _uiState.value = _uiState.value.copy(error = message, isLoading = false)
+                notificationManager.showError(message)
             }
         }
     }

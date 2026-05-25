@@ -6,6 +6,7 @@ import com.example.emergencynow.domain.model.request.CreateCallRequest
 import com.example.emergencynow.domain.usecase.call.CreateCallUseCase
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.AuthStorage
+import com.example.emergencynow.ui.util.NotificationManager
 import com.example.emergencynow.ui.util.PhoneNumberNormalizer
 import com.example.emergencynow.ui.util.parseJwt
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,6 @@ enum class PatientIdentification {
 
 data class EmergencyCallUiState(
     val isLoading: Boolean = false,
-    val error: String? = null,
     val callCreated: Boolean = false,
     val callId: String? = null,
     val description: String = "",
@@ -35,6 +35,7 @@ data class EmergencyCallUiState(
 class EmergencyCallViewModel(
     private val createCallUseCase: CreateCallUseCase,
     private val authStorage: AuthStorage,
+    private val notificationManager: NotificationManager,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EmergencyCallUiState())
     val uiState: StateFlow<EmergencyCallUiState> = _uiState.asStateFlow()
@@ -65,11 +66,11 @@ class EmergencyCallViewModel(
         viewModelScope.launch {
             val state = _uiState.value
             if (state.latitude == null || state.longitude == null) {
-                _uiState.value = state.copy(error = "Location not available")
+                notificationManager.showError("Location not available")
                 return@launch
             }
 
-            _uiState.value = state.copy(isLoading = true, error = null)
+            _uiState.value = state.copy(isLoading = true)
             try {
                 val normalizedPhone = state.selectedContactPhoneNumber
                     ?.let { PhoneNumberNormalizer.toE164(it) }
@@ -100,17 +101,13 @@ class EmergencyCallViewModel(
                         )
                     },
                     onFailure = { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to create call"
-                        )
+                        _uiState.value = _uiState.value.copy(isLoading = false)
+                        notificationManager.showError(error.message ?: "Failed to create call")
                     }
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Unknown error"
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                notificationManager.showError(e.message ?: "Unknown error")
             }
         }
     }

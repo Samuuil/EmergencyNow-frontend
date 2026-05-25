@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.emergencynow.domain.usecase.profile.CreateProfileUseCase
 import com.example.emergencynow.domain.usecase.profile.GetProfileUseCase
 import com.example.emergencynow.domain.usecase.profile.UpdateProfileUseCase
+import com.example.emergencynow.ui.util.NotificationManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +13,6 @@ import kotlinx.coroutines.launch
 
 data class PersonalInfoUiState(
     val isLoading: Boolean = true,
-    val error: String? = null,
     val height: String = "",
     val weight: String = "",
     val gender: String = "male",
@@ -28,7 +28,8 @@ data class PersonalInfoUiState(
 class PersonalInformationViewModel(
     private val getProfileUseCase: GetProfileUseCase,
     private val createProfileUseCase: CreateProfileUseCase,
-    private val updateProfileUseCase: UpdateProfileUseCase
+    private val updateProfileUseCase: UpdateProfileUseCase,
+    private val notificationManager: NotificationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PersonalInfoUiState())
@@ -40,7 +41,7 @@ class PersonalInformationViewModel(
 
     private fun loadProfile() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isLoading = true)
             try {
                 val result = getProfileUseCase()
                 result.fold(
@@ -63,14 +64,15 @@ class PersonalInformationViewModel(
                             isLoading = false,
                             isEditMode = false
                         )
+                        notificationManager.showError(error.message ?: "Failed to load profile")
                     }
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Failed to load profile: ${e.message}",
                     isEditMode = false
                 )
+                notificationManager.showError(e.message ?: "Failed to load profile")
             }
         }
     }
@@ -118,7 +120,7 @@ class PersonalInformationViewModel(
             val weightValue = state.weight.toIntOrNull()
 
             if (heightValue == null || weightValue == null || heightValue <= 0 || weightValue <= 0) {
-                _uiState.value = state.copy(error = "Please enter valid height and weight")
+                notificationManager.showError("Please enter valid height and weight")
                 return@launch
             }
 
@@ -140,7 +142,7 @@ class PersonalInformationViewModel(
             val bloodType = if (state.bloodType.isBlank()) null else state.bloodType
             val dateOfBirth = if (state.dateOfBirth.isBlank()) null else state.dateOfBirth
 
-            _uiState.value = state.copy(isSaving = true, error = null)
+            _uiState.value = state.copy(isSaving = true)
 
             try {
                 val result = if (state.isEditMode) {
@@ -158,17 +160,13 @@ class PersonalInformationViewModel(
                         onSuccess()
                     },
                     onFailure = { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isSaving = false,
-                            error = "Failed to save profile: ${error.message}"
-                        )
+                        _uiState.value = _uiState.value.copy(isSaving = false)
+                        notificationManager.showError(error.message ?: "Failed to save profile")
                     }
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    error = "Failed to save profile"
-                )
+                _uiState.value = _uiState.value.copy(isSaving = false)
+                notificationManager.showError(e.message ?: "Failed to save profile")
             }
         }
     }

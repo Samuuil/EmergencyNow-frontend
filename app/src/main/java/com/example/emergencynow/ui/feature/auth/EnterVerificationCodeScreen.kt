@@ -153,16 +153,6 @@ fun EnterVerificationCodeScreen(
                     }
                 )
 
-                Text(
-                    text = "Code",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = BrandBlueMid,
-                    modifier = Modifier
-                        .offset(x = 16.dp, y = (-10).dp)
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                )
             }
             
             Spacer(Modifier.height(32.dp))

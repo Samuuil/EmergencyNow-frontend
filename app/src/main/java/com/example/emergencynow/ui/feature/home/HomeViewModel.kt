@@ -7,6 +7,7 @@ import com.example.emergencynow.data.repository.LocationRepository
 import com.example.emergencynow.domain.usecase.user.GetUserRoleUseCase
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.AuthStorage
+import com.example.emergencynow.ui.util.NotificationManager
 import com.example.emergencynow.ui.util.parseJwt
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Job
@@ -18,7 +19,6 @@ import kotlinx.coroutines.launch
 
 data class HomeUiState(
     val isLoading: Boolean = true,
-    val error: String? = null,
     val userLocation: LatLng? = null,
     val isDriver: Boolean = false,
     val isDoctor: Boolean = false,
@@ -29,6 +29,7 @@ class HomeViewModel(
     private val getUserRoleUseCase: GetUserRoleUseCase,
     private val authStorage: AuthStorage,
     private val locationRepository: LocationRepository,
+    private val notificationManager: NotificationManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -52,13 +53,11 @@ class HomeViewModel(
     fun loadUserData() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+                _uiState.value = _uiState.value.copy(isLoading = true)
                 val accessToken = authStorage.accessToken
                 if (accessToken.isNullOrEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        error = "Missing authentication credentials",
-                        isLoading = false
-                    )
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    notificationManager.showError("Missing authentication credentials")
                     return@launch
                 }
 
@@ -92,7 +91,8 @@ class HomeViewModel(
                 )
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to load user data", e)
-                _uiState.value = _uiState.value.copy(error = e.message, isLoading = false)
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                notificationManager.showError(e.message ?: "Failed to load user data")
             }
         }
     }
