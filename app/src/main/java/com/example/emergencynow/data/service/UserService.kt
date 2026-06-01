@@ -1,14 +1,10 @@
 package com.example.emergencynow.data.service
 
 import com.example.emergencynow.domain.model.response.UserEgnResponse
-import com.example.emergencynow.domain.model.response.UserRoleResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface UserService {
-    @GET("users/user-role/{id}")
-    suspend fun getUserRole(@Path("id") id: String): UserRoleResponse
-
     @GET("users/{id}/egn")
     suspend fun getUserEgn(@Path("id") id: String): UserEgnResponse
 

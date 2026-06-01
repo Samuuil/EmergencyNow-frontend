@@ -5,8 +5,10 @@ import com.example.emergencynow.domain.usecase.ambulance.AssignAmbulanceDriverUs
 import com.example.emergencynow.domain.usecase.ambulance.GetAvailableAmbulancesUseCase
 import com.example.emergencynow.ui.feature.ambulance.AmbulanceSelectionViewModel
 import com.example.emergencynow.ui.util.AuthSession
+import com.example.emergencynow.ui.util.NotificationManager
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -28,6 +30,7 @@ class AmbulanceSelectionViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var getAmbulancesUseCase: GetAvailableAmbulancesUseCase
     private lateinit var assignUseCase: AssignAmbulanceDriverUseCase
+    private lateinit var notificationManager: NotificationManager
 
     private val fakeAmbulance = AmbulanceDto(
         id = "amb-1", licensePlate = "CB001", type = "Sprinter", status = "AVAILABLE"
@@ -38,6 +41,7 @@ class AmbulanceSelectionViewModelTest {
         Dispatchers.setMain(testDispatcher)
         getAmbulancesUseCase = mockk()
         assignUseCase = mockk()
+        notificationManager = mockk(relaxed = true)
         AuthSession.userId = "driver-1"
     }
 
@@ -51,7 +55,7 @@ class AmbulanceSelectionViewModelTest {
     fun `init loads available ambulances`() = runTest {
         coEvery { getAmbulancesUseCase() } returns Result.success(listOf(fakeAmbulance))
 
-        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase)
+        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase, notificationManager)
         advanceUntilIdle()
 
         assertEquals(listOf(fakeAmbulance), vm.uiState.value.availableAmbulances)
@@ -62,7 +66,7 @@ class AmbulanceSelectionViewModelTest {
     fun `init sets error when load fails`() = runTest {
         coEvery { getAmbulancesUseCase() } returns Result.failure(Exception("Server error"))
 
-        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase)
+        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase, notificationManager)
         advanceUntilIdle()
 
         assertEquals("Server error", vm.uiState.value.error)
@@ -73,7 +77,7 @@ class AmbulanceSelectionViewModelTest {
     fun `selectAmbulance sets selectedAmbulanceId`() = runTest {
         coEvery { getAmbulancesUseCase() } returns Result.success(listOf(fakeAmbulance))
 
-        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase)
+        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase, notificationManager)
         advanceUntilIdle()
         vm.selectAmbulance("amb-1")
 
@@ -84,7 +88,7 @@ class AmbulanceSelectionViewModelTest {
     fun `selectAmbulance same id twice deselects`() = runTest {
         coEvery { getAmbulancesUseCase() } returns Result.success(listOf(fakeAmbulance))
 
-        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase)
+        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase, notificationManager)
         advanceUntilIdle()
         vm.selectAmbulance("amb-1")
         vm.selectAmbulance("amb-1")
@@ -96,7 +100,7 @@ class AmbulanceSelectionViewModelTest {
     fun `assignAmbulance does nothing when no selection`() = runTest {
         coEvery { getAmbulancesUseCase() } returns Result.success(listOf(fakeAmbulance))
 
-        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase)
+        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase, notificationManager)
         advanceUntilIdle()
 
         var callbackCalled = false
@@ -111,7 +115,7 @@ class AmbulanceSelectionViewModelTest {
         coEvery { getAmbulancesUseCase() } returns Result.success(listOf(fakeAmbulance))
         coEvery { assignUseCase("driver-1", "amb-1") } returns Result.success(Unit)
 
-        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase)
+        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase, notificationManager)
         advanceUntilIdle()
         vm.selectAmbulance("amb-1")
 
@@ -127,13 +131,13 @@ class AmbulanceSelectionViewModelTest {
         coEvery { getAmbulancesUseCase() } returns Result.success(listOf(fakeAmbulance))
         coEvery { assignUseCase(any(), any()) } returns Result.failure(Exception("Assignment failed"))
 
-        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase)
+        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase, notificationManager)
         advanceUntilIdle()
         vm.selectAmbulance("amb-1")
         vm.assignAmbulance {}
         advanceUntilIdle()
 
-        assertEquals("Assignment failed", vm.uiState.value.error)
+        verify { notificationManager.showError("Assignment failed") }
         assertFalse(vm.uiState.value.isAssigning)
     }
 
@@ -141,7 +145,7 @@ class AmbulanceSelectionViewModelTest {
     fun `retry reloads ambulances`() = runTest {
         coEvery { getAmbulancesUseCase() } returns Result.success(emptyList())
 
-        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase)
+        val vm = AmbulanceSelectionViewModel(getAmbulancesUseCase, assignUseCase, notificationManager)
         advanceUntilIdle()
         vm.retry()
         advanceUntilIdle()

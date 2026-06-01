@@ -6,9 +6,11 @@ import com.example.emergencynow.domain.usecase.profile.CreateProfileUseCase
 import com.example.emergencynow.domain.usecase.profile.GetProfileUseCase
 import com.example.emergencynow.domain.usecase.profile.UpdateProfileUseCase
 import com.example.emergencynow.ui.feature.profile.PersonalInformationViewModel
+import com.example.emergencynow.ui.util.NotificationManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,6 +32,7 @@ class PersonalInformationViewModelTest {
     private lateinit var getProfileUseCase: GetProfileUseCase
     private lateinit var createProfileUseCase: CreateProfileUseCase
     private lateinit var updateProfileUseCase: UpdateProfileUseCase
+    private lateinit var notificationManager: NotificationManager
 
     private val fakeProfile = Profile(
         id = "p-1", height = 175, weight = 70, gender = Gender.FEMALE,
@@ -43,6 +46,7 @@ class PersonalInformationViewModelTest {
         getProfileUseCase = mockk()
         createProfileUseCase = mockk()
         updateProfileUseCase = mockk()
+        notificationManager = mockk(relaxed = true)
     }
 
     @After
@@ -51,7 +55,7 @@ class PersonalInformationViewModelTest {
     }
 
     private fun buildVm() = PersonalInformationViewModel(
-        getProfileUseCase, createProfileUseCase, updateProfileUseCase
+        getProfileUseCase, createProfileUseCase, updateProfileUseCase, notificationManager
     )
 
     @Test
@@ -120,7 +124,7 @@ class PersonalInformationViewModelTest {
         vm.saveProfile {}
         advanceUntilIdle()
 
-        assertEquals("Please enter valid height and weight", vm.uiState.value.error)
+        verify { notificationManager.showError("Please enter valid height and weight") }
     }
 
     @Test
@@ -170,7 +174,7 @@ class PersonalInformationViewModelTest {
         vm.saveProfile {}
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.error!!.contains("Server error"))
+        verify { notificationManager.showError("Server error") }
         assertFalse(vm.uiState.value.isSaving)
     }
 

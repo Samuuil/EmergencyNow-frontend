@@ -6,10 +6,6 @@ import com.example.emergencynow.data.service.UserService
 class UserDataSourceImpl(
     private val userService: UserService
 ) : UserDataSource {
-    override suspend fun getUserRole(userId: String): String {
-        return userService.getUserRole(id = userId).role
-    }
-
     override suspend fun getUserEgn(userId: String): String {
         return userService.getUserEgn(id = userId).egn
     }

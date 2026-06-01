@@ -4,6 +4,7 @@ import com.example.emergencynow.domain.model.entity.Gender
 import com.example.emergencynow.domain.model.entity.Profile
 import com.example.emergencynow.domain.usecase.profile.GetProfileByEgnUseCase
 import com.example.emergencynow.ui.feature.doctor.PatientProfileViewModel
+import com.example.emergencynow.ui.util.NotificationManager
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,7 @@ class PatientProfileViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var useCase: GetProfileByEgnUseCase
+    private lateinit var notificationManager: NotificationManager
 
     private val fakeProfile = Profile(
         id = "p-1", height = 175, weight = 70, gender = Gender.MALE,
@@ -37,6 +39,7 @@ class PatientProfileViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         useCase = mockk()
+        notificationManager = mockk(relaxed = true)
     }
 
     @After
@@ -48,7 +51,7 @@ class PatientProfileViewModelTest {
     fun `loadPatientProfile success populates profile and clears loading`() = runTest {
         coEvery { useCase("1234567890") } returns Result.success(fakeProfile)
 
-        val vm = PatientProfileViewModel(useCase)
+        val vm = PatientProfileViewModel(useCase, notificationManager)
         vm.loadPatientProfile("1234567890")
         advanceUntilIdle()
 
@@ -61,7 +64,7 @@ class PatientProfileViewModelTest {
     fun `loadPatientProfile failure sets error message`() = runTest {
         coEvery { useCase(any()) } returns Result.failure(Exception("Patient not found"))
 
-        val vm = PatientProfileViewModel(useCase)
+        val vm = PatientProfileViewModel(useCase, notificationManager)
         vm.loadPatientProfile("0000000000")
         advanceUntilIdle()
 
@@ -74,7 +77,7 @@ class PatientProfileViewModelTest {
     fun `loadPatientProfile sets isLoading true while running`() = runTest {
         coEvery { useCase(any()) } returns Result.success(fakeProfile)
 
-        val vm = PatientProfileViewModel(useCase)
+        val vm = PatientProfileViewModel(useCase, notificationManager)
         vm.loadPatientProfile("1234567890")
 
         assertTrue(vm.uiState.value.isLoading)
@@ -89,7 +92,7 @@ class PatientProfileViewModelTest {
         val updated = fakeProfile.copy(height = 180)
         coEvery { useCase("egn-2") } returns Result.success(updated)
 
-        val vm = PatientProfileViewModel(useCase)
+        val vm = PatientProfileViewModel(useCase, notificationManager)
         vm.loadPatientProfile("egn-1")
         advanceUntilIdle()
         assertEquals(175, vm.uiState.value.profile?.height)
