@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.emergencynow.BuildConfig
 import com.example.emergencynow.domain.model.entity.DispatcherAmbulanceSummary
 import com.example.emergencynow.domain.model.entity.DispatcherCallOffer
+import com.example.emergencynow.domain.model.entity.PatientRecord
 import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONArray
@@ -27,6 +28,7 @@ class DispatcherSocketManager {
     var onDriverAccepted: ((callId: String, ambulanceId: String) -> Unit)? = null
     var onDriverRejected: ((callId: String, ambulanceId: String, ambulances: List<DispatcherAmbulanceSummary>) -> Unit)? = null
     var onAmbulanceUnavailable: ((callId: String, ambulanceId: String, ambulances: List<DispatcherAmbulanceSummary>) -> Unit)? = null
+    var onDriverNoResponse: ((callId: String, ambulanceId: String, ambulances: List<DispatcherAmbulanceSummary>) -> Unit)? = null
     var onAmbulanceListUpdated: ((List<DispatcherAmbulanceSummary>) -> Unit)? = null
     var onConnectionChange: ((Boolean) -> Unit)? = null
 
@@ -152,6 +154,18 @@ class DispatcherSocketManager {
                 }
             }
 
+            socket?.on("driver.no-response") { args ->
+                try {
+                    val data = args.firstOrNull() as? JSONObject ?: return@on
+                    val callId = data.getString("callId")
+                    val ambulanceId = data.getString("ambulanceId")
+                    val ambulances = parseAmbulanceList(data.optJSONArray("ambulances"))
+                    onDriverNoResponse?.invoke(callId, ambulanceId, ambulances)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing driver.no-response: ${e.message}", e)
+                }
+            }
+
             socket?.on("ambulance.list-updated") { args ->
                 try {
                     val data = args.firstOrNull() as? JSONObject ?: return@on
@@ -227,7 +241,33 @@ class DispatcherSocketManager {
             longitude = json.getDouble("longitude"),
             createdAt = json.optString("createdAt", ""),
             userName = if (json.isNull("userName")) null else json.optString("userName", null),
+            patient = parsePatient(json.optJSONObject("patient")),
         )
+    }
+
+    private fun parsePatient(json: JSONObject?): PatientRecord? {
+        if (json == null) return null
+        return PatientRecord(
+            egn = json.optString("egn", ""),
+            fullName = json.optString("fullName", ""),
+            phoneNumber = json.optString("phoneNumber", ""),
+            email = json.optString("email", ""),
+            bloodType = if (json.isNull("bloodType")) null else json.optString("bloodType"),
+            allergies = parseStringList(json.optJSONArray("allergies")),
+            medicines = parseStringList(json.optJSONArray("medicines")),
+            illnesses = parseStringList(json.optJSONArray("illnesses")),
+            height = if (json.isNull("height")) null else json.optInt("height"),
+            weight = if (json.isNull("weight")) null else json.optInt("weight"),
+            gender = if (json.isNull("gender")) null else json.optString("gender"),
+            dateOfBirth = if (json.isNull("dateOfBirth")) null else json.optString("dateOfBirth"),
+        )
+    }
+
+    private fun parseStringList(arr: JSONArray?): List<String>? {
+        if (arr == null) return null
+        val list = mutableListOf<String>()
+        for (i in 0 until arr.length()) list.add(arr.optString(i, ""))
+        return list
     }
 
     private fun parseAmbulanceList(arr: JSONArray?): List<DispatcherAmbulanceSummary> {

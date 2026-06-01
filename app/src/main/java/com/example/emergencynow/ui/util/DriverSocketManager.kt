@@ -25,7 +25,20 @@ data class CallRoute(
     val steps: List<String>
 )
 
-class DriverSocketManager {
+interface IDriverSocketManager {
+    var onCallOffer: ((CallOffer) -> Unit)?
+    var onCallRoute: ((CallRoute) -> Unit)?
+    var onConnectionChange: ((Boolean) -> Unit)?
+    var onLocationRequest: ((requestId: Int) -> Unit)?
+    fun connect(accessToken: String)
+    fun disconnect()
+    fun acceptCall(callId: String)
+    fun declineCall(callId: String)
+    fun sendLocationUpdate(callId: String, latitude: Double, longitude: Double)
+    fun isConnected(): Boolean
+}
+
+class DriverSocketManager : IDriverSocketManager {
     companion object {
         private const val TAG = "DriverSocketManager"
         private const val NAMESPACE = "/drivers"
@@ -36,13 +49,13 @@ class DriverSocketManager {
     private var isConnected = false
     private var connectionTimeoutHandler: android.os.Handler? = null
 
-    var onCallOffer: ((CallOffer) -> Unit)? = null
-    var onCallRoute: ((CallRoute) -> Unit)? = null
-    var onConnectionChange: ((Boolean) -> Unit)? = null
+    override var onCallOffer: ((CallOffer) -> Unit)? = null
+    override var onCallRoute: ((CallRoute) -> Unit)? = null
+    override var onConnectionChange: ((Boolean) -> Unit)? = null
 
-    var onLocationRequest: ((requestId: Int) -> Unit)? = null
+    override var onLocationRequest: ((requestId: Int) -> Unit)? = null
 
-    fun connect(accessToken: String) {
+    override fun connect(accessToken: String) {
         Log.d(TAG, "════════════════════════════════════════")
         Log.d(TAG, "DRIVER SOCKET CONNECT REQUESTED")
         Log.d(TAG, "Token: ${accessToken.take(20)}...")
@@ -286,11 +299,11 @@ class DriverSocketManager {
         }
     }
 
-    fun acceptCall(callId: String) {
+    override fun acceptCall(callId: String) {
         respondToCall(callId, true)
     }
 
-    fun declineCall(callId: String) {
+    override fun declineCall(callId: String) {
         respondToCall(callId, false)
     }
 
@@ -313,7 +326,7 @@ class DriverSocketManager {
         }
     }
 
-    fun sendLocationUpdate(callId: String, latitude: Double, longitude: Double) {
+    override fun sendLocationUpdate(callId: String, latitude: Double, longitude: Double) {
         if (socket == null || !isConnected) {
             Log.w(TAG, "Cannot send location - socket not connected (socket=${socket != null}, connected=$isConnected)")
             return
@@ -333,25 +346,7 @@ class DriverSocketManager {
     }
 
 
-    fun sendLocationUpdate(latitude: Double, longitude: Double) {
-        if (socket == null || !isConnected) {
-            Log.w(TAG, "Cannot send location - socket not connected")
-            return
-        }
-
-        try {
-            val data = JSONObject().apply {
-                put("latitude", latitude)
-                put("longitude", longitude)
-            }
-            socket?.emit("location.update", data)
-            Log.d(TAG, "Sent location.update: lat=$latitude, lng=$longitude")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error sending location.update: ${e.message}")
-        }
-    }
-
-    fun disconnect() {
+    override fun disconnect() {
         Log.d(TAG, "Disconnect requested")
         connectionTimeoutHandler?.removeCallbacksAndMessages(null)
         connectionTimeoutHandler = null
@@ -367,7 +362,7 @@ class DriverSocketManager {
         Log.d(TAG, "Disconnected and cleaned up socket")
     }
 
-    fun isConnected(): Boolean {
+    override fun isConnected(): Boolean {
         val actuallyConnected = socket?.connected() == true
         if (actuallyConnected != isConnected) {
             Log.w(TAG, "Connection state mismatch - socket.connected()=$actuallyConnected, isConnected=$isConnected - fixing...")

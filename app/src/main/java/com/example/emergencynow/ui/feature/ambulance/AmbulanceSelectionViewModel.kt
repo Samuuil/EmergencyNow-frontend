@@ -7,6 +7,7 @@ import com.example.emergencynow.domain.model.response.AmbulanceDto
 import com.example.emergencynow.domain.usecase.ambulance.AssignAmbulanceDriverUseCase
 import com.example.emergencynow.domain.usecase.ambulance.GetAvailableAmbulancesUseCase
 import com.example.emergencynow.ui.util.AuthSession
+import com.example.emergencynow.ui.util.NotificationManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +23,8 @@ data class AmbulanceSelectionUiState(
 
 class AmbulanceSelectionViewModel(
     private val getAvailableAmbulancesUseCase: GetAvailableAmbulancesUseCase,
-    private val assignAmbulanceDriverUseCase: AssignAmbulanceDriverUseCase
+    private val assignAmbulanceDriverUseCase: AssignAmbulanceDriverUseCase,
+    private val notificationManager: NotificationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AmbulanceSelectionUiState())
@@ -47,18 +49,16 @@ class AmbulanceSelectionViewModel(
                     },
                     onFailure = { exception ->
                         Log.e("AmbulanceSelection", "Failed to load ambulances", exception)
-                        _uiState.value = _uiState.value.copy(
-                            error = exception.message ?: "Failed to load ambulances",
-                            isLoading = false
-                        )
+                        val message = exception.message ?: "Failed to load ambulances"
+                        _uiState.value = _uiState.value.copy(error = message, isLoading = false)
+                        notificationManager.showError(message)
                     }
                 )
             } catch (e: Exception) {
                 Log.e("AmbulanceSelection", "Error loading ambulances", e)
-                _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "An unexpected error occurred",
-                    isLoading = false
-                )
+                val message = e.message ?: "An unexpected error occurred"
+                _uiState.value = _uiState.value.copy(error = message, isLoading = false)
+                notificationManager.showError(message)
             }
         }
     }
@@ -86,18 +86,14 @@ class AmbulanceSelectionViewModel(
                     },
                     onFailure = { exception ->
                         Log.e("AmbulanceSelection", "Failed to assign ambulance", exception)
-                        _uiState.value = _uiState.value.copy(
-                            error = exception.message ?: "Failed to assign ambulance",
-                            isAssigning = false
-                        )
+                        _uiState.value = _uiState.value.copy(isAssigning = false)
+                        notificationManager.showError(exception.message ?: "Failed to assign ambulance")
                     }
                 )
             } catch (e: Exception) {
                 Log.e("AmbulanceSelection", "Error assigning ambulance", e)
-                _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "An unexpected error occurred",
-                    isAssigning = false
-                )
+                _uiState.value = _uiState.value.copy(isAssigning = false)
+                notificationManager.showError(e.message ?: "An unexpected error occurred")
             }
         }
     }

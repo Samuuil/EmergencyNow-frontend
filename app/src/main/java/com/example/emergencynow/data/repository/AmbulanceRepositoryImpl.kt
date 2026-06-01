@@ -9,7 +9,7 @@ import java.time.Instant
 class AmbulanceRepositoryImpl(
     private val ambulanceDataSource: AmbulanceDataSource
 ) : AmbulanceRepository {
-    
+
     override suspend fun getAvailableAmbulances(): Result<List<Ambulance>> = safeApiCall {
         ambulanceDataSource.getAvailableAmbulances().map { dto ->
             Ambulance(
@@ -26,7 +26,7 @@ class AmbulanceRepositoryImpl(
             )
         }
     }
-    
+
     override suspend fun getAmbulanceByDriver(driverId: String): Result<Ambulance?> = safeApiCall {
         ambulanceDataSource.getAmbulanceByDriver(driverId)?.let { dto ->
             Ambulance(
@@ -43,7 +43,7 @@ class AmbulanceRepositoryImpl(
             )
         }
     }
-    
+
     override suspend fun assignAmbulanceDriver(
         ambulanceId: String,
         driverId: String?
@@ -61,10 +61,5 @@ class AmbulanceRepositoryImpl(
             createdAt = Instant.now(),
             updatedAt = Instant.now()
         )
-    }
-
-    override suspend fun markAmbulanceAvailable(ambulanceId: String): Result<Unit> = safeApiCall {
-        ambulanceDataSource.markAmbulanceAvailable(ambulanceId)
-        Unit
     }
 }

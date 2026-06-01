@@ -385,6 +385,28 @@ fun PatientProfileDialog(
                             CircularProgressIndicator(color = BrandBlueDark)
                         }
                     }
+                    uiState.notInRecords -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Patient record not found",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = BrandBlueDark
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "This person doesn't have an EmergencyNow medical profile.",
+                                    fontSize = 16.sp,
+                                    color = BrandBlueDark.copy(alpha = 0.7f),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+                        }
+                    }
                     uiState.error != null -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),

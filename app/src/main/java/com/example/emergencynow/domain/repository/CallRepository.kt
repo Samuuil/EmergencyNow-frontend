@@ -12,8 +12,6 @@ interface CallRepository {
         patientPhoneNumber: String? = null
     ): Result<Call>
 
-    suspend fun getCallTracking(callId: String): Result<Call>
-
     suspend fun updateCallStatus(
         callId: String,
         status: CallStatus

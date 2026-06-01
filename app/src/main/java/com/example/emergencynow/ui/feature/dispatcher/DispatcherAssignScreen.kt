@@ -34,6 +34,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.awaitCancellation
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,9 +79,17 @@ fun DispatcherAssignScreen(
     val call = state.calls[callId]
     var selectedAmbulance by remember { mutableStateOf<DispatcherAmbulanceSummary?>(null) }
 
-    LaunchedEffect(Unit) {
-        viewModel.connectSocket()
-        viewModel.stopAlert()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.connectSocket()
+            viewModel.stopAlert()
+            try {
+                awaitCancellation()
+            } finally {
+                viewModel.disconnectSocket()
+            }
+        }
     }
 
     LaunchedEffect(callId, state.isSocketConnected) {

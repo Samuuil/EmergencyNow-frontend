@@ -115,6 +115,15 @@ class DispatcherViewModel(
             notificationManager.showError("Ambulance unavailable — pick another")
         }
 
+        socket.onDriverNoResponse = { callId, _, ambulances ->
+            val current = _uiState.value
+            _uiState.value = current.copy(
+                pendingAssignments = current.pendingAssignments - callId,
+                ambulances = if (ambulances.isNotEmpty()) ambulances else current.ambulances,
+            )
+            notificationManager.showError("Driver did not respond — please select another ambulance")
+        }
+
         socket.onAmbulanceListUpdated = { ambulances ->
             _uiState.value = _uiState.value.copy(
                 ambulances = ambulances,

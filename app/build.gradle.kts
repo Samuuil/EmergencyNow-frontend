@@ -54,6 +54,26 @@ android {
         compose = true
         buildConfig = true
     }
+    packaging {
+        resources {
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE-notice.md"
+        }
+    }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+            all {
+                it.maxHeapSize = "256m"
+                it.maxParallelForks = 1
+                it.jvmArgs(
+                    "-Djdk.attach.allowAttachSelf=true",
+                    "-XX:+EnableDynamicAgentLoading",
+                    "-Xshare:off"
+                )
+            }
+        }
+    }
 }
 
 dependencies {
@@ -95,10 +115,16 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     testImplementation(libs.junit)
+    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("app.cash.turbine:turbine:1.1.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation("io.mockk:mockk-android:1.13.10")
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.3")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

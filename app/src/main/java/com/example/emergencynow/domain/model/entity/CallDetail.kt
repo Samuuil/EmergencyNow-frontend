@@ -6,6 +6,5 @@ data class CallDetail(
     val userEgn: String?,
     val patientEgn: String?,
     val patientPhoneNumber: String?,
-    val ambulanceId: String?,
-    val hospitalId: String?
+    val selectedHospitalId: String?,
 )

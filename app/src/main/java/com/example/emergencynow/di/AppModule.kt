@@ -10,7 +10,6 @@ import com.example.emergencynow.data.session.TokenInterceptor
 import com.example.emergencynow.ui.util.AuthStorage
 import com.example.emergencynow.domain.repository.*
 import com.example.emergencynow.domain.usecase.ambulance.*
-import com.example.emergencynow.domain.usecase.ambulance.MarkAmbulanceAvailableUseCase
 import com.example.emergencynow.domain.usecase.auth.*
 import com.example.emergencynow.domain.usecase.auth.GetUserOnboardingStateUseCase
 import com.example.emergencynow.domain.usecase.call.*
@@ -21,7 +20,6 @@ import com.example.emergencynow.domain.usecase.dispatcher.GetAvailableAmbulances
 import com.example.emergencynow.domain.usecase.dispatcher.GetDispatcherCallsUseCase
 import com.example.emergencynow.domain.usecase.hospital.*
 import com.example.emergencynow.domain.usecase.profile.*
-import com.example.emergencynow.domain.usecase.user.GetUserRoleUseCase
 import com.example.emergencynow.ui.feature.auth.EnterEgnViewModel
 import com.example.emergencynow.ui.feature.auth.VerifyCodeViewModel
 import com.example.emergencynow.ui.feature.call.EmergencyCallViewModel
@@ -37,7 +35,12 @@ import com.example.emergencynow.ui.feature.home.CallTrackingViewModel
 import com.example.emergencynow.ui.feature.home.DriverViewModel
 import com.example.emergencynow.ui.util.DispatcherNotificationHelper
 import com.example.emergencynow.ui.util.DriverNotificationHelper
+import com.example.emergencynow.ui.util.DriverSocketManager
+import com.example.emergencynow.ui.util.IDriverSocketManager
+import com.example.emergencynow.ui.util.IUserSocketManager
+import com.example.emergencynow.ui.util.UserSocketManager
 import com.example.emergencynow.ui.util.FcmTokenRegistrar
+import com.example.emergencynow.ui.util.NetworkMonitor
 import com.example.emergencynow.ui.util.PendingCallOfferStorage
 import com.example.emergencynow.ui.AppViewModel
 import com.example.emergencynow.ui.util.NotificationManager
@@ -70,10 +73,13 @@ val appModule = module {
     single { AuthStorage(androidContext()) }
     single { com.example.emergencynow.data.repository.LocationRepository(androidContext()) }
     single { NotificationManager() }
+    single { NetworkMonitor(androidContext()) }
     single { DriverNotificationHelper(androidContext()) }
     single { DispatcherNotificationHelper(androidContext()) }
     single { PendingCallOfferStorage(androidContext()) }
     single { FcmTokenRegistrar(get()) }
+    factory<IDriverSocketManager> { DriverSocketManager() }
+    factory<IUserSocketManager> { UserSocketManager() }
 
     single {
         HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
@@ -176,13 +182,10 @@ val appModule = module {
     factory { GetAmbulanceByDriverUseCase(get()) }
     factory { AssignAmbulanceDriverUseCase(get()) }
     factory { UnassignAmbulanceDriverUseCase(get()) }
-    factory { MarkAmbulanceAvailableUseCase(get()) }
 
     factory { GetHospitalsForCallUseCase(get()) }
     factory { SelectHospitalUseCase(get()) }
     factory { GetHospitalRouteUseCase(get()) }
-
-    factory { GetUserRoleUseCase(get()) }
 
     factory { GetDispatcherCallsUseCase(get()) }
     factory { GetAvailableAmbulancesForDispatcherUseCase(get()) }
@@ -191,10 +194,10 @@ val appModule = module {
     factory { RegisterDeviceTokenUseCase(get()) }
     factory { UnregisterDeviceTokenUseCase(get()) }
 
-    viewModel { AppViewModel(get(), get(), get()) }
+    viewModel { AppViewModel(get(), get(), get(), get()) }
     viewModel { EnterEgnViewModel() }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get(), get()) }
-    viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get(), locationRepository = get()) }
+    viewModel { HomeViewModel(authStorage = get(), locationRepository = get(), notificationManager = get()) }
     viewModel {
         DriverViewModel(
             getAmbulanceByDriverUseCase = get(),
@@ -207,20 +210,22 @@ val appModule = module {
             driverNotificationHelper = get(),
             authStorage = get(),
             pendingCallOfferStorage = get(),
+            driverSocket = get(),
         )
     }
-    viewModel { CallTrackingViewModel(authStorage = get()) }
+    viewModel { CallTrackingViewModel(authStorage = get(), userSocket = get()) }
     viewModel {
         AmbulanceSelectionViewModel(
             getAvailableAmbulancesUseCase = get(),
-            assignAmbulanceDriverUseCase = get()
+            assignAmbulanceDriverUseCase = get(),
+            notificationManager = get()
         )
     }
-    viewModel { EmergencyCallViewModel(get(), get()) }
+    viewModel { EmergencyCallViewModel(get(), get(), get()) }
     viewModel { com.example.emergencynow.ui.feature.contacts.ContactPickerViewModel() }
-    viewModel { PersonalInformationViewModel(get(), get(), get()) }
-    viewModel { HistoryViewModel(get()) }
-    viewModel { PatientProfileViewModel(get()) }
+    viewModel { PersonalInformationViewModel(get(), get(), get(), get()) }
+    viewModel { HistoryViewModel(get(), get()) }
+    viewModel { PatientProfileViewModel(get(), get()) }
     viewModel {
         EmergencyContactsViewModel(
             getContactsUseCase = get(),
