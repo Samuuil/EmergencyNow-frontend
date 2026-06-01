@@ -2,6 +2,7 @@ package com.example.emergencynow.ui.feature.doctor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.emergencynow.data.error.EmergencyError
 import com.example.emergencynow.domain.model.entity.Profile
 import com.example.emergencynow.domain.usecase.profile.GetProfileByEgnUseCase
 import com.example.emergencynow.ui.util.NotificationManager
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 data class PatientProfileUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
+    val notInRecords: Boolean = false,
     val profile: Profile? = null
 )
 
@@ -26,7 +28,7 @@ class PatientProfileViewModel(
 
     fun loadPatientProfile(egn: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null, notInRecords = false)
             try {
                 val result = getProfileByEgnUseCase(egn)
                 result.fold(
@@ -37,9 +39,17 @@ class PatientProfileViewModel(
                         )
                     },
                     onFailure = { error ->
+                        val notInRecords = error is EmergencyError.Generic &&
+                            (error.isNotFound() || error.isErrorCode("USER_NOT_FOUND") || error.isErrorCode("PROFILE_NOT_FOUND"))
                         val message = error.message ?: "Failed to load patient profile"
-                        _uiState.value = _uiState.value.copy(isLoading = false, error = message)
-                        notificationManager.showError(message)
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = message,
+                            notInRecords = notInRecords
+                        )
+                        if (!notInRecords) {
+                            notificationManager.showError(message)
+                        }
                     }
                 )
             } catch (e: Exception) {
