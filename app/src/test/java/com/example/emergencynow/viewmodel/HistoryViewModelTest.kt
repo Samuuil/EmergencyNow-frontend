@@ -4,6 +4,7 @@ import com.example.emergencynow.domain.model.entity.Call
 import com.example.emergencynow.domain.model.entity.CallStatus
 import com.example.emergencynow.domain.usecase.call.GetUserCallsUseCase
 import com.example.emergencynow.ui.feature.history.HistoryViewModel
+import com.example.emergencynow.ui.util.NotificationManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -27,6 +28,7 @@ class HistoryViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var useCase: GetUserCallsUseCase
+    private lateinit var notificationManager: NotificationManager
 
     private fun fakeCall(id: String) = Call(
         id = id, description = "desc", latitude = 0.0, longitude = 0.0,
@@ -43,6 +45,7 @@ class HistoryViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         useCase = mockk()
+        notificationManager = mockk(relaxed = true)
     }
 
     @After
@@ -55,7 +58,7 @@ class HistoryViewModelTest {
         val calls = listOf(fakeCall("c1"), fakeCall("c2"))
         coEvery { useCase(1, 50) } returns Result.success(calls)
 
-        val vm = HistoryViewModel(useCase)
+        val vm = HistoryViewModel(useCase, notificationManager)
         advanceUntilIdle()
 
         assertEquals(calls, vm.uiState.value.calls)
@@ -67,7 +70,7 @@ class HistoryViewModelTest {
     fun `init sets error on failure`() = runTest {
         coEvery { useCase(1, 50) } returns Result.failure(Exception("Network error"))
 
-        val vm = HistoryViewModel(useCase)
+        val vm = HistoryViewModel(useCase, notificationManager)
         advanceUntilIdle()
 
         assertEquals("Network error", vm.uiState.value.error)
@@ -79,7 +82,7 @@ class HistoryViewModelTest {
     fun `retry calls loadUserCalls again`() = runTest {
         coEvery { useCase(1, 50) } returns Result.success(emptyList())
 
-        val vm = HistoryViewModel(useCase)
+        val vm = HistoryViewModel(useCase, notificationManager)
         advanceUntilIdle()
         vm.retry()
         advanceUntilIdle()
@@ -91,7 +94,7 @@ class HistoryViewModelTest {
     fun `empty call list is reflected in state`() = runTest {
         coEvery { useCase(1, 50) } returns Result.success(emptyList())
 
-        val vm = HistoryViewModel(useCase)
+        val vm = HistoryViewModel(useCase, notificationManager)
         advanceUntilIdle()
 
         assertTrue(vm.uiState.value.calls.isEmpty())

@@ -22,25 +22,6 @@ class UserRepositoryTest {
     }
 
     @Test
-    fun `getUserRole returns role string from data source`() = runTest {
-        coEvery { dataSource.getUserRole("user-1") } returns "DRIVER"
-
-        val result = repository.getUserRole("user-1")
-
-        assertTrue(result.isSuccess)
-        assertEquals("DRIVER", result.getOrNull())
-    }
-
-    @Test
-    fun `getUserRole returns failure when data source throws`() = runTest {
-        coEvery { dataSource.getUserRole(any()) } throws Exception("User not found")
-
-        val result = repository.getUserRole("user-x")
-
-        assertTrue(result.isFailure)
-    }
-
-    @Test
     fun `getUserEgn returns EGN from data source`() = runTest {
         coEvery { dataSource.getUserEgn("user-1") } returns "1234567890"
 

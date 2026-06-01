@@ -7,10 +7,6 @@ import com.example.emergencynow.domain.repository.UserRepository
 class UserRepositoryImpl(
     private val userDataSource: UserDataSource
 ) : UserRepository {
-    override suspend fun getUserRole(userId: String): Result<String> = safeApiCall {
-        userDataSource.getUserRole(userId)
-    }
-    
     override suspend fun getUserEgn(userId: String): Result<String> = safeApiCall {
         userDataSource.getUserEgn(userId)
     }

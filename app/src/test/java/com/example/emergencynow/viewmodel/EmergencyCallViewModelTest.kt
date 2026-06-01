@@ -6,9 +6,11 @@ import com.example.emergencynow.ui.feature.call.EmergencyCallViewModel
 import com.example.emergencynow.ui.feature.call.PatientIdentification
 import com.example.emergencynow.ui.util.AuthSession
 import com.example.emergencynow.ui.util.AuthStorage
+import com.example.emergencynow.ui.util.NotificationManager
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,6 +32,7 @@ class EmergencyCallViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var createCallUseCase: CreateCallUseCase
     private lateinit var authStorage: AuthStorage
+    private lateinit var notificationManager: NotificationManager
 
     private val fakeDto = CallDto(
         id = "call-1", userId = "user-1",
@@ -41,6 +44,7 @@ class EmergencyCallViewModelTest {
         Dispatchers.setMain(testDispatcher)
         createCallUseCase = mockk()
         authStorage = mockk(relaxed = true)
+        notificationManager = mockk(relaxed = true)
         AuthSession.userId = "user-1"
     }
 
@@ -50,7 +54,7 @@ class EmergencyCallViewModelTest {
         AuthSession.userId = null
     }
 
-    private fun buildVm() = EmergencyCallViewModel(createCallUseCase, authStorage)
+    private fun buildVm() = EmergencyCallViewModel(createCallUseCase, authStorage, notificationManager)
 
     @Test
     fun `createCall sets error when location is null`() = runTest {
@@ -58,7 +62,7 @@ class EmergencyCallViewModelTest {
         vm.createCall()
         advanceUntilIdle()
 
-        assertEquals("Location not available", vm.uiState.value.error)
+        verify { notificationManager.showError("Location not available") }
         assertFalse(vm.uiState.value.isLoading)
         assertFalse(vm.uiState.value.callCreated)
     }
@@ -86,7 +90,7 @@ class EmergencyCallViewModelTest {
         vm.createCall()
         advanceUntilIdle()
 
-        assertEquals("Network error", vm.uiState.value.error)
+        verify { notificationManager.showError("Network error") }
         assertFalse(vm.uiState.value.callCreated)
         assertFalse(vm.uiState.value.isLoading)
     }

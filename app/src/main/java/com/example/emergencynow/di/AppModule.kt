@@ -20,7 +20,6 @@ import com.example.emergencynow.domain.usecase.dispatcher.GetAvailableAmbulances
 import com.example.emergencynow.domain.usecase.dispatcher.GetDispatcherCallsUseCase
 import com.example.emergencynow.domain.usecase.hospital.*
 import com.example.emergencynow.domain.usecase.profile.*
-import com.example.emergencynow.domain.usecase.user.GetUserRoleUseCase
 import com.example.emergencynow.ui.feature.auth.EnterEgnViewModel
 import com.example.emergencynow.ui.feature.auth.VerifyCodeViewModel
 import com.example.emergencynow.ui.feature.call.EmergencyCallViewModel
@@ -188,8 +187,6 @@ val appModule = module {
     factory { SelectHospitalUseCase(get()) }
     factory { GetHospitalRouteUseCase(get()) }
 
-    factory { GetUserRoleUseCase(get()) }
-
     factory { GetDispatcherCallsUseCase(get()) }
     factory { GetAvailableAmbulancesForDispatcherUseCase(get()) }
     factory { AssignAmbulanceUseCase(get()) }
@@ -200,7 +197,7 @@ val appModule = module {
     viewModel { AppViewModel(get(), get(), get(), get()) }
     viewModel { EnterEgnViewModel() }
     viewModel { VerifyCodeViewModel(get(), get(), get(), get(), get(), get()) }
-    viewModel { HomeViewModel(getUserRoleUseCase = get(), authStorage = get(), locationRepository = get(), notificationManager = get()) }
+    viewModel { HomeViewModel(authStorage = get(), locationRepository = get(), notificationManager = get()) }
     viewModel {
         DriverViewModel(
             getAmbulanceByDriverUseCase = get(),
