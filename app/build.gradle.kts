@@ -124,6 +124,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation("io.mockk:mockk-android:1.13.10")
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.3")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
